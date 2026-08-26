@@ -24,9 +24,28 @@ export interface RSVP {
 
 export const fetchEvents = async (): Promise<ChurchEvent[]> => {
   if (!db) return [];
-  const q = query(collection(db, 'events'), orderBy('dateTime', 'asc'));
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChurchEvent));
+  try {
+    const q = query(collection(db, 'events'), orderBy('dateTime', 'asc'));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => {
+      const data = doc.data();
+      const rawCap = data.capacity;
+      const capacityNum = typeof rawCap === 'number' ? rawCap : (parseInt(rawCap, 10) || 30);
+      return {
+        id: doc.id,
+        title: data.title || '',
+        description: data.description || '',
+        dateTime: data.dateTime || '',
+        location: data.location || '',
+        capacity: capacityNum,
+        coverImage: data.coverImage || '',
+        createdAt: data.createdAt
+      } as ChurchEvent;
+    });
+  } catch (err) {
+    console.error("Error fetching events from Firestore:", err);
+    return [];
+  }
 };
 
 export const createEvent = async (eventData: Partial<ChurchEvent>) => {

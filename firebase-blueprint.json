@@ -81,9 +81,63 @@
         "createdAt": { "type": "number" },
         "updatedAt": { "type": "number" }
       }
+    },
+    "Conversation": {
+      "title": "AI Concierge Conversation",
+      "description": "Saved interactions with Mark Vil AI",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "messages": { 
+          "type": "array", 
+          "items": {
+            "type": "object",
+            "properties": {
+              "role": { "type": "string" },
+              "content": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      }
+    },
+    "PrayerRequest": {
+      "title": "Prayer Request",
+      "description": "User prayer requests",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "request": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "number" }
+      }
+    },
+    "Visit": {
+      "title": "Planned Visit",
+      "description": "User planned church visits",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "number" }
+      }
     }
   },
   "firestore": {
+    "/users/{uid}/conversations/{conversationId}": {
+      "schema": "#/entities/Conversation",
+      "description": "User conversations with AI"
+    },
+    "/users/{uid}/prayer_requests/{requestId}": {
+      "schema": "#/entities/PrayerRequest",
+      "description": "User prayer requests"
+    },
+    "/users/{uid}/visits/{visitId}": {
+      "schema": "#/entities/Visit",
+      "description": "User planned visits"
+    },
     "/users/{uid}/hundred_days_reflections/{dayId}": {
       "schema": "#/entities/HundredDaysReflection",
       "description": "Permanent 100 Days reflection notes for a user"

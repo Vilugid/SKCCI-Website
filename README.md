@@ -1,195 +1,141 @@
-# SAVIOR-KING Commission Church International (SKCCI) Web Application
+# SAVIOR-KING Commission Church International (SKCCI) Web Platform
 
 > *"Your Church, Your Family."*
 
-A full-stack web application designed for **SAVIOR-KING Commission Church International (SKCCI)**. The platform provides a spiritual growth hub, discipleship training platform, interactive Bible reading plans, and cell leader ministry tools.
+A full-stack, cloud-connected digital ministry platform designed for **SAVIOR-KING Commission Church International (SKCCI)**. The application integrates an AI-powered church concierge powered by **Google Gemini**, interactive discipleship training curriculums, milestone-based daily Bible reading trackers with permanent cloud synchronization, real-time prayer request boards with analytics, cell group management with meeting proof verification, and service leadership tools.
 
 ---
 
-## 🌟 Key Features
+## 🏆 Hackathon Submission & System Overview
 
-### 📖 Bible Reading & Reflection
-- **My First 100 Days with JESUS**:
-  - Interactive daily New Testament milestone tracker (1 chapter per day).
-  - Built-in passage reader with previous/next navigation.
-  - **Scripture Reflection Notes**: Record *"What struck you most?"* with character counting and cloud synchronization.
-  - **Permanent Lifetime Records**: Reflection notes and reading progress are stored permanently linked to the user's account.
-  - **Lifetime CSV Export**: Export all 100 milestone reflections to CSV at any time or upon 100% completion.
-- **365-Day Daily Bible Plan**:
-  - Full canonical plan with OT, NT, Psalms, and Proverbs daily portions.
-  - Daily Scripture Reflection Notes with cloud sync.
-  - December Year-End CSV Export & notice banner with automatic annual renewal.
-  - Light and Dark reading mode themes.
+This project was engineered to solve the real-world operational and spiritual discipleship challenges of a growing local and global church community:
 
-### 🛡️ Cell Leader Tools
-- **Sunday Service Outlines**:
-  - Weekly preaching outlines, scripture references, and discussion questions.
-  - Admin/Leader editor for updating sermons and service themes.
-- **Worship Videos & Setlists**:
-  - Embedded YouTube worship video playlists per service.
-  - Weekly song setlist overview and one-click lyric copying.
-- **Master Song Bank (A–Z)**:
-  - Comprehensive searchable archive of church praise and worship lyrics.
-  - Instant one-click lyric copy formatted for mobile cell devotionals.
-- **Vertical Jump Navigation**:
-  - Clean column-based quick navigation across mobile and desktop.
+1. **AI Concierge ("Hannah")**: Seamlessly guides visitors and members through service schedules, RSVP workflows, sermon outlines, consolidation manuals, fasting commitments, prayer requests, and online streaming in both Tagalog/Filipino and English with graceful offline fallback.
+2. **Permanent Scripture Reflection Engine**: Provides personal, lifetime-synced journals for both the *"My First 100 Days with JESUS"* and the *"365-Day Canonical Plan"* with one-click lifetime CSV export.
+3. **Discipleship & Cell Management**: Enables cell leaders to register groups, track weekly attendance, upload verified meeting photo proofs with client-side image compression, and inspect 6-month growth trends via Recharts.
+4. **Prayer Warrior Hub**: Facilitates daily focused intercession, tracking weekly active warriors, monthly trend visualizers, and individual fasting commitments.
+5. **Leader Tools & Song Bank**: Houses Sunday service sermon series outlines, Scripture references, Roman numeral teaching breakdowns, embedded worship sets, and an A–Z searchable song lyric database.
 
-### 📚 Discipleship & Ministries
-- **Discipleship Manuals & Envisioning Lessons**:
-  - Complete curriculum for consolidation, post-encounter, and cell leader training.
-  - Clean pagination, chapter browsing, and reading layout.
-- **Prayer Hub**:
-  - Intercessory prayer request wall with community "I Prayed" encouragement counts.
-- **Cell Groups Directory**:
-  - Location-based network of cell groups, meeting schedules, and contact details.
-- **Church Events & Announcements**:
-  - Live calendar of church services, youth gatherings, prayer vigils, and retreats.
-- **Giving & Tithes**:
-  - Digital donation details, banking channels, GCash QR codes, and giving guidance.
-- **Welcome Kit & Gospel Presentation**:
-  - Interactive Gospel visual presentation and new believer next steps.
+---
+
+## 🌟 Feature Breakdown
+
+### 🤖 AI Church Assistant ("Hannah")
+- **Google Gen AI Integration**: Utilizes `@google/genai` TypeScript SDK with resilient server-side proxying to protect API keys.
+- **Dual-Model Fallback Chain**: Features proactive multi-model fallback (`gemini-3.1-flash-lite` -> `gemini-3.5-flash-lite`) with context-aware system instructions.
+- **Bilingual Support**: Fluent in conversational Filipino/Tagalog (with proper cultural honorifics "po" and "opo") and English.
+- **Domain-Specific Guidance**: Real-time assistance for service schedules, physical sanctuary directions, online streaming links, sermon breakdowns, and event RSVPs.
+
+### 📖 Bible Reading & Reflection Trackers
+- **"My First 100 Days with JESUS"**:
+  - Daily chapter reading milestones across the New Testament.
+  - Interactive Scripture reflection notes (*"What struck you most?"*) with live character counting and cloud auto-save.
+  - Lifetime CSV export of user reflections.
+- **"365-Day Bible Reading Guide"**:
+  - Full-year canonical reading schedule covering Old Testament, New Testament, Psalms, and Proverbs daily.
+  - Year-End December reflection summary and automated annual cycle reset.
+  - Dual light/dark reading mode support.
+
+### 🛡️ Cell Group Management & Analytics
+- **Group Directory & Leader Hub**: Searchable directory of cell groups by location, day, and ministry category.
+- **Meeting Logs & Proof Verification**: Leaders can log weekly meetings, track disciple attendance, and upload JPG photo proof compressed in-browser to save bandwidth.
+- **Visual Analytics**: Interactive 6-month attendance and active group trend charts rendered with Recharts.
+
+### 🙏 Prayer Warrior Hub & Fasting Tracker
+- **Daily Prayer Focus**: Thematic prayer agendas for Monday through Saturday.
+- **Interactive Warrior Counter**: Live counters indicating community participation per prayer focus.
+- **Fasting Commitment**: Selectable fast types (*Skip Breakfast, Skip Lunch, Skip Dinner, 24-Hour Fast, Daniel's Fast*).
+- **Admin Management**: Dedicated prayer admin portal for reviewing and marking requests as prayed.
+
+### 📜 Discipleship Manuals & Envisioning Curriculum
+- **Consolidation Manuals**: Follow-up and discipleship lessons for nurturing new believers.
+- **Evangelism & Envisioning Modules**: Advanced kingdom leadership training.
+- **Interactive Progress Tracking**: Lesson checkboxes synced with user account profiles.
+
+### 🎵 Leader Tools & Master Song Bank
+- **Sunday Preaching Outlines**: Structured sermon series notes, scriptures, Roman numeral breakdowns, and discussion prompts.
+- **Embedded Worship Sets**: YouTube worship playlists accompanying each service.
+- **Song Bank (A–Z)**: Searchable lyrics database with one-click copy formatted for mobile small groups.
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
 
-- **Frontend**:
-  - [React 19](https://react.dev/) + [TypeScript](https://www.typescriptlang.org/)
-  - [Vite 6](https://vitejs.dev/) (Fast bundling and HMR)
-  - [Tailwind CSS 4](https://tailwindcss.com/) (Responsive utility styling)
-  - [Motion (Framer Motion)](https://motion.dev/) (Smooth page transitions & celebration dialogs)
-  - [Lucide React](https://lucide.dev/) (Clean iconography)
-  - [React Hot Toast](https://react-hot-toast.com/) (Notifications)
-- **Backend & Server**:
-  - [Node.js](https://nodejs.org/) & [Express 4](https://expressjs.com/)
-  - [tsx](https://github.com/privatenumber/tsx) for development
-  - [esbuild](https://esbuild.github.io/) for high-speed single-bundle server compilation (`dist/server.cjs`)
-  - Canonical host routing and SPA static serving
-- **Database & Authentication**:
-  - [Firebase Firestore](https://firebase.google.com/docs/firestore) for persistent cloud records (Bible progress, reflection notes, cell leaders, prayer wall)
-  - [Firebase Authentication](https://firebase.google.com/docs/auth) with Google Sign-In popup integration
+```
+[ Client: React 19 + Tailwind CSS + TanStack Query ]
+                       │
+       ┌───────────────┴───────────────┐
+       ▼                               ▼
+[ Express API Server ]       [ Firebase Services ]
+   ├─ /api/chat                 ├─ Authentication (Google Sign-In)
+   │  (Gemini Gen AI)           ├─ Cloud Firestore (RBAC & Schemas)
+   └─ Static Asset Serving      └─ Storage (Optimized Photos)
+```
+
+- **Frontend**: React 19, TypeScript, Vite 6, Tailwind CSS 4, Motion, Lucide React, Recharts, React Hot Toast
+- **Backend**: Node.js, Express, tsx (dev), esbuild (production CommonJS bundle)
+- **AI & ML**: Google Gen AI SDK (`@google/genai`), server-side execution with `process.env.GEMINI_API_KEY`
+- **Database & Auth**: Firebase Firestore & Firebase Authentication
 
 ---
 
-## 📁 Project Structure
+## 🔒 Security, Hygiene & Privacy Standards
 
-```
-├── .env.example                # Environment variable documentation
-├── firebase-applet-config.json # Firebase client configuration
-├── firebase-blueprint.json     # Firestore entity and schema blueprints
-├── firestore.rules             # Firestore security rules
-├── metadata.json               # Application metadata and capabilities
-├── package.json                # Project dependencies and npm scripts
-├── server.ts                   # Express custom backend entry point
-├── tsconfig.json               # TypeScript configuration
-├── vite.config.ts              # Vite bundler configuration
-│
-├── public/                     # Static assets (favicons, images, logos)
-│
-└── src/
-    ├── main.tsx                # Client application root entry point
-    ├── App.tsx                 # Main layout, router, navigation, and views
-    ├── index.css               # Global Tailwind CSS imports
-    ├── types.ts                # TypeScript interfaces and data models
-    ├── firebase.ts             # Firebase client SDK initialization
-    ├── bibleData.ts            # Canonical 365-day Bible reading schedule
-    ├── data.ts                 # 100-day Bible reading schedule and defaults
-    ├── lessonsData.ts          # Discipleship training and consolidation lessons
-    ├── envisioningLessons.ts   # Advanced vision and leadership lessons
-    │
-    ├── components/             # Reusable UI feature components
-    │   ├── Header.tsx          # Navigation bar with responsive drawer and Auth
-    │   ├── Hero.tsx            # Welcome banner with call-to-action cards
-    │   ├── BiblePlan.tsx       # 100 Days Bible tracker with reflection notes
-    │   ├── BiblePlan365.tsx    # 365 Days Bible reading guide & annual tracker
-    │   ├── LeaderTools.tsx     # Cell leader outlines, worship songs, & Song Bank
-    │   ├── ManualsReader.tsx   # Interactive reader for discipleship books
-    │   ├── PrayerHub.tsx       # Interactive prayer request board
-    │   ├── CellGroup.tsx       # Church cell group finder and listing
-    │   ├── Events.tsx          # Church calendar and upcoming events
-    │   ├── Giving.tsx          # Tithes, offerings, and online payment details
-    │   ├── Gospel.tsx          # The Four Spiritual Truths interactive guide
-    │   ├── WelcomeKit.tsx      # Guide for first-time church visitors
-    │   ├── LockModal.tsx       # Password verification modal for sensitive tools
-    │   └── Footer.tsx          # Church information and contact footer
-    │
-    ├── contexts/               # React Context Providers
-    │   └── AuthContext.tsx     # Firebase Authentication state and methods
-    │
-    ├── hooks/                  # Custom React hooks
-    │   └── useSyncedState.ts   # Unified cloud + localStorage state hook
-    │
-    └── utils/                  # Utility functions and date helpers
-```
+1. **Zero Hardcoded Secrets**: All API keys, tokens, and credentials are strictly injected via environment variables (`process.env.GEMINI_API_KEY`) on the server side.
+2. **Server-Side API Proxying**: The Gemini API key is never exposed to the client-side bundle. All interactions are securely routed through `/api/chat`.
+3. **Data Isolation & Privacy**: User reflections, progress, and private records are isolated in user-scoped Firestore paths with strict validation in `firestore.rules`.
+4. **Resilient Fallbacks**: If the AI service experiences network hiccups or rate limits, Hannah gracefully switches to built-in localized knowledge bases without throwing 500 errors.
+5. **No Exposed Personal Data**: Prayer requests and forms use sanitized inputs and secure database models.
 
 ---
 
-## 🚀 Getting Started (Local Development)
+## 🚀 Setup & Local Development Instructions
 
 ### 1. Prerequisites
-- **Node.js**: v18.0.0 or later
-- **npm** or **bun** / **yarn**
+- **Node.js**: v18.0.0 or higher
+- **npm** (or yarn / pnpm)
 
 ### 2. Installation
-Clone the repository and install all dependencies:
 ```bash
+git clone <repository-url>
+cd savior-king-commission-church
 npm install
 ```
 
-### 3. Environment Configuration
-Copy the `.env.example` file to `.env`:
+### 3. Environment Setup
+Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Ensure your Firebase configuration in `firebase-applet-config.json` contains your Firebase project keys (API Key, Project ID, Auth Domain, Storage Bucket).
+Ensure your `.env` contains:
+```env
+GEMINI_API_KEY="your_actual_gemini_api_key"
+```
 
-### 4. Running the Dev Server
-Start the full-stack dev server:
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
-The server will boot on `http://localhost:3000`.
+The server will start on `http://localhost:3000`.
 
 ---
 
-## 📦 Building & Production Deployment
+## 📦 Production Build & Deployment
 
-### 1. Production Build
-Compile both the frontend Vite bundle and backend Express server into the `dist/` directory:
+### Build the Application
 ```bash
 npm run build
 ```
-This produces:
-- `dist/index.html` + static assets (Frontend SPA)
-- `dist/server.cjs` (Compiled CommonJS backend bundle)
+This runs `vite build` for the frontend and `esbuild` for the server, creating:
+- `dist/` (Client static assets)
+- `dist/server.cjs` (Standalone Node.js backend bundle)
 
-### 2. Running in Production
-Launch the compiled production application:
+### Run the Production Server
 ```bash
 npm start
-```
-
-### 3. Cloud Run / Containerized Deployment
-The app is configured for container deployment (e.g., Google Cloud Run, Docker):
-- The server binds to host `0.0.0.0` and port `3000`.
-- All routes fallback to the Vite SPA single-page application entry point.
-
----
-
-## 🔒 Security & Firestore Rules
-
-Database security rules are defined in `firestore.rules` and enforce role-based access control (RBAC):
-- **Scripture Reflections & Bible Progress**: Restricted strictly to the authenticated owner (`request.auth.uid == userId`).
-- **Prayer Wall & Cell Groups**: Publicly readable with authenticated write validation.
-- **Sunday Service Outlines & Announcements**: Publicly readable with leader authorization for editing.
-
-To deploy or verify rules:
-```bash
-# Handled automatically via deployment tools or Firebase CLI:
-firebase deploy --only firestore:rules
 ```
 
 ---
 
 ## 📄 License
-Created for SAVIOR-KING Commission Church International. All rights reserved.
+SAVIOR-KING Commission Church International. All rights reserved.

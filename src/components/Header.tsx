@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Menu, X, User, Lock, ChevronDown, LogOut } from 'lucide-react';
+import { Menu, X, User, Lock, ChevronDown, LogOut, Globe } from 'lucide-react';
 import { TabItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HeaderProps {
   activeTab: TabItem;
@@ -9,51 +10,50 @@ interface HeaderProps {
   is100DayComplete: boolean;
 }
 
-const TABS: TabItem[] = ['Home', 'Welcome Kit', 'Gospel', 'Manuals', '100 Days Bible Plan', '365 Bible Reading Guide', 'Cell Group', 'Leader Tools', 'Events', 'Prayer Hub', 'Giving', 'Contact'];
-
 export default function Header({ activeTab, handleTabClick, is100DayComplete }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signInWithGoogle, logout } = useAuth();
+  const { language, setLanguage } = useLanguage();
 
   const getTabClass = (tab: TabItem, isDropdownItem = false) => {
     if (isDropdownItem) {
-      return `px-4 py-2.5 text-left text-sm font-medium transition-colors ${activeTab === tab ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:bg-[#FAFAFA] hover:text-[#C82323]'}`;
+      return `px-4 py-2.5 text-left text-sm font-medium transition-colors ${activeTab === tab ? 'bg-[#FAFAFA] text-[#C82323] font-semibold' : 'text-[#0F2C59] hover:bg-[#FAFAFA] hover:text-[#C82323]'}`;
     }
     
     // Top-level tabs
     const isActive = activeTab === tab || (tab === 'Welcome Kit' && (activeTab === 'Gospel' || activeTab === '100 Days Bible Plan'));
-    return `text-2xl font-medium transition-colors duration-200 flex items-center gap-1.5 whitespace-nowrap ${
+    return `text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${
       isActive 
-        ? 'text-[#C82323] border-b-2 border-[#C82323] pb-1' 
+        ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' 
         : 'text-[#0F2C59] hover:text-[#C82323] pb-1'
     }`;
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 lg:px-8 py-4">
-        <div className="flex justify-between items-end gap-4 lg:gap-8">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-xs w-full">
+      <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-20 sm:h-24 gap-3 lg:gap-6">
           
           {/* Logo */}
           <div 
-            className="flex-shrink-0 flex items-end cursor-pointer"
+            className="flex-shrink-0 flex items-center cursor-pointer"
             onClick={() => handleTabClick('Home')}
           >
             <img 
               src="/churchlogo2.png" 
               alt="Savior-King Commission Church Logo" 
-              className="h-20 lg:h-24 w-auto object-contain"
+              className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto object-contain transition-transform hover:scale-[1.02]"
             />
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex flex-1 justify-center items-end space-x-4 lg:space-x-8">
+          <nav className="hidden md:flex flex-1 justify-center items-center gap-2.5 md:gap-3 lg:gap-5 xl:gap-6 mx-1 lg:mx-3">
             <button onClick={() => handleTabClick('Home')} className={getTabClass('Home')}>
               Home
             </button>
             
             {/* Welcome Kit Dropdown */}
-            <div className="relative group flex items-end">
+            <div className="relative group flex items-center">
               <button 
                 onClick={() => handleTabClick('Welcome Kit')} 
                 className={getTabClass('Welcome Kit')}
@@ -62,7 +62,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                 <ChevronDown size={14} className="text-[#0F2C59] group-hover:text-[#C82323] transition-colors" />
               </button>
               
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-48 bg-white border border-gray-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 z-50">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-48 bg-white border border-gray-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 z-50">
                 <div className="py-2 flex flex-col">
                   <button 
                     onClick={() => handleTabClick('Gospel')} 
@@ -81,15 +81,15 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             </div>
 
             {/* Grow Dropdown */}
-            <div className="relative group flex items-end">
+            <div className="relative group flex items-center">
               <button 
-                className={`text-2xl font-medium transition-colors duration-200 flex items-center gap-1.5 whitespace-nowrap ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'text-[#C82323] border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
+                className={`text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
               >
                 Grow
                 <ChevronDown size={14} className="text-[#0F2C59] group-hover:text-[#C82323] transition-colors" />
               </button>
               
-              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-white border border-gray-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 z-50">
+              <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 w-56 bg-white border border-gray-100 shadow-xl rounded-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top scale-95 group-hover:scale-100 z-50">
                 <div className="py-2 flex flex-col">
                   <button 
                     onClick={() => handleTabClick('Manuals')} 
@@ -140,45 +140,61 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             </button>
           </nav>
 
-          {/* Sign In Button / Profile */}
-          <div className="hidden md:flex items-end flex-shrink-0">
+          {/* Right Section: Profile & Sign In */}
+          <div className="hidden md:flex items-center flex-shrink-0 gap-2.5 lg:gap-3 pl-1">
+            <button
+              onClick={() => setLanguage(language === 'fil' ? 'en' : 'fil')}
+              className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition-colors cursor-pointer"
+              title={`Switch language (Current: ${language === 'fil' ? 'Filipino' : 'English'})`}
+            >
+              {language === 'fil' ? '🇵🇭' : '🇺🇸'}
+            </button>
+
             {user ? (
-              <div className="flex items-center space-x-3 pb-1">
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200/70 py-1 px-2.5 rounded-full shadow-2xs">
                 <div className="flex items-center gap-2">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-8 h-8 rounded-full" />
+                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-gray-200 object-cover" />
                   ) : (
-                    <div className="w-8 h-8 rounded-full bg-[#FAFAFA] flex items-center justify-center text-[#0F2C59]">
-                      <User size={16} />
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-[#0F2C59] border border-gray-200">
+                      <User size={15} />
                     </div>
                   )}
-                  <span className="text-sm font-medium text-gray-700 whitespace-nowrap hidden lg:block">
-                    {user.displayName?.split(' ')[0]}
+                  <span className="text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap max-w-[90px] lg:max-w-[120px] truncate">
+                    {user.displayName?.split(' ')[0] || 'Member'}
                   </span>
                 </div>
                 <button 
                   onClick={logout}
-                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-0.5"
                   title="Sign Out"
                 >
-                  <LogOut size={18} />
+                  <LogOut size={15} />
                 </button>
               </div>
             ) : (
               <button 
                 onClick={signInWithGoogle}
-                className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] transition-colors whitespace-nowrap mb-1"
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-xs sm:text-sm font-bold rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] shadow-2xs transition-all active:scale-95 whitespace-nowrap cursor-pointer"
               >
-                Sign in with Google
+                Sign In
               </button>
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <div className="flex md:hidden items-end flex-shrink-0 pb-2">
+          {/* Mobile right section */}
+          <div className="flex md:hidden items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setLanguage(language === 'fil' ? 'en' : 'fil')}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-base transition-colors"
+              title="Toggle Language"
+            >
+              {language === 'fil' ? '🇵🇭' : '🇺🇸'}
+            </button>
+            
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-amber-500"
+              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500"
             >
               <span className="sr-only">Open main menu</span>
               {isMobileMenuOpen ? (

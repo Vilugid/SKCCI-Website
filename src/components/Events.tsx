@@ -16,6 +16,99 @@ const formatDate = (dateString: string) => {
   }
 };
 
+// Category detection & default high-quality Unsplash image generator
+const getEventCategoryMeta = (title: string, description: string) => {
+  const text = `${title || ''} ${description || ''}`.toLowerCase();
+  if (text.includes('young pro') || text.includes('career') || text.includes('professionals') || text.includes('calling')) {
+    return {
+      category: 'Young Professionals',
+      fallbackImage: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+    };
+  }
+  if (text.includes('youth') || text.includes('k-youth') || text.includes('student') || text.includes('campus')) {
+    return {
+      category: 'Youth Ministry',
+      fallbackImage: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1200&q=80',
+    };
+  }
+  if (text.includes('prayer') || text.includes('intercession') || text.includes('fasting') || text.includes('vigil')) {
+    return {
+      category: 'Prayer & Intercession',
+      fallbackImage: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&w=1200&q=80',
+    };
+  }
+  if (text.includes('worship') || text.includes('sunday') || text.includes('service') || text.includes('celebration')) {
+    return {
+      category: 'Sunday Worship',
+      fallbackImage: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80',
+    };
+  }
+  if (text.includes('men') || text.includes('women') || text.includes('cell') || text.includes('family')) {
+    return {
+      category: 'Cell Fellowship',
+      fallbackImage: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80',
+    };
+  }
+  return {
+    category: 'Church Gathering',
+    fallbackImage: 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&w=1200&q=80',
+  };
+};
+
+function EventCardImageHeader({ event, isFull, spotsLeft }: { event: ChurchEvent; isFull: boolean; spotsLeft: number }) {
+  const meta = getEventCategoryMeta(event.title, event.description);
+  const initialSrc = (event.coverImage && event.coverImage.trim().length > 0) ? event.coverImage.trim() : meta.fallbackImage;
+  const [imgSrc, setImgSrc] = useState(initialSrc);
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="h-52 bg-slate-800 relative overflow-hidden group">
+      {!imgError ? (
+        <img 
+          src={imgSrc} 
+          alt={event.title} 
+          onError={() => {
+            if (imgSrc !== meta.fallbackImage) {
+              setImgSrc(meta.fallbackImage);
+            } else {
+              setImgError(true);
+            }
+          }}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#0F2C59] via-[#1E3A8A] to-[#C82323]/80 text-white p-6 text-center">
+          <Calendar className="h-12 w-12 mb-2 text-white/80" />
+          <span className="text-xs font-bold tracking-wider uppercase text-white/90">{meta.category}</span>
+        </div>
+      )}
+      
+      {/* Subtle bottom gradient shadow for text & badge contrast */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent pointer-events-none" />
+
+      {/* Category Pill on Top-Left */}
+      <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm border border-white/20">
+        {meta.category}
+      </div>
+
+      {/* Dynamic Spots Left Badge on Top-Right */}
+      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-gray-900 shadow-md border border-gray-100 flex items-center gap-1.5 z-10">
+        {isFull ? (
+          <span className="text-[#C82323] font-extrabold flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse"></span>
+            FULL / SOLD OUT
+          </span>
+        ) : (
+          <span className="flex items-center gap-1.5 text-gray-800">
+            <span className={`w-2 h-2 rounded-full ${spotsLeft <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+            <span className="font-extrabold text-[#0F2C59]">{spotsLeft}</span> {spotsLeft === 1 ? 'spot left' : 'spots left'}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Events() {
   const { user, signInWithGoogle } = useAuth();
   const isAdmin = isEventAdmin(user?.email);
@@ -180,84 +273,97 @@ export default function Events() {
 
         {/* Public Feed View */}
         {activeTab === 'feed' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
             {events.length === 0 ? (
-              <div className="col-span-full bg-white rounded-2xl p-12 text-center border border-gray-100">
+              <div className="col-span-full bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
                 <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-4" />
                 <h3 className="text-lg font-medium text-gray-900">No Upcoming Events</h3>
                 <p className="mt-1 text-gray-500">Check back soon for new gatherings.</p>
               </div>
             ) : (
               events.map(event => {
+                const totalCapacity = typeof event.capacity === 'number' ? event.capacity : (parseInt(event.capacity as any, 10) || 30);
                 const rsvps = allRsvps[event.id] || [];
                 const rsvpCount = rsvps.length;
-                const capacityPercent = Math.min(100, Math.round((rsvpCount / event.capacity) * 100));
-                const isFull = rsvpCount >= event.capacity;
+                const spotsLeft = Math.max(0, totalCapacity - rsvpCount);
+                const isFull = spotsLeft === 0;
+                const capacityPercent = totalCapacity > 0 ? Math.min(100, Math.round((rsvpCount / totalCapacity) * 100)) : 0;
                 const userHasRSVPd = user ? rsvps.some(r => r.userId === user.uid) : false;
 
                 return (
-                  <div key={event.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col transition-transform hover:-translate-y-1">
-                    <div className="h-48 bg-gray-200 relative">
-                      {event.coverImage ? (
-                        <img src={event.coverImage} alt={event.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                          <ImageIcon className="h-12 w-12 text-gray-300" />
-                        </div>
-                      )}
-                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-gray-900 shadow-sm">
-                        {isFull ? <span className="text-[#C82323]">SOLD OUT</span> : `${event.capacity - rsvpCount} spots left`}
-                      </div>
-                    </div>
+                  <div 
+                    key={event.id} 
+                    className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100/90 overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1"
+                  >
+                    <EventCardImageHeader 
+                      event={event} 
+                      isFull={isFull} 
+                      spotsLeft={spotsLeft} 
+                    />
                     
-                    <div className="p-6 flex-1 flex flex-col">
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">{event.title}</h3>
-                      <p className="text-gray-500 text-sm line-clamp-2 mb-4">{event.description}</p>
+                    <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900 mb-3 leading-snug tracking-tight font-serif">
+                          {event.title}
+                        </h3>
+                        <p className="text-gray-600 text-sm leading-relaxed mb-6 whitespace-pre-line">
+                          {event.description}
+                        </p>
+                      </div>
                       
-                      <div className="space-y-2 mb-6 mt-auto text-sm text-gray-600">
-                        <div className="flex items-center gap-2">
-                          <Clock size={16} className="text-[#C82323]" />
-                          <span>{formatDate(event.dateTime)}</span>
+                      <div>
+                        {/* Event Details: Date/Time & Location */}
+                        <div className="space-y-2.5 pt-4 border-t border-gray-100 mb-6 text-sm">
+                          <div className="flex items-center gap-2.5 text-gray-700 bg-gray-50/80 px-3.5 py-2.5 rounded-xl border border-gray-100">
+                            <Clock size={16} className="text-[#C82323] shrink-0" />
+                            <span className="font-semibold text-gray-800">{formatDate(event.dateTime)}</span>
+                          </div>
+                          <div className="flex items-center gap-2.5 text-gray-700 bg-gray-50/80 px-3.5 py-2.5 rounded-xl border border-gray-100">
+                            <MapPin size={16} className="text-[#C82323] shrink-0" />
+                            <span className="truncate text-gray-800 font-medium">{event.location}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin size={16} className="text-[#C82323]" />
-                          <span className="truncate">{event.location}</span>
-                        </div>
-                      </div>
 
-                      {/* Capacity Bar */}
-                      <div className="mb-6">
-                        <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-500 font-medium">Capacity</span>
-                          <span className="text-gray-700 font-bold">{capacityPercent}%</span>
+                        {/* Capacity Progress Bar */}
+                        <div className="mb-6 bg-gray-50/60 p-3 rounded-xl border border-gray-100">
+                          <div className="flex justify-between text-xs mb-1.5 font-medium">
+                            <span className="text-gray-600 flex items-center gap-1">
+                              <Users size={13} className="text-gray-400" />
+                              Confirmed Attendees: <strong className="text-gray-900">{rsvpCount}</strong> / {totalCapacity}
+                            </span>
+                            <span className={`font-bold ${capacityPercent >= 90 ? 'text-[#C82323]' : 'text-[#0F2C59]'}`}>
+                              {capacityPercent}% filled
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200/80 rounded-full h-2 overflow-hidden">
+                            <div 
+                              className={`h-full rounded-full transition-all duration-500 ${capacityPercent >= 90 ? 'bg-[#C82323]' : 'bg-[#0F2C59]'}`} 
+                              style={{ width: `${capacityPercent}%` }}
+                            />
+                          </div>
                         </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-500 ${capacityPercent >= 90 ? 'bg-[#C82323]' : 'bg-[#0F2C59]'}`} 
-                            style={{ width: `${capacityPercent}%` }}
-                          />
-                        </div>
-                      </div>
 
-                      <button
-                        onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
-                        disabled={!userHasRSVPd && isFull}
-                        className={`w-full py-3 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2
-                          ${userHasRSVPd 
-                            ? 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100' 
-                            : isFull 
-                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                              : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 shadow-sm'
-                          }`}
-                      >
-                        {userHasRSVPd ? (
-                          <><CheckCircle size={18} /> RSVP'd (Click to Cancel)</>
-                        ) : isFull ? (
-                          'Event Full'
-                        ) : (
-                          'RSVP Now'
-                        )}
-                      </button>
+                        {/* RSVP Action Button */}
+                        <button
+                          onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
+                          disabled={!userHasRSVPd && isFull}
+                          className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer
+                            ${userHasRSVPd 
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-100' 
+                              : isFull 
+                                ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed'
+                                : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 hover:shadow-sm'
+                            }`}
+                        >
+                          {userHasRSVPd ? (
+                            <><CheckCircle size={18} className="text-emerald-600" /> Attending (Click to Cancel RSVP)</>
+                          ) : isFull ? (
+                            'Event Full (Capacity Reached)'
+                          ) : (
+                            <><Plus size={18} /> RSVP / Attending</>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -284,8 +390,8 @@ export default function Events() {
               <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Activity size={16} /> Avg Attendance</div>
                 <div className="text-3xl font-bold text-[#0F2C59]">
-                  {events.length > 0 
-                    ? Math.round((Object.values(allRsvps).reduce((sum, rsvps) => sum + rsvps.length, 0) / events.reduce((sum, e) => sum + e.capacity, 0)) * 100)
+                  {events.length > 0 && events.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0) > 0
+                    ? Math.round((Object.values(allRsvps).reduce((sum, rsvps) => sum + rsvps.length, 0) / events.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0)) * 100)
                     : 0}%
                 </div>
               </div>
@@ -294,7 +400,8 @@ export default function Events() {
                 <div className="text-3xl font-bold text-[#C82323]">
                   {events.filter(e => {
                     const count = (allRsvps[e.id] || []).length;
-                    return count > 0 && count / e.capacity >= 0.8;
+                    const cap = Number(e.capacity) || 30;
+                    return count > 0 && count / cap >= 0.8;
                   }).length}
                 </div>
               </div>
@@ -363,23 +470,28 @@ export default function Events() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {events.map(event => (
-                        <tr key={event.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 font-medium text-gray-900">{event.title}</td>
-                          <td className="px-6 py-4 text-gray-500">{formatDate(event.dateTime)}</td>
-                          <td className="px-6 py-4">
-                            <span className={`px-2 py-1 rounded text-xs font-bold ${
-                              (allRsvps[event.id]?.length || 0) >= event.capacity ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'
-                            }`}>
-                              {allRsvps[event.id]?.length || 0} / {event.capacity}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <button onClick={() => handleEditClick(event)} className="text-gray-400 hover:text-[#0F2C59] p-1 mx-1 transition-colors"><Edit size={16} /></button>
-                            <button onClick={() => { if(confirm('Delete event?')) deleteEventMutation.mutate(event.id); }} className="text-gray-400 hover:text-red-600 p-1 mx-1 transition-colors"><Trash2 size={16} /></button>
-                          </td>
-                        </tr>
-                      ))}
+                      {events.map(event => {
+                        const cap = Number(event.capacity) || 30;
+                        const rsvpsCount = allRsvps[event.id]?.length || 0;
+                        const isFull = rsvpsCount >= cap;
+                        return (
+                          <tr key={event.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 font-medium text-gray-900">{event.title}</td>
+                            <td className="px-6 py-4 text-gray-500">{formatDate(event.dateTime)}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                                isFull ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'
+                              }`}>
+                                {rsvpsCount} / {cap}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button onClick={() => handleEditClick(event)} className="text-gray-400 hover:text-[#0F2C59] p-1 mx-1 transition-colors"><Edit size={16} /></button>
+                              <button onClick={() => { if(confirm('Delete event?')) deleteEventMutation.mutate(event.id); }} className="text-gray-400 hover:text-red-600 p-1 mx-1 transition-colors"><Trash2 size={16} /></button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                       {events.length === 0 && (
                         <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No events created yet.</td></tr>
                       )}

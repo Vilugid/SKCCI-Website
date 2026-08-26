@@ -19,6 +19,7 @@ import CellGroup from './components/CellGroup';
 import LeaderTools from './components/LeaderTools';
 import Events from './components/Events';
 import PrayerHub from './components/PrayerHub';
+import HannahChat from './components/HannahChat';
 import { TabItem } from './types';
 import { useSyncedState } from './hooks/useSyncedState';
 import { useAuth } from './contexts/AuthContext';
@@ -76,7 +77,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-white overflow-x-hidden w-full">
       <Toaster position="bottom-right" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff' } }} />
       <Header 
         activeTab={activeTab} 
@@ -84,7 +85,7 @@ export default function App() {
         is100DayComplete={is100DayComplete} 
       />
       
-      <main className="flex-grow">
+      <main className="flex-grow w-full overflow-x-hidden">
         {activeTab === 'Home' && (
           <>
             <Hero handleTabClick={handleTabClick} />
@@ -196,6 +197,9 @@ export default function App() {
       </main>
 
       <Footer handleTabClick={handleTabClick} />
+
+      {/* Floating Docked Virtual Church Usher */}
+      <HannahChat handleTabClick={handleTabClick} />
 
       <LockModal 
         isOpen={showLockModal} 
