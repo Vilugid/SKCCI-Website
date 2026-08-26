@@ -1,0 +1,112 @@
+{
+  "entities": {
+    "BibleProgress": {
+      "title": "Bible Progress",
+      "description": "Stores user's progress tracking for bible plans",
+      "type": "object",
+      "properties": {
+        "isViewedOTDone": { "type": "boolean" },
+        "isViewedNTDone": { "type": "boolean" },
+        "otDay": { "type": "number" },
+        "ntDay": { "type": "number" },
+        "nt365Day": { "type": "number" }
+      }
+    },
+    "UserRoles": {
+      "type": "object",
+      "properties": {
+        "isAdmin": { "type": "boolean" }
+      }
+    },
+    "CellGroup": {
+      "type": "object",
+      "properties": {
+        "leaderId": { "type": "string" },
+        "leaderName": { "type": "string" },
+        "members": { "type": "array", "items": { "type": "string" } },
+        "location": { "type": "string" },
+        "scheduleDay": { "type": "string" },
+        "scheduleTime": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "proofPhotoUrl": { "type": "string" },
+        "lastProofUploadAt": { "type": "string" },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "ServiceRecord": {
+      "type": "object",
+      "properties": {
+        "dateValue": { "type": "string" },
+        "dateLabel": { "type": "string" },
+        "messageTitle": { "type": "string" },
+        "messageOutline": { "type": "string" },
+        "youtubeVideoIds": { "type": "array", "items": { "type": "string" } },
+        "songs": { 
+          "type": "array", 
+          "items": { 
+            "type": "object", 
+            "properties": {
+              "title": { "type": "string" },
+              "lyrics": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string" }
+      }
+    },
+    "ScriptureReflection": {
+      "title": "Scripture Reflection",
+      "description": "Daily scripture reflection notes",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 10 },
+        "year": { "type": "number" },
+        "note": { "type": "string", "maxLength": 100 },
+        "passageTitle": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      }
+    },
+    "HundredDaysReflection": {
+      "title": "100 Days Scripture Reflection",
+      "description": "Permanent lifetime scripture reflection notes for the 100 Days milestone",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "day": { "type": "number" },
+        "chapterScripture": { "type": "string", "maxLength": 100 },
+        "note": { "type": "string", "maxLength": 100 },
+        "dateCompleted": { "type": "string", "maxLength": 20 },
+        "createdAt": { "type": "number" },
+        "updatedAt": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/users/{uid}/hundred_days_reflections/{dayId}": {
+      "schema": "#/entities/HundredDaysReflection",
+      "description": "Permanent 100 Days reflection notes for a user"
+    },
+    "/users/{uid}/scripture_reflections/{reflectionId}": {
+      "schema": "#/entities/ScriptureReflection",
+      "description": "Daily reflections for a user"
+    },
+    "/users/{uid}/bible_progress/data": {
+      "schema": "#/entities/BibleProgress",
+      "description": "User's specific progress data"
+    },
+    "/users/{uid}": {
+      "schema": "#/entities/UserRoles",
+      "description": "User roles"
+    },
+    "/cell_groups/{groupId}": {
+      "schema": "#/entities/CellGroup",
+      "description": "Cell Groups"
+    },
+    "/leader_tools/{recordId}": {
+      "schema": "#/entities/ServiceRecord",
+      "description": "Historical leader tools content"
+    }
+  }
+}

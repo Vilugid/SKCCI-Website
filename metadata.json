@@ -1,0 +1,6 @@
+{
+  "name": "SAVIOR-KING Commission Church",
+  "description": "Your Church Your Family. Modern web application for SAVIOR-KING Commission Church International (SKCCI).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
