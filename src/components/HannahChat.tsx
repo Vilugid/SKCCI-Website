@@ -137,8 +137,8 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
     },
   ];
 
-  const tagalogGreeting = "Maligayang pagdating! Ako si Hannah, ang inyong virtual church usher. Paano po kita matutulungan ngayon?";
-  const englishGreeting = "Welcome! I'm Hannah, your virtual church usher. How can I assist you today?";
+  const tagalogGreeting = "Maligayang pagdating! Ako si Hannah, ang inyong AI virtual church usher. Paano po kita matutulungan ngayon?";
+  const englishGreeting = "Welcome! I'm Hannah, your AI virtual church usher. How can I assist you today?";
 
   // When language is selected or changed
   const handleSelectLanguage = (lang: ChatLanguage) => {
@@ -455,6 +455,10 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                   Kumusta! Welcome to SKCCI
                 </h4>
                 
+                <div className="bg-gray-100 rounded-full px-3 py-1 mb-6 border border-gray-200">
+                  <span className="text-[10px] text-gray-500 font-medium tracking-wide uppercase">Hannah • AI Virtual Church Usher | Powered by Gemini</span>
+                </div>
+                
                 <p className="text-xs text-gray-600 mb-6 leading-relaxed max-w-[260px]">
                   Please choose your preferred language / Piliin ang inyong wika upang masimulan ang pakikipag-usap:
                 </p>
@@ -653,6 +657,14 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                     <Send size={15} className={input.trim() ? "translate-x-0.5" : ""} />
                   </button>
                 </form>
+              </div>
+              <div className="px-3 pb-2 text-center">
+                <p className="text-[10px] sm:text-[11px] text-gray-400 leading-tight">
+                  {selectedLanguage === 'tl'
+                    ? "Si Hannah ay isang AI assistant na pinapagana ng Gemini. Bagamat nilikha upang tumulong at magpalakas ng loob, ang AI ay maaaring magkamali. Mangyaring sumangguni sa pamunuan ng simbahan para sa mahahalagang detalye tungkol sa Bibliya, pastoral, o iskedyul."
+                    : "Hannah is an AI assistant powered by Gemini. While designed to encourage and assist, AI can make mistakes. Please verify important biblical, pastoral, or schedule details with church leadership."
+                  }
+                </p>
               </div>
             </div>
           )}
