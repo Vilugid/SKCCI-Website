@@ -61,6 +61,17 @@ service cloud.firestore {
       allow write: if isCellLeaderAdmin();
     }
 
+    match /cell_leader_tools/weekly_memory_verse {
+      allow read: if true;
+      allow create, delete: if isCellLeaderAdmin();
+      allow update: if isCellLeaderAdmin() || (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds']));
+    }
+
+    match /cell_leader_tools/{document=**} {
+      allow read: if true;
+      allow write: if isCellLeaderAdmin();
+    }
+
     match /events/{eventId} {
       allow read: if true;
       allow write: if isEventAdmin();

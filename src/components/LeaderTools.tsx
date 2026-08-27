@@ -2,8 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchLeaderTools, createLeaderTool, updateLeaderTool, removeLeaderTool } from '../api/db';
-import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown } from 'lucide-react';
+import { fetchLeaderTools, createLeaderTool, updateLeaderTool, removeLeaderTool, subscribeToMemoryVerse, updateMemoryVerse, toggleMemoryVerseMemorized, MemoryVerseData } from '../api/db';
+import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown, BookOpen, Quote, CheckCircle2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
 
@@ -138,6 +138,54 @@ export default function LeaderTools() {
   const [isFormattedView, setIsFormattedView] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
+  // Memory Verse State (Real-time sync with cell_leader_tools/weekly_memory_verse)
+  const [memoryVerse, setMemoryVerse] = useState<MemoryVerseData>({
+    reference: 'Philippians 4:6-7',
+    text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+    translation: 'NIV',
+    memorizedUserIds: [],
+  });
+
+  const [editVerseRef, setEditVerseRef] = useState('Philippians 4:6-7');
+  const [editVerseText, setEditVerseText] = useState('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.');
+  const [editVerseTranslation, setEditVerseTranslation] = useState('NIV');
+  const [isTogglingVerse, setIsTogglingVerse] = useState(false);
+
+  // Subscribe to Memory Verse changes in real-time
+  useEffect(() => {
+    const unsubscribe = subscribeToMemoryVerse((data) => {
+      setMemoryVerse(data);
+      if (!isEditing) {
+        setEditVerseRef(data.reference || 'Philippians 4:6-7');
+        setEditVerseText(data.text || '');
+        setEditVerseTranslation(data.translation || 'NIV');
+      }
+    });
+    return () => unsubscribe();
+  }, [isEditing]);
+
+  const handleToggleMemorized = async () => {
+    if (!user) {
+      toast('Please sign in with Google to track your memorization progress!', { icon: '🔐' });
+      return;
+    }
+    const currentMemorized = (memoryVerse.memorizedUserIds || []).includes(user.uid);
+    setIsTogglingVerse(true);
+    try {
+      await toggleMemoryVerseMemorized(user.uid, !currentMemorized);
+      if (!currentMemorized) {
+        toast.success("Hooray! Marked as memorized 🧠", { id: 'memory-toast' });
+      } else {
+        toast("Unmarked from memorized list", { id: 'memory-toast' });
+      }
+    } catch (err) {
+      console.error("Error toggling memory verse:", err);
+      toast.error("Failed to update memorization status");
+    } finally {
+      setIsTogglingVerse(false);
+    }
+  };
+
   // Edit State
   const [editDateValue, setEditDateValue] = useState('');
   const [editDateLabel, setEditDateLabel] = useState('');
@@ -148,8 +196,9 @@ export default function LeaderTools() {
   const [expandedSongIdx, setExpandedSongIdx] = useState<number | null>(null);
 
   // Quick Navigator, Collapsible Sections & Song Bank State
-  const [activeSection, setActiveSection] = useState<string>('sunday-service');
+  const [activeSection, setActiveSection] = useState<string>('memory-verse');
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({
+    'memory-verse': false,
     'sunday-service': true,
     'worship-videos': true,
     'song-lyrics': true,
@@ -173,6 +222,7 @@ export default function LeaderTools() {
   const toggleAllSections = () => {
     if (areAllSectionsCollapsed) {
       setCollapsedSections({
+        'memory-verse': false,
         'sunday-service': false,
         'worship-videos': false,
         'song-lyrics': false,
@@ -180,6 +230,7 @@ export default function LeaderTools() {
       });
     } else {
       setCollapsedSections({
+        'memory-verse': true,
         'sunday-service': true,
         'worship-videos': true,
         'song-lyrics': true,
@@ -256,7 +307,7 @@ export default function LeaderTools() {
 
   // ScrollSpy for Quick-Navigator
   useEffect(() => {
-    const sectionIds = ['sunday-service', 'worship-videos', 'song-lyrics', 'song-bank'];
+    const sectionIds = ['memory-verse', 'sunday-service', 'worship-videos', 'song-lyrics', 'song-bank'];
     
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 180;
@@ -275,7 +326,7 @@ export default function LeaderTools() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [selectedRecord, masterSongs, collapsedSections]);
+  }, [selectedRecord, masterSongs, collapsedSections, memoryVerse]);
 
   const scrollToSection = (id: string) => {
     // Automatically expand the section if it is collapsed so user can see the content
@@ -295,6 +346,7 @@ export default function LeaderTools() {
   };
 
   const navSections = [
+    { id: 'memory-verse', label: 'Memory Verse', subtitle: 'Weekly Scripture', icon: Sparkles, count: (memoryVerse.memorizedUserIds || []).length },
     { id: 'sunday-service', label: 'Sunday Service', subtitle: 'Outline & Theme', icon: FileText },
     { id: 'worship-videos', label: 'Worship Videos', subtitle: 'Video Recordings', icon: Youtube },
     { id: 'song-lyrics', label: 'Song Lyrics', subtitle: 'Weekly Setlist', icon: Music },
@@ -302,6 +354,10 @@ export default function LeaderTools() {
   ];
 
   const handleEditInit = () => {
+    setEditVerseRef(memoryVerse.reference || 'Philippians 4:6-7');
+    setEditVerseText(memoryVerse.text || '');
+    setEditVerseTranslation(memoryVerse.translation || 'NIV');
+
     if (selectedRecord) {
       setEditDateValue(selectedRecord.dateValue);
       setEditDateLabel(selectedRecord.dateLabel);
@@ -330,6 +386,7 @@ export default function LeaderTools() {
     }
     // Uncollapse all sections so user can immediately edit
     setCollapsedSections({
+      'memory-verse': false,
       'sunday-service': false,
       'worship-videos': false,
       'song-lyrics': false,
@@ -340,6 +397,10 @@ export default function LeaderTools() {
 
   const handleCreateNew = () => {
     setSelectedRecordId(null);
+    setEditVerseRef(memoryVerse.reference || 'Philippians 4:6-7');
+    setEditVerseText(memoryVerse.text || '');
+    setEditVerseTranslation(memoryVerse.translation || 'NIV');
+
     const today = new Date();
     const nextSunday = new Date();
     nextSunday.setDate(today.getDate() + ((7 - today.getDay()) % 7));
@@ -356,6 +417,7 @@ export default function LeaderTools() {
     setEditVideoIds([]);
     setEditSongs([]);
     setCollapsedSections({
+      'memory-verse': false,
       'sunday-service': false,
       'worship-videos': false,
       'song-lyrics': false,
@@ -366,18 +428,29 @@ export default function LeaderTools() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      // We are using setDoc in updateLeaderTool, which allows creating or updating based on dateValue ID
-      await updateLeaderTool(data.id, data.payload);
+      // 1. We are using setDoc in updateLeaderTool, which allows creating or updating based on dateValue ID
+      if (data.id && data.payload) {
+        await updateLeaderTool(data.id, data.payload);
+      }
+      // 2. Update weekly memory verse
+      if (data.memoryVerse) {
+        await updateMemoryVerse({
+          reference: data.memoryVerse.reference,
+          text: data.memoryVerse.text,
+          translation: data.memoryVerse.translation,
+        }, user?.email || 'Leader Tools Admin');
+      }
       return data.id;
     },
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['leader_tools'] });
-      setSelectedRecordId(id);
+      if (id) setSelectedRecordId(id);
       setIsEditing(false);
+      toast.success("All updates saved successfully!");
     },
     onError: (error) => {
       console.error("Error saving tools data:", error);
-      alert("Failed to save changes.");
+      toast.error("Failed to save changes.");
     }
   });
 
@@ -406,6 +479,11 @@ export default function LeaderTools() {
         youtubeVideoIds: editVideoIds.filter(id => id.trim() !== ''),
         songs: editSongs,
         createdAt: new Date()
+      },
+      memoryVerse: {
+        reference: editVerseRef.trim() || 'Philippians 4:6-7',
+        text: editVerseText.trim(),
+        translation: editVerseTranslation.trim() || 'NIV'
       }
     });
   };
@@ -599,6 +677,145 @@ export default function LeaderTools() {
           {/* Main Content Area */}
           <div className="flex-1 min-w-0 space-y-8 w-full">
             
+            {/* 0. Memory Verse (First Section Prior Sunday Service) */}
+            <div id="memory-verse" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden scroll-mt-24">
+              <div className="bg-[#0F2C59] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center min-w-0">
+                  <Sparkles className="text-[#D4A373] mr-3 flex-shrink-0" size={22} />
+                  <div>
+                    <h2 className="text-xl font-bold text-white font-serif truncate">
+                      Weekly Memory Verse
+                    </h2>
+                    <p className="text-xs text-blue-200">Scripture meditation & memory focus for cell leaders</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-full font-medium border border-white/10">
+                    {memoryVerse.translation || 'NIV'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => toggleSectionCollapse('memory-verse')}
+                    className="text-white hover:text-blue-100 flex items-center gap-1 text-xs sm:text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors"
+                    title={collapsedSections['memory-verse'] ? "Expand section" : "Collapse section"}
+                  >
+                    <span>{collapsedSections['memory-verse'] ? "Expand" : "Collapse"}</span>
+                    <ChevronDown size={16} className={`transition-transform duration-200 ${collapsedSections['memory-verse'] ? '-rotate-90' : 'rotate-0'}`} />
+                  </button>
+                </div>
+              </div>
+
+              {!collapsedSections['memory-verse'] && (
+                <div className="p-6">
+                  {isEditing ? (
+                    <div className="space-y-4 bg-gray-50/80 p-5 rounded-xl border border-gray-200">
+                      <div className="flex items-center justify-between pb-2 border-b border-gray-200">
+                        <span className="text-sm font-bold text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
+                          <Edit size={16} /> Edit Weekly Memory Verse
+                        </span>
+                        <span className="text-xs text-gray-500">Syncs in real time via Firestore</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="sm:col-span-2">
+                          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                            Scripture Reference
+                          </label>
+                          <input
+                            type="text"
+                            value={editVerseRef}
+                            onChange={(e) => setEditVerseRef(e.target.value)}
+                            placeholder="e.g. Philippians 4:6-7"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F2C59] focus:border-transparent text-sm font-semibold bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                            Translation Tag
+                          </label>
+                          <input
+                            type="text"
+                            value={editVerseTranslation}
+                            onChange={(e) => setEditVerseTranslation(e.target.value)}
+                            placeholder="e.g. NIV, ESV, Tagalog Ang Biblia"
+                            className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F2C59] focus:border-transparent text-sm bg-white"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wider mb-1">
+                          Scripture Verse Text
+                        </label>
+                        <textarea
+                          value={editVerseText}
+                          onChange={(e) => setEditVerseText(e.target.value)}
+                          placeholder="Enter the full scripture verse text..."
+                          rows={4}
+                          className="w-full px-3.5 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0F2C59] focus:border-transparent text-sm leading-relaxed bg-white"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-gray-100 pb-3">
+                        <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0F2C59] font-serif tracking-tight">
+                          {memoryVerse.reference}
+                        </h3>
+                        <span className="inline-flex items-center text-xs font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 self-start sm:self-auto">
+                          {memoryVerse.translation}
+                        </span>
+                      </div>
+
+                      {/* Styled Quote Container */}
+                      <div className="relative bg-gradient-to-br from-amber-50/50 via-white to-sky-50/30 p-6 sm:p-7 rounded-2xl border-l-4 border-[#C82323] border-y border-r border-gray-200/80 shadow-sm">
+                        <p className="text-base sm:text-lg text-gray-800 font-medium leading-relaxed italic font-serif">
+                          "{memoryVerse.text}"
+                        </p>
+                      </div>
+
+                      {/* Counter Badge Styled Identically to Prayer Hub */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={handleToggleMemorized}
+                          disabled={isTogglingVerse}
+                          className={`font-semibold rounded-full px-3 py-1 flex items-center gap-1.5 text-xs sm:text-sm transition-all ${
+                            (memoryVerse.memorizedUserIds || []).includes(user?.uid || '')
+                              ? 'bg-sky-100 text-sky-950 ring-2 ring-sky-400 border border-sky-300'
+                              : 'bg-sky-50 text-sky-950 hover:bg-sky-100 border border-sky-200'
+                          }`}
+                          title={user ? "Click to toggle memorized status" : "Sign in to track memorized status"}
+                        >
+                          <span className="text-base leading-none">🧠</span>
+                          <span>
+                            {(memoryVerse.memorizedUserIds || []).length}{' '}
+                            {(memoryVerse.memorizedUserIds || []).length === 1 ? 'Leader Memorized' : 'Leaders Memorized'}
+                          </span>
+                          {(memoryVerse.memorizedUserIds || []).includes(user?.uid || '') && (
+                            <span className="ml-1 text-[10px] bg-sky-600 text-white px-1.5 py-0.5 rounded-full font-bold">
+                              ✓ You
+                            </span>
+                          )}
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${memoryVerse.reference} (${memoryVerse.translation})\n"${memoryVerse.text}"`);
+                              toast.success("Copied memory verse to clipboard!");
+                            }}
+                            className="text-xs text-gray-500 hover:text-[#0F2C59] flex items-center gap-1 px-3 py-1.5 rounded-full hover:bg-gray-100 border border-gray-200 transition-colors"
+                          >
+                            <Copy size={13} /> Copy Verse
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {/* 1. Sunday Service (Outline Component) */}
             <div id="sunday-service" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden scroll-mt-24">
               <div className="bg-[#0F2C59] px-6 py-4 flex flex-wrap items-center justify-between gap-3">

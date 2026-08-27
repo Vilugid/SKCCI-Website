@@ -123,9 +123,26 @@
         "notes": { "type": "string" },
         "createdAt": { "type": "number" }
       }
+    },
+    "MemoryVerse": {
+      "title": "Weekly Memory Verse",
+      "description": "Weekly scripture memory verse for cell leaders with real-time memorization tracking",
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string", "maxLength": 100 },
+        "text": { "type": "string", "maxLength": 1000 },
+        "translation": { "type": "string", "maxLength": 50 },
+        "memorizedUserIds": { "type": "array", "items": { "type": "string" } },
+        "updatedBy": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" }
+      }
     }
   },
   "firestore": {
+    "/cell_leader_tools/weekly_memory_verse": {
+      "schema": "#/entities/MemoryVerse",
+      "description": "Weekly memory verse document"
+    },
     "/users/{uid}/conversations/{conversationId}": {
       "schema": "#/entities/Conversation",
       "description": "User conversations with AI"
