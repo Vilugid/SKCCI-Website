@@ -50,6 +50,14 @@ service cloud.firestore {
       }
     }
     
+    match /user_reading_streaks/{streakId} {
+      allow read: if true;
+      allow write: if request.auth != null && (
+        request.resource.data.userId == request.auth.uid || 
+        streakId.matches('^' + request.auth.uid + '_.*')
+      );
+    }
+
     match /cell_groups/{groupId} {
       allow read: if true;
       allow create: if request.auth != null;

@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
+import BibleStreakCard from './BibleStreakCard';
+import { ReadingPlanId } from '../types';
 
 interface BiblePlanProps {
   progressArray: number[];
@@ -77,6 +79,11 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
 
   const currentPlanItem = BIBLE_PLAN.find(item => item.day === selectedDay) || BIBLE_PLAN[0];
   const isSelectedDayCompleted = completedDays.has(selectedDay);
+
+  const savedNote = (reflections[selectedDay]?.note || '').trim();
+  const currentNote = noteText.trim();
+  const hasChangesToSave = currentNote !== savedNote;
+  const isAlreadySaved = !isSaving && currentNote === savedNote && savedNote.length > 0;
 
   const toggleDay = (day: number) => {
     let newArray: number[];
@@ -233,6 +240,23 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
           )}
         </div>
 
+        {/* Bible Reading Streak & Shield Tracking Module - Shown only while user is active on the 100 Days Plan */}
+        {!is100DayComplete && progressPercentage < 100 && (
+          <div className="max-w-3xl mx-auto mb-12">
+            <BibleStreakCard
+              planId="plan_100"
+              allowPlanSwitch={false}
+              currentDayNumber={selectedDay}
+              totalPlanDays={100}
+              onReadingMarked={(dayNum) => {
+                if (dayNum && !completedDays.has(dayNum)) {
+                  toggleDay(dayNum);
+                }
+              }}
+            />
+          </div>
+        )}
+
         {/* Hero Card: Today's / Selected Day Passage Reader & Reflection Note */}
         <div className="max-w-3xl mx-auto mb-16">
           <div className={`rounded-2xl p-6 sm:p-10 border shadow-lg relative overflow-hidden transition-colors ${
@@ -362,21 +386,26 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                 <button
                   type="button"
                   onClick={handleSaveNote}
-                  disabled={isSaving}
-                  className={`w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                  disabled={isSaving || !hasChangesToSave}
+                  className={`w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
                     saveSuccess
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white'
-                  } disabled:opacity-70 disabled:cursor-not-allowed`}
+                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                      : !hasChangesToSave
+                      ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                      : 'bg-[#0F2C59] hover:bg-[#1A365D] text-white shadow-sm cursor-pointer active:scale-95'
+                  }`}
+                  title={!hasChangesToSave ? (isAlreadySaved ? "Your reflection is already saved in cloud" : "No changes to save") : "Save reflection to cloud"}
                 >
                   {isSaving ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : saveSuccess ? (
                     <Check size={18} />
+                  ) : isAlreadySaved ? (
+                    <Check size={18} className="text-gray-400" />
                   ) : (
                     <Save size={18} />
                   )}
-                  {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save to Cloud'}
+                  {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : isAlreadySaved ? 'Saved to Cloud' : 'Save to Cloud'}
                 </button>
               </div>
             </div>

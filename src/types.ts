@@ -11,3 +11,23 @@ export interface BiblePlanDay {
   book: string;
   chapter: number;
 }
+
+export type ReadingPlanId = 'plan_100' | 'plan_365';
+
+export interface StreakHistoryItem {
+  date: string; // YYYY-MM-DD
+  status: 'completed' | 'shield_used' | 'missed';
+  dayNumber?: number;
+}
+
+export interface UserReadingStreak {
+  userId: string;
+  planId: ReadingPlanId;
+  currentStreak: number;
+  longestStreak: number;
+  shieldsAvailable: number;
+  lastCompletedDate: string | null;
+  completedDays: number[];
+  history: StreakHistoryItem[];
+  updatedAt?: any;
+}

@@ -6,6 +6,8 @@ import { useSyncedState } from '../hooks/useSyncedState';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
+import BibleStreakCard from './BibleStreakCard';
+import { ReadingPlanId } from '../types';
 
 type Theme = 'light' | 'dark';
 
@@ -20,11 +22,20 @@ interface ScriptureReflection {
 }
 
 
-export default function BiblePlan365() {
+interface BiblePlan365Props {
+  is100DayComplete?: boolean;
+}
+
+export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }: BiblePlan365Props = {}) {
   const { user, signInWithGoogle } = useAuth();
   const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
   const currentYear = new Date().getFullYear();
+
+  // Synced 100-day completion status check
+  const [synced100Complete] = useSyncedState<boolean>('sk_100_day_completed', false);
+  const [synced100Progress] = useSyncedState<number[]>('sk_100_day_progress', []);
+  const is100Completed = propIs100DayComplete ?? (synced100Complete || synced100Progress.length >= 100);
   
   // Progress sets via useSyncedState
   const [completedOTArray, setCompletedOTArray] = useSyncedState<number[]>(`sk_bible_ot_${currentYear}`, []);
@@ -56,6 +67,11 @@ export default function BiblePlan365() {
   };
   
   const viewedDate = getCalendarDateForDay(viewedDay, currentYear);
+  
+  const savedNote = (reflections[viewedDate]?.note || '').trim();
+  const currentNote = noteText.trim();
+  const hasChangesToSave = currentNote !== savedNote;
+  const isAlreadySaved = !isSaving && currentNote === savedNote && savedNote.length > 0;
   
   useEffect(() => {
     setNoteText(reflections[viewedDate]?.note || '');
@@ -275,6 +291,24 @@ export default function BiblePlan365() {
           </div>
         </div>
 
+        {/* Bible Reading Streak & Shield Tracking Module - Shown only when user has completed the 100-Day Bible Plan */}
+        {is100Completed && (
+          <div className="max-w-3xl mx-auto mb-12">
+            <BibleStreakCard
+              planId="plan_365"
+              allowPlanSwitch={false}
+              currentDayNumber={viewedDay}
+              totalPlanDays={365}
+              onReadingMarked={(dayNum) => {
+                if (dayNum) {
+                  if (!completedOT.has(dayNum)) toggleReading(dayNum, 'ot');
+                  if (!completedNT.has(dayNum)) toggleReading(dayNum, 'nt');
+                }
+              }}
+            />
+          </div>
+        )}
+
         {/* Hero Card: Today's / Viewed Reading */}
         <div className="max-w-3xl mx-auto mb-16">
           <div className={`rounded-2xl p-6 sm:p-10 border shadow-lg relative overflow-hidden transition-colors ${isViewedAllDone ? (theme === 'light' ? 'bg-[#FAFAFA]/50 border-[#D4A373]/40' : 'bg-amber-900/10 border-amber-900/50') : (theme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700')}`}>
@@ -407,21 +441,28 @@ export default function BiblePlan365() {
                 
                 <button
                   onClick={handleSaveNote}
-                  disabled={isSaving}
-                  className={`w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-sm ${
+                  disabled={isSaving || !hasChangesToSave}
+                  className={`w-full sm:w-auto flex-shrink-0 flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all ${
                     saveSuccess
-                      ? 'bg-green-600 hover:bg-green-700 text-white'
-                      : 'bg-[#0F2C59] hover:bg-[#0F2C59]/90 text-white'
-                  } disabled:opacity-70 disabled:cursor-not-allowed`}
+                      ? 'bg-green-600 hover:bg-green-700 text-white shadow-sm'
+                      : !hasChangesToSave
+                      ? theme === 'light'
+                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                        : 'bg-gray-800 text-gray-500 border border-gray-700 cursor-not-allowed shadow-none'
+                      : 'bg-[#0F2C59] hover:bg-[#1A365D] text-white shadow-sm cursor-pointer active:scale-95'
+                  }`}
+                  title={!hasChangesToSave ? (isAlreadySaved ? "Your reflection is already saved in cloud" : "No changes to save") : "Save reflection to cloud"}
                 >
                   {isSaving ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : saveSuccess ? (
                     <Check size={18} />
+                  ) : isAlreadySaved ? (
+                    <Check size={18} className="text-gray-400" />
                   ) : (
                     <Save size={18} />
                   )}
-                  {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : 'Save to Cloud'}
+                  {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : isAlreadySaved ? 'Saved to Cloud' : 'Save to Cloud'}
                 </button>
               </div>
             </div>

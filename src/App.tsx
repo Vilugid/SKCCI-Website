@@ -132,7 +132,7 @@ export default function App() {
         )}
 
         {activeTab === '365 Bible Reading Guide' && (
-          <BiblePlan365 />
+          <BiblePlan365 is100DayComplete={is100DayComplete} />
         )}
 
         {activeTab === 'Giving' && (

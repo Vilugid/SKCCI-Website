@@ -136,9 +136,40 @@
         "updatedBy": { "type": "string", "maxLength": 128 },
         "updatedAt": { "type": "string" }
       }
+    },
+    "UserReadingStreak": {
+      "title": "User Reading Streak",
+      "description": "Tracks daily Bible reading streak, streak shields, and completed days per plan",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "planId": { "type": "string", "enum": ["plan_100", "plan_365"] },
+        "currentStreak": { "type": "number" },
+        "longestStreak": { "type": "number" },
+        "shieldsAvailable": { "type": "number" },
+        "lastCompletedDate": { "type": "string" },
+        "completedDays": { "type": "array", "items": { "type": "number" } },
+        "history": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "date": { "type": "string" },
+              "status": { "type": "string", "enum": ["completed", "shield_used", "missed"] },
+              "dayNumber": { "type": "number" }
+            }
+          }
+        },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "planId", "currentStreak", "longestStreak", "shieldsAvailable"]
     }
   },
   "firestore": {
+    "/user_reading_streaks/{streakId}": {
+      "schema": "#/entities/UserReadingStreak",
+      "description": "User Bible reading streak and shield state"
+    },
     "/cell_leader_tools/weekly_memory_verse": {
       "schema": "#/entities/MemoryVerse",
       "description": "Weekly memory verse document"
