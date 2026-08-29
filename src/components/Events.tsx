@@ -295,25 +295,33 @@ export default function Events() {
                     key={event.id} 
                     className="bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100/90 overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1"
                   >
+                    {/* Fixed Card Image Header */}
                     <EventCardImageHeader 
                       event={event} 
                       isFull={isFull} 
                       spotsLeft={spotsLeft} 
                     />
                     
-                    <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900 mb-3 leading-snug tracking-tight font-serif">
+                    {/* Card Body with structured flex distribution */}
+                    <div className="p-6 sm:p-7 flex-1 flex flex-col">
+                      {/* Top Header & Announcement Body */}
+                      <div className="flex-none">
+                        <h3 className="text-xl font-bold text-gray-900 mb-3 leading-snug tracking-tight font-serif min-h-[3.25rem] flex items-start" title={event.title}>
                           {event.title}
                         </h3>
-                        <p className="text-gray-600 text-sm leading-relaxed mb-6 whitespace-pre-line">
+                      </div>
+
+                      {/* Fixed Height Scrollable Description Container */}
+                      <div className="relative mb-6">
+                        <div className="h-56 overflow-y-auto pr-2 custom-scrollbar text-gray-600 text-sm leading-relaxed whitespace-pre-line select-text">
                           {event.description}
-                        </p>
+                        </div>
                       </div>
                       
-                      <div>
+                      {/* Bottom Section Pinned to Base */}
+                      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col">
                         {/* Event Details: Date/Time & Location */}
-                        <div className="space-y-2.5 pt-4 border-t border-gray-100 mb-6 text-sm">
+                        <div className="space-y-2.5 mb-5 text-sm">
                           <div className="flex items-center gap-2.5 text-gray-700 bg-gray-50/80 px-3.5 py-2.5 rounded-xl border border-gray-100">
                             <Clock size={16} className="text-[#C82323] shrink-0" />
                             <span className="font-semibold text-gray-800">{formatDate(event.dateTime)}</span>
@@ -325,7 +333,7 @@ export default function Events() {
                         </div>
 
                         {/* Capacity Progress Bar */}
-                        <div className="mb-6 bg-gray-50/60 p-3 rounded-xl border border-gray-100">
+                        <div className="mb-5 bg-gray-50/60 p-3 rounded-xl border border-gray-100">
                           <div className="flex justify-between text-xs mb-1.5 font-medium">
                             <span className="text-gray-600 flex items-center gap-1">
                               <Users size={13} className="text-gray-400" />
