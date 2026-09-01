@@ -90,6 +90,16 @@ service cloud.firestore {
       }
     }
 
+    match /church_settings/{settingId} {
+      allow read: if true;
+      allow write: if isEventAdmin();
+    }
+
+    match /sunday_attendance/{logId} {
+      allow read: if true;
+      allow write: if isEventAdmin();
+    }
+
     match /prayer_requests/{requestId} {
       allow create: if true;
       allow read, update, delete: if isPrayerAdmin();

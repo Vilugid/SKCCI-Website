@@ -137,6 +137,32 @@
         "updatedAt": { "type": "string" }
       }
     },
+    "SundayAttendance": {
+      "title": "Sunday Attendance Record",
+      "description": "Historical Sunday service actual attendance count logs and notes",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string" },
+        "count": { "type": "number" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "loggedBy": { "type": "string" }
+      },
+      "required": ["date", "count"]
+    },
+    "SundayServiceCard": {
+      "title": "Sunday Service Card Settings",
+      "description": "Customizable content and banner for the recurring Sunday Worship Service card",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "coverImage": { "type": "string" },
+        "location": { "type": "string" },
+        "timeSchedule": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      }
+    },
     "UserReadingStreak": {
       "title": "User Reading Streak",
       "description": "Tracks daily Bible reading streak, streak shields, and completed days per plan",
@@ -166,6 +192,14 @@
     }
   },
   "firestore": {
+    "/sunday_attendance/{logId}": {
+      "schema": "#/entities/SundayAttendance",
+      "description": "Historical logs of actual Sunday church attendees"
+    },
+    "/church_settings/sunday_service_card": {
+      "schema": "#/entities/SundayServiceCard",
+      "description": "Configuration settings for recurring Sunday service card"
+    },
     "/user_reading_streaks/{streakId}": {
       "schema": "#/entities/UserReadingStreak",
       "description": "User Bible reading streak and shield state"

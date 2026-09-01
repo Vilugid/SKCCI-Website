@@ -293,7 +293,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
     const lower = content.toLowerCase();
     const buttons: { tab?: TabItem; href?: string; label: string; icon: React.ReactNode }[] = [];
 
-    if (lower.includes('1bpfgoffo67') || lower.includes('1bpfgoff') || lower.includes('stream') || lower.includes('online service') || lower.includes('livestream') || lower.includes('panoorin ang online')) {
+    if (lower.includes('1bpfgoffo67') || lower.includes('1bpfgoff') || lower.includes('stream') || lower.includes('online service') || lower.includes('livestream') || lower.includes('panoorin ang online') || lower.includes('facebook')) {
       buttons.push({
         href: 'https://www.facebook.com/share/g/1BpFgffo67/',
         label: isTagalog ? 'Panoorin ang Online Service' : 'Watch Online Service',
@@ -326,7 +326,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
         });
       }
 
-      if (lower.includes('cell group') || lower.includes('small group') || lower.includes('cell fellowship')) {
+      if (lower.includes('cell group') || lower.includes('small group') || lower.includes('cell fellowship') || lower.includes('cell')) {
         buttons.push({
           tab: 'Cell Group',
           label: isTagalog ? 'Pumunta sa Cell Groups' : 'View Cell Groups',
@@ -334,7 +334,31 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
         });
       }
 
-      if (lower.includes('prayer hub') || (lower.includes('prayer') && lower.includes('hub'))) {
+      if (lower.includes('100 day') || lower.includes('100 days') || lower.includes('first 100')) {
+        buttons.push({
+          tab: '100 Days Bible Plan',
+          label: isTagalog ? '100 Days Bible Plan' : '100 Days Bible Plan',
+          icon: <BookOpen size={13} className="text-amber-600" />
+        });
+      }
+
+      if (lower.includes('365') || lower.includes('365-day') || lower.includes('buong bibliya')) {
+        buttons.push({
+          tab: '365 Bible Reading Guide',
+          label: isTagalog ? '365 Bible Reading Guide' : '365 Bible Reading Guide',
+          icon: <BookOpen size={13} className="text-indigo-600" />
+        });
+      }
+
+      if (lower.includes('ebanghelyo') || lower.includes('gospel') || lower.includes('spiritual truths') || lower.includes('espiritwal na katotohanan')) {
+        buttons.push({
+          tab: 'Gospel',
+          label: isTagalog ? 'Tingnan ang Gospel Page' : 'View Gospel Page',
+          icon: <BookOpen size={13} className="text-red-600" />
+        });
+      }
+
+      if (lower.includes('prayer hub') || lower.includes('prayer request') || (lower.includes('prayer') && lower.includes('hub')) || lower.includes('panalangin')) {
         buttons.push({
           tab: 'Prayer Hub',
           label: isTagalog ? 'Pumunta sa Prayer Hub' : 'Go to Prayer Hub',
@@ -342,7 +366,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
         });
       }
 
-      if (lower.includes('giving tab') || (lower.includes('giving') && (lower.includes('tithe') || lower.includes('gcash')))) {
+      if (lower.includes('giving') || lower.includes('tithe') || lower.includes('handog') || lower.includes('kaloob') || lower.includes('gcash')) {
         buttons.push({
           tab: 'Giving',
           label: isTagalog ? 'Pumunta sa Giving Page' : 'Go to Giving Page',
@@ -350,7 +374,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
         });
       }
 
-      if (lower.includes('contact tab') || (lower.includes('contact') && lower.includes('map'))) {
+      if (lower.includes('contact') || lower.includes('lokasyon') || lower.includes('location') || lower.includes('map') || lower.includes('mañalac') || lower.includes('direksyon') || lower.includes('planuhin ang pagbisita') || lower.includes('plan my visit')) {
         buttons.push({
           tab: 'Contact',
           label: isTagalog ? 'Tingnan ang Lokasyon & Map' : 'View Location & Map',
@@ -510,7 +534,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
 
                       <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} max-w-[85%]`}>
                         <div
-                          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
+                          className={`px-4 py-2.5 rounded-2xl text-sm leading-relaxed break-words ${
                             isUser
                               ? 'bg-[#C82323] text-white rounded-br-xs shadow-sm font-normal'
                               : 'bg-white text-gray-800 border border-gray-200/80 rounded-bl-xs shadow-xs prose prose-sm max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0.5 prose-strong:text-gray-900'
@@ -519,7 +543,9 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                           {isUser ? (
                             <p className="whitespace-pre-wrap">{msg.content}</p>
                           ) : (
-                            <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            <div className="markdown-body">
+                              <ReactMarkdown>{msg.content}</ReactMarkdown>
+                            </div>
                           )}
                         </div>
 
