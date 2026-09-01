@@ -224,10 +224,14 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
     setInput('');
     setIsLoading(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
         body: JSON.stringify({
           message: text,
           history: messages.map(m => ({
@@ -237,6 +241,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
           language: currentLang
         })
       });
+      clearTimeout(timeoutId);
 
       let replyText = "";
       if (response.ok) {

@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 
 dotenv.config();
 
@@ -387,21 +387,34 @@ SKCCI Knowledge Base:
         { role: 'user', parts: [{ text: message }] }
       ];
 
-      // Try standard valid text models with graceful cascading
+      // Try standard valid text models with low thinking level for snappier responses and graceful cascading
       const modelsToTry = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
       let lastError = null;
 
-      for (const model of modelsToTry) {
-        try {
-          const response = await genAI.models.generateContent({
+      // Wrap generation in a safety timeout so Hannah never hangs indefinitely
+      const generateWithTimeout = async (model: string, timeoutMs: number = 7000) => {
+        return Promise.race([
+          genAI.models.generateContent({
             model,
             contents: formattedContents,
             config: {
               systemInstruction: systemInstruction,
               temperature: 0.7,
               maxOutputTokens: 2048,
+              thinkingConfig: {
+                thinkingLevel: ThinkingLevel.LOW,
+              },
             }
-          });
+          }),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error(`Model ${model} request timed out after ${timeoutMs}ms`)), timeoutMs)
+          )
+        ]);
+      };
+
+      for (const model of modelsToTry) {
+        try {
+          const response = await generateWithTimeout(model, 6500);
 
           if (response && response.text) {
             return res.json({ reply: response.text });
@@ -412,7 +425,7 @@ SKCCI Knowledge Base:
         }
       }
 
-      console.error("[Hannah AI] All Gemini models failed:", lastError);
+      console.warn("[Hannah AI] Falling back to instant church knowledge base:", lastError?.message || lastError);
       // Seamlessly provide accurate church knowledge fallback response rather than generic error
       const fallbackReply = getChurchFallbackResponse(message, safeLang);
       return res.json({ reply: fallbackReply });
