@@ -43,9 +43,13 @@ import {
   ChevronRight,
   Share2,
   ExternalLink,
-  Video
+  Video,
+  Archive,
+  History,
+  CalendarDays
 } from 'lucide-react';
 import ShareEventModal, { canUseNativeShare, triggerNativeShare } from './ShareEventModal';
+import EventRecapModal from './EventRecapModal';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -224,8 +228,10 @@ export default function Events() {
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'feed' | 'admin'>('feed');
+  const [feedFilter, setFeedFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const [adminSubTab, setAdminSubTab] = useState<'events' | 'sunday_card' | 'attendance'>('events');
   const [sharingEvent, setSharingEvent] = useState<ChurchEvent | null>(null);
+  const [recapEvent, setRecapEvent] = useState<ChurchEvent | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
 
   const handleShareClick = async (e: React.MouseEvent, event: ChurchEvent) => {
@@ -246,7 +252,8 @@ export default function Events() {
     dateTime: '',
     location: '',
     capacity: 100,
-    coverImage: ''
+    coverImage: '',
+    photosUrl: ''
   });
 
   // Admin Sunday Service Card Editor State
@@ -431,7 +438,8 @@ export default function Events() {
       dateTime: event.dateTime,
       location: event.location,
       capacity: event.capacity,
-      coverImage: event.coverImage
+      coverImage: event.coverImage,
+      photosUrl: event.photosUrl || ''
     });
     setEditId(event.id);
     setIsEditing(true);
@@ -440,7 +448,7 @@ export default function Events() {
   };
 
   const resetForm = () => {
-    setFormData({ title: '', description: '', dateTime: '', location: '', capacity: 100, coverImage: '' });
+    setFormData({ title: '', description: '', dateTime: '', location: '', capacity: 100, coverImage: '', photosUrl: '' });
     setEditId(null);
     setIsEditing(false);
   };
@@ -474,6 +482,8 @@ export default function Events() {
   };
 
   const now = new Date();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
   
   // Calculate next Sunday dynamically
   const nextSunday = new Date(now);
@@ -491,21 +501,29 @@ export default function Events() {
     dateTime: nextSunday.toISOString(),
     location: sundayCardSettings.location || 'SKCC Hall',
     capacity: 9999, // unlimited
-    coverImage: sundayCardSettings.coverImage || DEFAULT_SUNDAY_SERVICE_SETTINGS.coverImage
+    coverImage: sundayCardSettings.coverImage || DEFAULT_SUNDAY_SERVICE_SETTINGS.coverImage,
+    photosUrl: sundayCardSettings.photosUrl || DEFAULT_SUNDAY_SERVICE_SETTINGS.photosUrl
   } as ChurchEvent;
 
-  // Process & Sort events
-  const processedEvents = events.map(e => ({ ...e, isPast: new Date(e.dateTime) < now }));
-  processedEvents.sort((a, b) => {
-    if (a.isPast === b.isPast) {
-      const dateA = new Date(a.dateTime).getTime();
-      const dateB = new Date(b.dateTime).getTime();
-      return a.isPast ? dateB - dateA : dateA - dateB;
-    }
-    return a.isPast ? 1 : -1;
+  // Process & Separate events into Upcoming and Past
+  const processedEvents = events.map(e => {
+    const eventDate = new Date(e.dateTime);
+    const isPast = eventDate.getTime() < todayStart.getTime();
+    return { ...e, isPast };
   });
 
-  const displayFeedEvents = [{ ...sundayEvent, isPast: false, isRecurring: true }, ...processedEvents];
+  const upcomingEvents: (ChurchEvent & { isPast?: boolean; isRecurring?: boolean })[] = [
+    { ...sundayEvent, isPast: false, isRecurring: true },
+    ...processedEvents
+      .filter(e => !e.isPast)
+      .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime())
+  ];
+
+  const pastEvents: (ChurchEvent & { isPast?: boolean; isRecurring?: boolean })[] = processedEvents
+    .filter(e => e.isPast)
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+
+  const displayFeedEvents = [...upcomingEvents, ...pastEvents];
 
   // Deep-link event detection & smooth scroll
   React.useEffect(() => {
@@ -562,6 +580,224 @@ export default function Events() {
   const peakAttendance = sortedAttendance.length > 0 ? Math.max(...sortedAttendance.map(s => s.count)) : 0;
   const latestRecord = sortedAttendance.length > 0 ? sortedAttendance[sortedAttendance.length - 1] : null;
 
+  // Reusable Event Card Renderer
+  const renderEventCard = (event: any, isPastSection = false) => {
+    const totalCapacity = typeof event.capacity === 'number' ? event.capacity : (parseInt(event.capacity as any, 10) || 30);
+    const rsvps = allRsvps[event.id] || [];
+    const rsvpCount = rsvps.length;
+    const spotsLeft = Math.max(0, totalCapacity - rsvpCount);
+    const isFull = spotsLeft === 0 && !event.isRecurring;
+    const capacityPercent = totalCapacity > 0 ? Math.min(100, Math.round((rsvpCount / totalCapacity) * 100)) : 0;
+    
+    // Enhanced user RSVP detection (checks live query list and localStorage fallback)
+    const isUserInFirestore = user ? rsvps.some((r: any) => r.userId === user.uid) : false;
+    const isUserInLocalStorage = user && typeof window !== 'undefined' && localStorage.getItem(`skcc_rsvp_${event.id}_${user.uid}`) === 'true';
+    const userHasRSVPd = Boolean(isUserInFirestore || isUserInLocalStorage);
+
+    const isHighlighted = highlightedEventId === event.id;
+    const isPast = Boolean(event.isPast || isPastSection);
+
+    return (
+      <div 
+        id={`event-card-${event.id}`}
+        key={event.id} 
+        className={`bg-white rounded-3xl overflow-hidden flex flex-col h-full transition-all duration-300 relative
+          ${isHighlighted 
+            ? 'ring-4 ring-[#0F2C59]/40 border-2 border-[#0F2C59] shadow-2xl scale-[1.02] z-20' 
+            : isPast
+              ? 'shadow-xs hover:shadow-md border border-gray-200/90 bg-white/95 filter grayscale-[25%] hover:grayscale-0 hover:border-gray-300'
+              : 'shadow-xs hover:shadow-lg border border-gray-100 hover:-translate-y-1'}`}
+      >
+        {/* Highlight Pulsing Notification Banner */}
+        {isHighlighted && (
+          <div className="bg-[#0F2C59] text-white text-xs font-bold py-1.5 px-3 flex items-center justify-center gap-1.5 animate-pulse">
+            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            Selected Shared Event
+          </div>
+        )}
+
+        {/* Fixed Card Image Header */}
+        <EventCardImageHeader 
+          event={event} 
+          isFull={isFull} 
+          spotsLeft={spotsLeft} 
+          isPast={isPast}
+          isRecurring={event.isRecurring}
+          onShare={(e) => handleShareClick(e, event)}
+        />
+        
+        {/* Card Body with structured flex distribution */}
+        <div className="p-6 sm:p-7 flex-1 flex flex-col">
+          {/* Top Header */}
+          <div className="flex-none">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              {isPast ? (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-100 px-2.5 py-0.5 rounded-full border border-gray-200">
+                  Concluded Gathering
+                </span>
+              ) : event.isRecurring ? (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Weekly Gathering
+                </span>
+              ) : (
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#0F2C59] bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-100">
+                  Upcoming Gathering
+                </span>
+              )}
+            </div>
+            <h3 className={`text-xl font-bold mb-3 leading-snug tracking-tight font-serif min-h-[3.25rem] flex items-start ${isPast ? 'text-gray-800' : 'text-gray-900'}`} title={event.title}>
+              {event.title}
+            </h3>
+          </div>
+
+          {/* Fixed Height Scrollable Description Container */}
+          <div className="relative mb-6">
+            <div className="h-48 overflow-y-auto pr-2 custom-scrollbar text-gray-600 text-sm leading-relaxed whitespace-pre-line select-text">
+              {event.description}
+            </div>
+          </div>
+          
+          {/* Bottom Section Pinned to Base */}
+          <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col">
+            {/* Event Details: Date/Time & Location */}
+            <div className="space-y-2.5 mb-5 text-sm">
+              <div className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-100 ${isPast ? 'bg-gray-100/70 text-gray-600' : 'bg-gray-50/80 text-gray-700'}`}>
+                <Clock size={16} className={`${isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
+                <span className="font-semibold text-xs sm:text-sm">
+                  {event.isRecurring 
+                    ? (sundayCardSettings.timeSchedule || 'Every Sunday, 9:30 AM') 
+                    : formatDate(event.dateTime)}
+                </span>
+              </div>
+              <div className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-100 ${isPast ? 'bg-gray-100/70 text-gray-600' : 'bg-gray-50/80 text-gray-700'}`}>
+                <MapPin size={16} className={`${isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
+                <span className="truncate font-medium text-xs sm:text-sm">{event.location}</span>
+              </div>
+
+              {/* Online Livestream / Facebook Link */}
+              {event.isRecurring && (sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/') && (
+                <a
+                  href={sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-blue-100 bg-blue-50/70 hover:bg-blue-100/70 text-[#1877F2] transition-all group cursor-pointer shadow-2xs"
+                  title="Join / Watch Sunday Service Online (Facebook Group)"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <Video size={16} className="text-[#1877F2] shrink-0" />
+                    <span className="truncate font-semibold text-xs sm:text-sm text-gray-800 group-hover:text-[#1877F2] transition-colors">
+                      Online Service (Facebook)
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs font-bold text-[#1877F2] shrink-0">
+                    <span>Join</span>
+                    <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </div>
+                </a>
+              )}
+            </div>
+
+            {/* Capacity Progress Bar / Recurring Attendee Badge */}
+            {!event.isRecurring ? (
+              <div className={`mb-5 p-3 rounded-xl border ${isPast ? 'bg-gray-50/80 border-gray-200' : 'bg-gray-50/60 border-gray-100'}`}>
+                <div className="flex justify-between text-xs mb-1.5 font-medium">
+                  <span className="text-gray-600 flex items-center gap-1">
+                    <Users size={13} className="text-gray-400" />
+                    {isPast ? 'Total Attendance Logged:' : 'Confirmed Attendees:'} <strong className="text-gray-900">{rsvpCount}</strong> {totalCapacity > 0 && !isPast ? `/ ${totalCapacity}` : ''}
+                  </span>
+                  {!isPast && (
+                    <span className={`font-bold ${capacityPercent >= 90 ? 'text-[#C82323]' : 'text-[#0F2C59]'}`}>
+                      {capacityPercent}% filled
+                    </span>
+                  )}
+                  {isPast && (
+                    <span className="text-[11px] font-bold text-gray-500 bg-gray-200/70 px-2 py-0.5 rounded-md">
+                      Concluded
+                    </span>
+                  )}
+                </div>
+                {!isPast && (
+                  <div className="w-full bg-gray-200/80 rounded-full h-2 overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full transition-all duration-500 ${capacityPercent >= 90 ? 'bg-[#C82323]' : 'bg-[#0F2C59]'}`} 
+                      style={{ width: `${capacityPercent}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="mb-5 bg-emerald-50/70 p-3 rounded-xl border border-emerald-100 flex items-center justify-between text-xs">
+                <span className="text-emerald-900 font-semibold flex items-center gap-1.5">
+                  <Sparkles size={14} className="text-emerald-600" />
+                  General Sunday Worship Service
+                </span>
+                <span className="text-emerald-700 font-bold bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                  Open & Free to All
+                </span>
+              </div>
+            )}
+
+            {/* RSVP & Recap Actions */}
+            {isPast ? (
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <button
+                  type="button"
+                  disabled
+                  className="w-full sm:flex-1 py-3 rounded-xl font-bold text-xs sm:text-sm bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed flex items-center justify-center gap-1.5 shadow-none"
+                >
+                  <CheckCircle size={15} className="text-gray-400" />
+                  <span>RSVP Closed</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRecapEvent(event)}
+                  className="w-full sm:w-auto px-4 py-3 rounded-xl font-bold text-xs sm:text-sm bg-[#0F2C59]/10 hover:bg-[#0F2C59] text-[#0F2C59] hover:text-white border border-[#0F2C59]/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs group shrink-0"
+                  title="View Recap & Photo Gallery"
+                >
+                  <ImageIcon size={15} className="group-hover:scale-110 transition-transform" />
+                  <span>View Recap</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
+                  disabled={!userHasRSVPd && isFull}
+                  className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer
+                    ${userHasRSVPd 
+                      ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-600' 
+                      : isFull 
+                        ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                        : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 hover:shadow-sm'
+                    }`}
+                >
+                  {userHasRSVPd ? (
+                    <><CheckCircle size={18} className="text-white" /> ✓ Attending (Click to Cancel RSVP)</>
+                  ) : isFull ? (
+                    'Event Full (Capacity Reached)'
+                  ) : (
+                    <><Plus size={18} /> + RSVP / Attending</>
+                  )}
+                </button>
+
+                {/* Share Button (Only on active/upcoming events) */}
+                <button
+                  onClick={(e) => handleShareClick(e, event)}
+                  title="Share Event"
+                  aria-label={`Share ${event.title}`}
+                  className="p-3.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#0F2C59] hover:border-[#0F2C59]/40 transition-all duration-200 shadow-xs flex items-center justify-center cursor-pointer active:scale-95 group shrink-0"
+                >
+                  <Share2 size={18} className="text-gray-500 group-hover:text-[#0F2C59] transition-colors" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (isLoadingEvents) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -599,189 +835,132 @@ export default function Events() {
           )}
         </div>
 
-        {/* Public Feed View */}
+        {/* Public Feed View with Dynamic Date Categorization */}
         {activeTab === 'feed' && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-            {displayFeedEvents.length === 0 ? (
-              <div className="col-span-full bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
-                <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No Upcoming Events</h3>
-                <p className="mt-1 text-gray-500">Check back soon for new gatherings.</p>
+          <div className="space-y-12 pb-20">
+            {/* Filter Segmented Controls */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white p-2.5 sm:p-3 rounded-2xl border border-gray-200 shadow-2xs">
+              <div className="flex items-center gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+                <button
+                  type="button"
+                  onClick={() => setFeedFilter('all')}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
+                    feedFilter === 'all'
+                      ? 'bg-[#0F2C59] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <CalendarDays size={15} />
+                  <span>All Gatherings</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${feedFilter === 'all' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    {upcomingEvents.length + pastEvents.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFeedFilter('upcoming')}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
+                    feedFilter === 'upcoming'
+                      ? 'bg-[#0F2C59] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Upcoming Events</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${feedFilter === 'upcoming' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-800'}`}>
+                    {upcomingEvents.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setFeedFilter('past')}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer flex items-center gap-2 ${
+                    feedFilter === 'past'
+                      ? 'bg-[#0F2C59] text-white shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <Archive size={15} />
+                  <span>Past Archive</span>
+                  <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${feedFilter === 'past' ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-600'}`}>
+                    {pastEvents.length}
+                  </span>
+                </button>
               </div>
-            ) : (
-              displayFeedEvents.map((event: any) => {
-                const totalCapacity = typeof event.capacity === 'number' ? event.capacity : (parseInt(event.capacity as any, 10) || 30);
-                const rsvps = allRsvps[event.id] || [];
-                const rsvpCount = rsvps.length;
-                const spotsLeft = Math.max(0, totalCapacity - rsvpCount);
-                const isFull = spotsLeft === 0 && !event.isRecurring;
-                const capacityPercent = totalCapacity > 0 ? Math.min(100, Math.round((rsvpCount / totalCapacity) * 100)) : 0;
-                
-                // Enhanced user RSVP detection (checks live query list and localStorage fallback)
-                const isUserInFirestore = user ? rsvps.some((r: any) => r.userId === user.uid) : false;
-                const isUserInLocalStorage = user && typeof window !== 'undefined' && localStorage.getItem(`skcc_rsvp_${event.id}_${user.uid}`) === 'true';
-                const userHasRSVPd = Boolean(isUserInFirestore || isUserInLocalStorage);
 
-                const isHighlighted = highlightedEventId === event.id;
+              <div className="text-xs text-gray-500 font-medium px-2">
+                {feedFilter === 'all' && `Showing ${upcomingEvents.length} upcoming & ${pastEvents.length} archived gathering${pastEvents.length !== 1 ? 's' : ''}`}
+                {feedFilter === 'upcoming' && `Showing ${upcomingEvents.length} active gathering${upcomingEvents.length !== 1 ? 's' : ''}`}
+                {feedFilter === 'past' && `Showing ${pastEvents.length} archived gathering${pastEvents.length !== 1 ? 's' : ''}`}
+              </div>
+            </div>
 
-                return (
-                  <div 
-                    id={`event-card-${event.id}`}
-                    key={event.id} 
-                    className={`bg-white rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-500 hover:-translate-y-1 relative
-                      ${isHighlighted 
-                        ? 'ring-4 ring-[#0F2C59]/40 border-2 border-[#0F2C59] shadow-2xl scale-[1.02] z-20' 
-                        : 'shadow-sm hover:shadow-md border border-gray-100/90'}
-                      ${event.isPast ? 'opacity-75' : ''}`}
-                  >
-                    {/* Highlight Pulsing Notification Banner */}
-                    {isHighlighted && (
-                      <div className="bg-[#0F2C59] text-white text-xs font-bold py-1.5 px-3 flex items-center justify-center gap-1.5 animate-pulse">
-                        <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                        Selected Shared Event
-                      </div>
-                    )}
-
-                    {/* Fixed Card Image Header */}
-                    <EventCardImageHeader 
-                      event={event} 
-                      isFull={isFull} 
-                      spotsLeft={spotsLeft} 
-                      isPast={event.isPast}
-                      isRecurring={event.isRecurring}
-                      onShare={(e) => handleShareClick(e, event)}
-                    />
-                    
-                    {/* Card Body with structured flex distribution */}
-                    <div className="p-6 sm:p-7 flex-1 flex flex-col">
-                      {/* Top Header */}
-                      <div className="flex-none">
-                        <h3 className="text-xl font-bold text-gray-900 mb-3 leading-snug tracking-tight font-serif min-h-[3.25rem] flex items-start" title={event.title}>
-                          {event.title}
-                        </h3>
-                      </div>
-
-                      {/* Fixed Height Scrollable Description Container */}
-                      <div className="relative mb-6">
-                        <div className="h-56 overflow-y-auto pr-2 custom-scrollbar text-gray-600 text-sm leading-relaxed whitespace-pre-line select-text">
-                          {event.description}
-                        </div>
-                      </div>
-                      
-                      {/* Bottom Section Pinned to Base */}
-                      <div className="mt-auto pt-4 border-t border-gray-100 flex flex-col">
-                        {/* Event Details: Date/Time & Location */}
-                        <div className="space-y-2.5 mb-5 text-sm">
-                          <div className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-100 ${event.isPast ? 'bg-gray-100 text-gray-500' : 'bg-gray-50/80 text-gray-700'}`}>
-                            <Clock size={16} className={`${event.isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
-                            <span className="font-semibold">
-                              {event.isRecurring 
-                                ? (sundayCardSettings.timeSchedule || 'Every Sunday, 9:30 AM') 
-                                : formatDate(event.dateTime)}
-                            </span>
-                          </div>
-                          <div className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-gray-100 ${event.isPast ? 'bg-gray-100 text-gray-500' : 'bg-gray-50/80 text-gray-700'}`}>
-                            <MapPin size={16} className={`${event.isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
-                            <span className="truncate font-medium">{event.location}</span>
-                          </div>
-
-                          {/* Online Livestream / Facebook Link */}
-                          {event.isRecurring && (sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/') && (
-                            <a
-                              href={sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/'}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-blue-100 bg-blue-50/70 hover:bg-blue-100/70 text-[#1877F2] transition-all group cursor-pointer shadow-2xs"
-                              title="Join / Watch Sunday Service Online (Facebook Group)"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <Video size={16} className="text-[#1877F2] shrink-0" />
-                                <span className="truncate font-semibold text-xs sm:text-sm text-gray-800 group-hover:text-[#1877F2] transition-colors">
-                                  Online Service (Facebook)
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1 text-xs font-bold text-[#1877F2] shrink-0">
-                                <span>Join</span>
-                                <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-                              </div>
-                            </a>
-                          )}
-                        </div>
-
-                        {/* Capacity Progress Bar / Recurring Attendee Badge */}
-                        {!event.isRecurring ? (
-                          <div className="mb-5 bg-gray-50/60 p-3 rounded-xl border border-gray-100">
-                            <div className="flex justify-between text-xs mb-1.5 font-medium">
-                              <span className="text-gray-600 flex items-center gap-1">
-                                <Users size={13} className="text-gray-400" />
-                                Confirmed Attendees: <strong className="text-gray-900">{rsvpCount}</strong> / {totalCapacity}
-                              </span>
-                              <span className={`font-bold ${capacityPercent >= 90 ? 'text-[#C82323]' : 'text-[#0F2C59]'}`}>
-                                {capacityPercent}% filled
-                              </span>
-                            </div>
-                            <div className="w-full bg-gray-200/80 rounded-full h-2 overflow-hidden">
-                              <div 
-                                className={`h-full rounded-full transition-all duration-500 ${event.isPast ? 'bg-gray-400' : capacityPercent >= 90 ? 'bg-[#C82323]' : 'bg-[#0F2C59]'}`} 
-                                style={{ width: `${capacityPercent}%` }}
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="mb-5 bg-emerald-50/70 p-3 rounded-xl border border-emerald-100 flex items-center justify-between text-xs">
-                            <span className="text-emerald-900 font-semibold flex items-center gap-1.5">
-                              <Sparkles size={14} className="text-emerald-600" />
-                              General Sunday Worship Service
-                            </span>
-                            <span className="text-emerald-700 font-bold bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                              Open & Free to All
-                            </span>
-                          </div>
-                        )}
-
-                        {/* RSVP & Share Action Row */}
-                        <div className="flex items-center gap-2.5">
-                          <button
-                            onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
-                            disabled={event.isPast || (!userHasRSVPd && isFull)}
-                            className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer
-                              ${event.isPast
-                                ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
-                                : userHasRSVPd 
-                                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-600' 
-                                  : isFull 
-                                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
-                                    : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 hover:shadow-sm'
-                              }`}
-                          >
-                            {event.isPast ? (
-                              <><CheckCircle size={18} className="text-gray-400" /> RSVP Closed</>
-                            ) : userHasRSVPd ? (
-                              <><CheckCircle size={18} className="text-white" /> ✓ Attending (Click to Cancel RSVP)</>
-                            ) : isFull ? (
-                              'Event Full (Capacity Reached)'
-                            ) : (
-                              <><Plus size={18} /> + RSVP / Attending</>
-                            )}
-                          </button>
-
-                          {/* Share Button (Only on active/upcoming events) */}
-                          {!event.isPast && (
-                            <button
-                              onClick={(e) => handleShareClick(e, event)}
-                              title="Share Event"
-                              aria-label={`Share ${event.title}`}
-                              className="p-3.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#0F2C59] hover:border-[#0F2C59]/40 transition-all duration-200 shadow-xs flex items-center justify-center cursor-pointer active:scale-95 group shrink-0"
-                            >
-                              <Share2 size={18} className="text-gray-500 group-hover:text-[#0F2C59] transition-colors" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+            {/* SECTION 1: UPCOMING EVENTS */}
+            {(feedFilter === 'all' || feedFilter === 'upcoming') && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 font-serif flex items-center gap-2">
+                      <Calendar className="text-[#0F2C59]" size={24} />
+                      Upcoming Gatherings & Services
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      RSVP, invite friends, and join our worship services, cell group meets, and ministry activities.
+                    </p>
                   </div>
-                );
-              })
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full self-start sm:self-auto flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {upcomingEvents.length} Open for RSVP
+                  </span>
+                </div>
+
+                {upcomingEvents.length === 0 ? (
+                  <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                    <Calendar className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">No Upcoming Events</h3>
+                    <p className="mt-1 text-gray-500">Check back soon for newly scheduled gatherings.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {upcomingEvents.map(event => renderEventCard(event, false))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* SECTION 2: PAST GATHERINGS / ARCHIVE */}
+            {(feedFilter === 'all' || feedFilter === 'past') && (
+              <div className="space-y-6 pt-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                      <Archive className="text-slate-600" size={24} />
+                      Past Gatherings / Archive
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      Explore summaries, sermon memories, and fellowship highlights from our past events.
+                    </p>
+                  </div>
+                  <span className="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full self-start sm:self-auto flex items-center gap-1.5">
+                    <History size={13} />
+                    {pastEvents.length} Archived
+                  </span>
+                </div>
+
+                {pastEvents.length === 0 ? (
+                  <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                    <Archive className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-900">No Past Events Archived Yet</h3>
+                    <p className="mt-1 text-gray-500">Past events will automatically appear here once their scheduled date has concluded.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {pastEvents.map(event => renderEventCard(event, true))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
@@ -884,6 +1063,22 @@ export default function Events() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
                         <input type="url" value={formData.coverImage} onChange={e => setFormData({...formData, coverImage: e.target.value})} className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" placeholder="https://..." />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
+                          <span>Photos & Highlights Link</span>
+                          <span className="text-xs font-normal text-gray-400">Optional</span>
+                        </label>
+                        <input 
+                          type="url" 
+                          value={formData.photosUrl} 
+                          onChange={e => setFormData({...formData, photosUrl: e.target.value})} 
+                          className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" 
+                          placeholder="https://www.facebook.com/... or Google Drive/Photos album URL" 
+                        />
+                        <p className="text-[11px] text-gray-400 mt-1">
+                          Custom album or post URL opened by members when clicking &quot;View Church Photos &amp; Highlights&quot; in the recap modal.
+                        </p>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
@@ -1165,6 +1360,31 @@ export default function Events() {
                         </button>
                       </div>
                       <p className="text-xs text-gray-400 mt-1">Facebook Group or Live stream URL where members can join remotely.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Photos & Highlights Album Link</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="url" 
+                          value={sundayCardForm.photosUrl || ''} 
+                          onChange={e => setSundayCardForm({ ...sundayCardForm, photosUrl: e.target.value })}
+                          className="flex-1 rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" 
+                          placeholder="https://www.facebook.com/share/g/1BpFgffo67/"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSundayCardForm({
+                            ...sundayCardForm,
+                            photosUrl: DEFAULT_SUNDAY_SERVICE_SETTINGS.photosUrl
+                          })}
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                          title="Reset to Default Photos Link"
+                        >
+                          <RotateCcw size={14} /> Reset
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Default album or Facebook group where service photos are shared for recaps.</p>
                     </div>
 
                     <div>
@@ -1628,6 +1848,14 @@ export default function Events() {
           event={sharingEvent} 
           isOpen={Boolean(sharingEvent)} 
           onClose={() => setSharingEvent(null)} 
+        />
+
+        {/* Past Event Recap Modal Dialog */}
+        <EventRecapModal
+          event={recapEvent}
+          isOpen={Boolean(recapEvent)}
+          onClose={() => setRecapEvent(null)}
+          attendanceCount={recapEvent ? (allRsvps[recapEvent.id]?.length || 0) : 0}
         />
 
       </div>

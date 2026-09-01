@@ -9,6 +9,7 @@ export interface ChurchEvent {
   location: string;
   capacity: number;
   coverImage: string;
+  photosUrl?: string;
   createdAt?: any;
   isRecurring?: boolean;
   isPast?: boolean;
@@ -41,6 +42,7 @@ export const fetchEvents = async (): Promise<ChurchEvent[]> => {
         location: data.location || '',
         capacity: capacityNum,
         coverImage: data.coverImage || '',
+        photosUrl: data.photosUrl || '',
         createdAt: data.createdAt
       } as ChurchEvent;
     });
@@ -52,17 +54,32 @@ export const fetchEvents = async (): Promise<ChurchEvent[]> => {
 
 export const createEvent = async (eventData: Partial<ChurchEvent>) => {
   if (!db) throw new Error("Database not initialized");
-  const docRef = await addDoc(collection(db, 'events'), {
-    ...eventData,
+  const cleanData: Record<string, any> = {
+    title: eventData.title || '',
+    description: eventData.description || '',
+    dateTime: eventData.dateTime || '',
+    location: eventData.location || '',
+    capacity: Number(eventData.capacity) || 30,
+    coverImage: eventData.coverImage || '',
+    photosUrl: eventData.photosUrl || '',
     createdAt: serverTimestamp()
-  });
+  };
+  const docRef = await addDoc(collection(db, 'events'), cleanData);
   return docRef.id;
 };
 
 export const updateEvent = async (eventId: string, eventData: Partial<ChurchEvent>) => {
   if (!db) throw new Error("Database not initialized");
   const docRef = doc(db, 'events', eventId);
-  await setDoc(docRef, eventData, { merge: true });
+  const cleanData: Record<string, any> = {};
+  if (eventData.title !== undefined) cleanData.title = eventData.title;
+  if (eventData.description !== undefined) cleanData.description = eventData.description;
+  if (eventData.dateTime !== undefined) cleanData.dateTime = eventData.dateTime;
+  if (eventData.location !== undefined) cleanData.location = eventData.location;
+  if (eventData.capacity !== undefined) cleanData.capacity = Number(eventData.capacity);
+  if (eventData.coverImage !== undefined) cleanData.coverImage = eventData.coverImage;
+  if (eventData.photosUrl !== undefined) cleanData.photosUrl = eventData.photosUrl;
+  await setDoc(docRef, cleanData, { merge: true });
 };
 
 export const removeEvent = async (eventId: string) => {
@@ -77,6 +94,7 @@ export interface SundayServiceCardSettings {
   location: string;
   timeSchedule: string;
   onlineLink?: string;
+  photosUrl?: string;
   updatedAt?: any;
 }
 
@@ -95,7 +113,8 @@ export const DEFAULT_SUNDAY_SERVICE_SETTINGS: SundayServiceCardSettings = {
   coverImage: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80',
   location: 'SKCC Hall',
   timeSchedule: 'Every Sunday, 9:30 AM',
-  onlineLink: 'https://www.facebook.com/share/g/1BpFgffo67/'
+  onlineLink: 'https://www.facebook.com/share/g/1BpFgffo67/',
+  photosUrl: 'https://www.facebook.com/share/g/1BpFgffo67/'
 };
 
 export const fetchSundayServiceCard = async (): Promise<SundayServiceCardSettings> => {
@@ -112,6 +131,7 @@ export const fetchSundayServiceCard = async (): Promise<SundayServiceCardSetting
         location: data.location || DEFAULT_SUNDAY_SERVICE_SETTINGS.location,
         timeSchedule: data.timeSchedule || DEFAULT_SUNDAY_SERVICE_SETTINGS.timeSchedule,
         onlineLink: data.onlineLink !== undefined ? data.onlineLink : DEFAULT_SUNDAY_SERVICE_SETTINGS.onlineLink,
+        photosUrl: data.photosUrl !== undefined ? data.photosUrl : DEFAULT_SUNDAY_SERVICE_SETTINGS.photosUrl,
         updatedAt: data.updatedAt
       };
     }

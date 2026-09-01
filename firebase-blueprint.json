@@ -160,6 +160,8 @@
         "coverImage": { "type": "string" },
         "location": { "type": "string" },
         "timeSchedule": { "type": "string" },
+        "onlineLink": { "type": "string" },
+        "photosUrl": { "type": "string" },
         "updatedAt": { "type": "string" }
       }
     },
