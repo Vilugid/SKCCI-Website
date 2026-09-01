@@ -40,8 +40,10 @@ import {
   RotateCcw,
   Check,
   CalendarCheck,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
+import ShareEventModal, { canUseNativeShare, triggerNativeShare } from './ShareEventModal';
 import { 
   ResponsiveContainer, 
   LineChart, 
@@ -112,7 +114,21 @@ const getEventCategoryMeta = (title: string, description: string) => {
   };
 };
 
-function EventCardImageHeader({ event, isFull, spotsLeft, isPast, isRecurring }: { event: ChurchEvent; isFull: boolean; spotsLeft: number; isPast?: boolean; isRecurring?: boolean }) {
+function EventCardImageHeader({ 
+  event, 
+  isFull, 
+  spotsLeft, 
+  isPast, 
+  isRecurring,
+  onShare 
+}: { 
+  event: ChurchEvent; 
+  isFull: boolean; 
+  spotsLeft: number; 
+  isPast?: boolean; 
+  isRecurring?: boolean;
+  onShare?: (e: React.MouseEvent) => void;
+}) {
   const meta = getEventCategoryMeta(event.title, event.description);
   const initialSrc = (event.coverImage && event.coverImage.trim().length > 0) ? event.coverImage.trim() : meta.fallbackImage;
   const [imgSrc, setImgSrc] = useState(initialSrc);
@@ -157,29 +173,44 @@ function EventCardImageHeader({ event, isFull, spotsLeft, isPast, isRecurring }:
         {isRecurring ? 'Sunday Gathering' : meta.category}
       </div>
 
-      {/* Dynamic Spots Left Badge on Top-Right */}
-      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-gray-900 shadow-md border border-gray-100 flex items-center gap-1.5 z-10">
-        {isPast ? (
-          <span className="flex items-center gap-1.5 text-gray-500 font-extrabold">
-            <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-            Past Event
-          </span>
-        ) : isRecurring ? (
-          <span className="flex items-center gap-1.5 text-[#0F2C59] font-extrabold">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            Open to All
-          </span>
-        ) : isFull ? (
-          <span className="text-[#C82323] font-extrabold flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse"></span>
-            FULL / SOLD OUT
-          </span>
-        ) : (
-          <span className="flex items-center gap-1.5 text-gray-800">
-            <span className={`w-2 h-2 rounded-full ${spotsLeft <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-            <span className="font-extrabold text-[#0F2C59]">{spotsLeft}</span> {spotsLeft === 1 ? 'spot left' : 'spots left'}
-          </span>
+      {/* Top-Right Badges & Actions */}
+      <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
+        {/* Quick Share floating icon (for active events) */}
+        {!isPast && onShare && (
+          <button
+            onClick={onShare}
+            title="Share this event"
+            aria-label="Share this event"
+            className="w-8 h-8 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/30 text-white flex items-center justify-center shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          >
+            <Share2 size={14} className="text-white" />
+          </button>
         )}
+
+        {/* Dynamic Spots Left / Status Badge */}
+        <div className="bg-white/95 backdrop-blur-md px-3.5 py-1.5 rounded-full text-xs font-bold text-gray-900 shadow-md border border-gray-100 flex items-center gap-1.5">
+          {isPast ? (
+            <span className="flex items-center gap-1.5 text-gray-500 font-extrabold">
+              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+              Past Event
+            </span>
+          ) : isRecurring ? (
+            <span className="flex items-center gap-1.5 text-[#0F2C59] font-extrabold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+              Open to All
+            </span>
+          ) : isFull ? (
+            <span className="text-[#C82323] font-extrabold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse"></span>
+              FULL / SOLD OUT
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-gray-800">
+              <span className={`w-2 h-2 rounded-full ${spotsLeft <= 5 ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
+              <span className="font-extrabold text-[#0F2C59]">{spotsLeft}</span> {spotsLeft === 1 ? 'spot left' : 'spots left'}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -192,6 +223,17 @@ export default function Events() {
 
   const [activeTab, setActiveTab] = useState<'feed' | 'admin'>('feed');
   const [adminSubTab, setAdminSubTab] = useState<'events' | 'sunday_card' | 'attendance'>('events');
+  const [sharingEvent, setSharingEvent] = useState<ChurchEvent | null>(null);
+  const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+
+  const handleShareClick = async (e: React.MouseEvent, event: ChurchEvent) => {
+    e.stopPropagation();
+    if (canUseNativeShare()) {
+      const shared = await triggerNativeShare(event);
+      if (shared) return;
+    }
+    setSharingEvent(event);
+  };
 
   // Admin event form state
   const [isEditing, setIsEditing] = useState(false);
@@ -463,6 +505,47 @@ export default function Events() {
 
   const displayFeedEvents = [{ ...sundayEvent, isPast: false, isRecurring: true }, ...processedEvents];
 
+  // Deep-link event detection & smooth scroll
+  React.useEffect(() => {
+    if (isLoadingEvents || displayFeedEvents.length === 0) return;
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const eventIdParam = params.get('eventId') || params.get('event');
+
+    if (!eventIdParam) return;
+
+    // Ensure we are viewing the public feed
+    setActiveTab('feed');
+
+    const matched = displayFeedEvents.find((e: any) => 
+      e.id === eventIdParam || 
+      (e.isRecurring && (eventIdParam === 'sunday-worship' || eventIdParam === 'recurring_sunday_service'))
+    );
+
+    if (matched) {
+      setHighlightedEventId(matched.id);
+
+      // Smooth scroll after layout renders
+      const scrollTimer = setTimeout(() => {
+        const elem = document.getElementById(`event-card-${matched.id}`);
+        if (elem) {
+          elem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 200);
+
+      // Keep highlight indicator active for 5 seconds
+      const clearTimer = setTimeout(() => {
+        setHighlightedEventId(null);
+      }, 5000);
+
+      return () => {
+        clearTimeout(scrollTimer);
+        clearTimeout(clearTimer);
+      };
+    }
+  }, [isLoadingEvents, events.length]);
+
   // Attendance Analytics Prep
   const sortedAttendance = [...attendanceLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const chartData = sortedAttendance.map(item => ({
@@ -537,11 +620,26 @@ export default function Events() {
                 const isUserInLocalStorage = user && typeof window !== 'undefined' && localStorage.getItem(`skcc_rsvp_${event.id}_${user.uid}`) === 'true';
                 const userHasRSVPd = Boolean(isUserInFirestore || isUserInLocalStorage);
 
+                const isHighlighted = highlightedEventId === event.id;
+
                 return (
                   <div 
+                    id={`event-card-${event.id}`}
                     key={event.id} 
-                    className={`bg-white rounded-2xl shadow-sm hover:shadow-md border border-gray-100/90 overflow-hidden flex flex-col h-full transition-all duration-300 hover:-translate-y-1 ${event.isPast ? 'opacity-75' : ''}`}
+                    className={`bg-white rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-500 hover:-translate-y-1 relative
+                      ${isHighlighted 
+                        ? 'ring-4 ring-[#0F2C59]/40 border-2 border-[#0F2C59] shadow-2xl scale-[1.02] z-20' 
+                        : 'shadow-sm hover:shadow-md border border-gray-100/90'}
+                      ${event.isPast ? 'opacity-75' : ''}`}
                   >
+                    {/* Highlight Pulsing Notification Banner */}
+                    {isHighlighted && (
+                      <div className="bg-[#0F2C59] text-white text-xs font-bold py-1.5 px-3 flex items-center justify-center gap-1.5 animate-pulse">
+                        <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                        Selected Shared Event
+                      </div>
+                    )}
+
                     {/* Fixed Card Image Header */}
                     <EventCardImageHeader 
                       event={event} 
@@ -549,6 +647,7 @@ export default function Events() {
                       spotsLeft={spotsLeft} 
                       isPast={event.isPast}
                       isRecurring={event.isRecurring}
+                      onShare={(e) => handleShareClick(e, event)}
                     />
                     
                     {/* Card Body with structured flex distribution */}
@@ -616,30 +715,44 @@ export default function Events() {
                           </div>
                         )}
 
-                        {/* RSVP Action Button */}
-                        <button
-                          onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
-                          disabled={event.isPast || (!userHasRSVPd && isFull)}
-                          className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer
-                            ${event.isPast
-                              ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
-                              : userHasRSVPd 
-                                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-600' 
-                                : isFull 
-                                  ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
-                                  : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 hover:shadow-sm'
-                            }`}
-                        >
-                          {event.isPast ? (
-                            <><CheckCircle size={18} className="text-gray-400" /> RSVP Closed</>
-                          ) : userHasRSVPd ? (
-                            <><CheckCircle size={18} className="text-white" /> ✓ Attending (Click to Cancel RSVP)</>
-                          ) : isFull ? (
-                            'Event Full (Capacity Reached)'
-                          ) : (
-                            <><Plus size={18} /> + RSVP / Attending</>
+                        {/* RSVP & Share Action Row */}
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            onClick={() => handleRSVPClick(event.id, userHasRSVPd)}
+                            disabled={event.isPast || (!userHasRSVPd && isFull)}
+                            className={`flex-1 py-3.5 rounded-xl font-bold text-sm transition-all duration-200 flex items-center justify-center gap-2 shadow-xs active:scale-[0.98] cursor-pointer
+                              ${event.isPast
+                                ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                                : userHasRSVPd 
+                                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm border border-emerald-600' 
+                                  : isFull 
+                                    ? 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed shadow-none'
+                                    : 'bg-[#0F2C59] text-white hover:bg-[#0F2C59]/90 hover:shadow-sm'
+                              }`}
+                          >
+                            {event.isPast ? (
+                              <><CheckCircle size={18} className="text-gray-400" /> RSVP Closed</>
+                            ) : userHasRSVPd ? (
+                              <><CheckCircle size={18} className="text-white" /> ✓ Attending (Click to Cancel RSVP)</>
+                            ) : isFull ? (
+                              'Event Full (Capacity Reached)'
+                            ) : (
+                              <><Plus size={18} /> + RSVP / Attending</>
+                            )}
+                          </button>
+
+                          {/* Share Button (Only on active/upcoming events) */}
+                          {!event.isPast && (
+                            <button
+                              onClick={(e) => handleShareClick(e, event)}
+                              title="Share Event"
+                              aria-label={`Share ${event.title}`}
+                              className="p-3.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 hover:text-[#0F2C59] hover:border-[#0F2C59]/40 transition-all duration-200 shadow-xs flex items-center justify-center cursor-pointer active:scale-95 group shrink-0"
+                            >
+                              <Share2 size={18} className="text-gray-500 group-hover:text-[#0F2C59] transition-colors" />
+                            </button>
                           )}
-                        </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1451,6 +1564,13 @@ export default function Events() {
 
           </div>
         )}
+
+        {/* Share Event Modal Dialog */}
+        <ShareEventModal 
+          event={sharingEvent} 
+          isOpen={Boolean(sharingEvent)} 
+          onClose={() => setSharingEvent(null)} 
+        />
 
       </div>
     </div>

@@ -104,19 +104,55 @@ export default function PrayerHub() {
 
   const uniqueWarriorsThisWeek = new Set(currentWeekLogs.map(log => log.userId)).size;
 
-  // Monthly Chart Data
-  const monthsMap: Record<string, Set<string>> = {};
-  prayerLogs.forEach(log => {
-    if (!monthsMap[log.month]) monthsMap[log.month] = new Set();
-    monthsMap[log.month].add(log.userId);
-  });
+  // Helper to format week label e.g., "Aug 30–Sep 5"
+  const formatWeekLabel = (weekStr: string) => {
+    try {
+      const parts = weekStr.split('-');
+      if (parts.length === 3) {
+        const year = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1;
+        const day = parseInt(parts[2], 10);
+        const startDate = new Date(year, month, day);
+        const endDate = new Date(year, month, day + 6);
+        
+        const startMonth = startDate.toLocaleDateString('en-US', { month: 'short' });
+        const endMonth = endDate.toLocaleDateString('en-US', { month: 'short' });
+        
+        if (startMonth === endMonth) {
+          return `${startMonth} ${startDate.getDate()}–${endDate.getDate()}`;
+        } else {
+          return `${startMonth} ${startDate.getDate()} – ${endMonth} ${endDate.getDate()}`;
+        }
+      }
+    } catch (e) {
+      // fallback
+    }
+    return weekStr;
+  };
+
+  // Weekly Chart Data
+  const weeksMap: Record<string, { warriors: Set<string>; prayersCount: number }> = {};
   
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const monthlyData = Object.keys(monthsMap).sort().map(monthStr => {
-    const [year, month] = monthStr.split('-');
+  prayerLogs.forEach(log => {
+    const w = log.week || currentWeekId;
+    if (!weeksMap[w]) {
+      weeksMap[w] = { warriors: new Set(), prayersCount: 0 };
+    }
+    weeksMap[w].warriors.add(log.userId);
+    weeksMap[w].prayersCount += 1;
+  });
+
+  // Always ensure current week exists in chart
+  if (!weeksMap[currentWeekId]) {
+    weeksMap[currentWeekId] = { warriors: new Set(), prayersCount: 0 };
+  }
+
+  const weeklyData = Object.keys(weeksMap).sort().map(weekStr => {
     return {
-      name: `${monthNames[parseInt(month, 10) - 1]} ${year}`,
-      warriors: monthsMap[monthStr].size
+      weekKey: weekStr,
+      name: formatWeekLabel(weekStr),
+      warriors: weeksMap[weekStr].warriors.size,
+      prayers: weeksMap[weekStr].prayersCount
     };
   });
 
@@ -311,28 +347,50 @@ export default function PrayerHub() {
               </div>
             </div>
 
-            {/* Monthly Trend Chart */}
+            {/* Weekly Trend Chart */}
             <div className="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm col-span-full">
-              <h2 className="text-2xl font-bold text-[#0F2C59] font-serif mb-6 flex items-center gap-2">
-                <Activity className="text-[#C82323]" /> Monthly Prayer Engagement
-              </h2>
-              {monthlyData.length > 0 ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-[#0F2C59] font-serif flex items-center gap-2">
+                    <Activity className="text-[#C82323]" /> Weekly Prayer Engagement
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Tracking weekly active prayer warriors and congregation intercession over time
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 self-start sm:self-auto bg-blue-50/70 border border-blue-100 px-3.5 py-1.5 rounded-full text-xs font-semibold text-[#0F2C59]">
+                  <Users size={14} className="text-[#C82323]" />
+                  <span>{uniqueWarriorsThisWeek} active this week</span>
+                </div>
+              </div>
+
+              {weeklyData.length > 0 ? (
                 <div className="h-72 w-full">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                    <LineChart data={weeklyData} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                       <XAxis dataKey="name" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
                       <YAxis stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                       <Tooltip
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                        formatter={(value: any, name: string) => [value, name === 'warriors' ? 'Active Prayer Warriors' : name]}
+                        labelFormatter={(label: string) => `Week of: ${label}`}
                       />
-                      <Line type="monotone" dataKey="warriors" stroke="#C82323" strokeWidth={3} dot={{ r: 4, fill: '#C82323', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} name="Unique Warriors" />
+                      <Line 
+                        type="monotone" 
+                        dataKey="warriors" 
+                        stroke="#C82323" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, fill: '#C82323', strokeWidth: 2, stroke: '#fff' }} 
+                        activeDot={{ r: 6 }} 
+                        name="Active Warriors" 
+                      />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               ) : (
                 <div className="h-72 w-full flex items-center justify-center text-gray-400 text-sm">
-                  No engagement data available yet.
+                  No weekly engagement data available yet.
                 </div>
               )}
             </div>

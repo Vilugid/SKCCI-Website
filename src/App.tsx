@@ -26,8 +26,67 @@ import { useAuth } from './contexts/AuthContext';
 import { Toaster } from 'react-hot-toast';
 import { MapPin } from 'lucide-react';
 
+export const tabToParam: Record<TabItem, string> = {
+  'Home': 'home',
+  'Welcome Kit': 'welcome',
+  'Gospel': 'gospel',
+  'Manuals': 'manuals',
+  '100 Days Bible Plan': 'bibleplan',
+  '365 Bible Reading Guide': 'bible365',
+  'Cell Group': 'cellgroup',
+  'Leader Tools': 'leadertools',
+  'Events': 'events',
+  'Prayer Hub': 'prayer',
+  'Giving': 'giving',
+  'Contact': 'contact'
+};
+
+export const getTabFromUrl = (): TabItem => {
+  if (typeof window === 'undefined') return 'Home';
+  const params = new URLSearchParams(window.location.search);
+  const tabParam = params.get('tab')?.toLowerCase();
+  
+  if (tabParam === 'events' || params.has('eventId') || params.has('event')) {
+    return 'Events';
+  }
+  if (tabParam === 'prayer' || tabParam === 'prayerhub' || tabParam === 'prayer-hub') {
+    return 'Prayer Hub';
+  }
+  if (tabParam === 'giving') {
+    return 'Giving';
+  }
+  if (tabParam === 'gospel') {
+    return 'Gospel';
+  }
+  if (tabParam === 'welcome' || tabParam === 'welcomekit' || tabParam === 'welcome-kit') {
+    return 'Welcome Kit';
+  }
+  if (tabParam === 'manuals') {
+    return 'Manuals';
+  }
+  if (tabParam === 'cellgroup' || tabParam === 'cell-group' || tabParam === 'cell') {
+    return 'Cell Group';
+  }
+  if (tabParam === 'leadertools' || tabParam === 'leader-tools' || tabParam === 'leader') {
+    return 'Leader Tools';
+  }
+  if (tabParam === 'bibleplan' || tabParam === 'bible-plan' || tabParam === '100days' || tabParam === '100-days') {
+    return '100 Days Bible Plan';
+  }
+  if (tabParam === 'bible365' || tabParam === '365' || tabParam === '365days') {
+    return '365 Bible Reading Guide';
+  }
+  if (tabParam === 'contact') {
+    return 'Contact';
+  }
+  if (tabParam === 'home') {
+    return 'Home';
+  }
+  return 'Home';
+};
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<TabItem>('Home');
+  const [activeTab, setActiveTab] = useState<TabItem>(getTabFromUrl);
   const [showLockModal, setShowLockModal] = useState(false);
   const { loading } = useAuth();
   
@@ -36,6 +95,23 @@ export default function App() {
   const [is100DayComplete, setIs100DayComplete] = useSyncedState<boolean>('sk_100_day_completed', false);
 
   const progressCount = progressArray.length;
+
+  // Handle URL sync on browser back/forward and initial mount
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getTabFromUrl();
+      setActiveTab(tab);
+    };
+
+    // Verify correct tab on mount (in case URL was adjusted)
+    const initialTab = getTabFromUrl();
+    if (initialTab !== activeTab) {
+      setActiveTab(initialTab);
+    }
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     // Migration from old key if new key is empty
@@ -55,12 +131,28 @@ export default function App() {
     }
   }, [progressArray.length, is100DayComplete, setProgressArray, setIs100DayComplete]);
 
-  const handleTabClick = (tab: TabItem) => {
+  const handleTabClick = (tab: TabItem, pushHistory = true) => {
     if (tab === '365 Bible Reading Guide' && !is100DayComplete) {
       setShowLockModal(true);
       return;
     }
     setActiveTab(tab);
+
+    if (pushHistory && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      if (tab === 'Home') {
+        url.searchParams.delete('tab');
+        url.searchParams.delete('eventId');
+        url.searchParams.delete('event');
+      } else {
+        url.searchParams.set('tab', tabToParam[tab] || tab.toLowerCase());
+        if (tab !== 'Events') {
+          url.searchParams.delete('eventId');
+          url.searchParams.delete('event');
+        }
+      }
+      window.history.pushState({ tab }, '', url.toString());
+    }
   };
 
   // Simple scroll to top when tab changes

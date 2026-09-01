@@ -10,6 +10,8 @@ export interface ChurchEvent {
   capacity: number;
   coverImage: string;
   createdAt?: any;
+  isRecurring?: boolean;
+  isPast?: boolean;
 }
 
 export interface RSVP {
