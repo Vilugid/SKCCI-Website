@@ -41,7 +41,9 @@ import {
   Check,
   CalendarCheck,
   ChevronRight,
-  Share2
+  Share2,
+  ExternalLink,
+  Video
 } from 'lucide-react';
 import ShareEventModal, { canUseNativeShare, triggerNativeShare } from './ShareEventModal';
 import { 
@@ -674,7 +676,7 @@ export default function Events() {
                             <Clock size={16} className={`${event.isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
                             <span className="font-semibold">
                               {event.isRecurring 
-                                ? (sundayCardSettings.timeSchedule || 'Every Sunday, 10:00 AM') 
+                                ? (sundayCardSettings.timeSchedule || 'Every Sunday, 9:30 AM') 
                                 : formatDate(event.dateTime)}
                             </span>
                           </div>
@@ -682,6 +684,28 @@ export default function Events() {
                             <MapPin size={16} className={`${event.isPast ? 'text-gray-400' : 'text-[#C82323]'} shrink-0`} />
                             <span className="truncate font-medium">{event.location}</span>
                           </div>
+
+                          {/* Online Livestream / Facebook Link */}
+                          {event.isRecurring && (sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/') && (
+                            <a
+                              href={sundayCardSettings.onlineLink || 'https://www.facebook.com/share/g/1BpFgffo67/'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-between gap-2.5 px-3.5 py-2.5 rounded-xl border border-blue-100 bg-blue-50/70 hover:bg-blue-100/70 text-[#1877F2] transition-all group cursor-pointer shadow-2xs"
+                              title="Join / Watch Sunday Service Online (Facebook Group)"
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <Video size={16} className="text-[#1877F2] shrink-0" />
+                                <span className="truncate font-semibold text-xs sm:text-sm text-gray-800 group-hover:text-[#1877F2] transition-colors">
+                                  Online Service (Facebook)
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 text-xs font-bold text-[#1877F2] shrink-0">
+                                <span>Join</span>
+                                <ExternalLink size={13} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                              </div>
+                            </a>
+                          )}
                         </div>
 
                         {/* Capacity Progress Bar / Recurring Attendee Badge */}
@@ -1119,6 +1143,31 @@ export default function Events() {
                     </div>
 
                     <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Online Livestream / Group Link</label>
+                      <div className="flex gap-2">
+                        <input 
+                          type="url" 
+                          value={sundayCardForm.onlineLink || ''} 
+                          onChange={e => setSundayCardForm({ ...sundayCardForm, onlineLink: e.target.value })}
+                          className="flex-1 rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" 
+                          placeholder="https://www.facebook.com/share/g/1BpFgffo67/"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSundayCardForm({
+                            ...sundayCardForm,
+                            onlineLink: DEFAULT_SUNDAY_SERVICE_SETTINGS.onlineLink
+                          })}
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                          title="Reset to Default Facebook Link"
+                        >
+                          <RotateCcw size={14} /> Reset
+                        </button>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-1">Facebook Group or Live stream URL where members can join remotely.</p>
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Description & Announcements</label>
                       <textarea 
                         required 
@@ -1194,12 +1243,21 @@ export default function Events() {
                       <div className="space-y-2 mb-4 text-xs">
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-gray-700 border border-gray-100">
                           <Clock size={14} className="text-[#C82323]" />
-                          <span className="font-semibold">{sundayCardForm.timeSchedule || 'Every Sunday, 10:00 AM'}</span>
+                          <span className="font-semibold">{sundayCardForm.timeSchedule || 'Every Sunday, 9:30 AM'}</span>
                         </div>
                         <div className="flex items-center gap-2 p-2 rounded-lg bg-gray-50 text-gray-700 border border-gray-100">
                           <MapPin size={14} className="text-[#C82323]" />
                           <span>{sundayCardForm.location || 'SKCC Hall'}</span>
                         </div>
+                        {sundayCardForm.onlineLink && (
+                          <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-blue-50/70 text-[#1877F2] border border-blue-100">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <Video size={14} className="text-[#1877F2] shrink-0" />
+                              <span className="truncate font-semibold text-gray-800">Online Service (Facebook)</span>
+                            </div>
+                            <ExternalLink size={12} className="shrink-0" />
+                          </div>
+                        )}
                       </div>
 
                       <div className="py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-center text-xs flex items-center justify-center gap-1.5">

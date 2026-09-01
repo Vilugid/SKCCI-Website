@@ -76,6 +76,7 @@ export interface SundayServiceCardSettings {
   coverImage: string;
   location: string;
   timeSchedule: string;
+  onlineLink?: string;
   updatedAt?: any;
 }
 
@@ -93,7 +94,8 @@ export const DEFAULT_SUNDAY_SERVICE_SETTINGS: SundayServiceCardSettings = {
   description: 'Join us every Sunday for worship, fellowship, and the Word!',
   coverImage: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80',
   location: 'SKCC Hall',
-  timeSchedule: 'Every Sunday, 10:00 AM'
+  timeSchedule: 'Every Sunday, 9:30 AM',
+  onlineLink: 'https://www.facebook.com/share/g/1BpFgffo67/'
 };
 
 export const fetchSundayServiceCard = async (): Promise<SundayServiceCardSettings> => {
@@ -109,6 +111,7 @@ export const fetchSundayServiceCard = async (): Promise<SundayServiceCardSetting
         coverImage: data.coverImage || DEFAULT_SUNDAY_SERVICE_SETTINGS.coverImage,
         location: data.location || DEFAULT_SUNDAY_SERVICE_SETTINGS.location,
         timeSchedule: data.timeSchedule || DEFAULT_SUNDAY_SERVICE_SETTINGS.timeSchedule,
+        onlineLink: data.onlineLink !== undefined ? data.onlineLink : DEFAULT_SUNDAY_SERVICE_SETTINGS.onlineLink,
         updatedAt: data.updatedAt
       };
     }
