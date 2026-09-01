@@ -319,6 +319,59 @@ How may I assist you today?`;
   }
 }
 
+// Fallback Prayer Guide Generator adhering to strict theological & formatting guidelines
+function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): string {
+  const lower = topic.toLowerCase();
+  
+  if (isTagalog) {
+    if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
+      return `Aming AMANG nasa langit, buong puso naming ipinapanalangin ang aming mga pastor at pinuno ng iglesya, na puspusin Mo sila ng Iyong banal na karunungan, kalakasan, at proteksyon sa bawat hakbang. Gabayan Mo ang kanilang mga puso upang patuloy silang manguna nang may katapatan at pag-ibig sa Iyong kawan, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('unity') || lower.includes('doctrine') || lower.includes('integrity')) {
+      return `Aming AMANG nasa langit, panatilihin Mo po ang banal na pagkakaisa at katatagan sa aming buong iglesya ayon sa katotohanan ng Iyong Salita. Ilayo Mo kami sa anumang hidwaan at palakasin ang aming pagsunod sa Iyo nang may buong katapatan, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('marriage') || lower.includes('family') || lower.includes('youth')) {
+      return `Aming AMANG nasa langit, ibinubuhos namin sa Iyo ang aming mga pamilya, mga mag-asawa, at mga kabataan upang mapuno sila ng Iyong pag-ibig, pagkakasundo, at banal na direksyon. Paghilumin Mo ang bawat tahanan at gabayan ang aming kabataan upang mamuhay nang may takot at sigasig para sa Iyong kaharian, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('healing') || lower.includes('sick') || lower.includes('miracle')) {
+      return `Aming AMANG nasa langit, idinadalangin namin ang Iyong mahimalang kagalingan, kapayapaan, at kalakasan sa bawat kapatid na dumaranas ng karamdaman o kahinaan ng katawan. Mahawakan nawa sila ng Iyong kapangyarihan at mapuspos ng Iyong banal na kaginhawahan, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('financial') || lower.includes('job') || lower.includes('provision')) {
+      return `Aming AMANG nasa langit, itinataas namin ang bawat pangangailangan sa hanapbuhay, pananalapi, at karunungan sa mabuting pamamahala ng Iyong mga pagpapala. Buksan Mo ang mga bintana ng langit para sa masaganang paglalaan upang kami ay maging pagpapala sa marami, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('outreach') || lower.includes('evangelism') || lower.includes('community')) {
+      return `Aming AMANG nasa langit, buksan Mo po ang mga puso ng aming komunidad upang marinig at tanggapin ang dakilang pagliligtas ng Ebanghelyo ni Cristo. Gamitin Mo ang bawat mananampalataya bilang tapat na liwanag at tagapaghatid ng Iyong biyaya sa aming kapwa, sa pangalan ni HESUS, Amen.`;
+    }
+    if (lower.includes('sunday') || lower.includes('worship') || lower.includes('preaching')) {
+      return `Aming AMANG nasa langit, basbasan at pahiran Mo po ang aming pagtitipon sa pagsamba, ang pagpapahayag ng Iyong Salita, at ang bawat pusong lalapit sa Iyo. Mapuspos nawa ang aming santuwaryo ng Iyong presensya at mabago ang aming buhay, sa pangalan ni HESUS, Amen.`;
+    }
+    return `Aming AMANG nasa langit, buong pagpapakumbaba naming itinataas sa Iyong harapan ang panalanging ito para sa ${topic}. Puspusin Mo kami ng Iyong biyaya, karunungan, at banal na kapayapaan habang nagtitiwala kami sa Iyong dakilang kapangyarihan, sa pangalan ni HESUS, Amen.`;
+  } else {
+    if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
+      return `Our FATHER in Heaven, we lift up our church leaders and pastors, asking that You endow them with divine wisdom, spiritual protection, and renewed strength each day. May Your Holy Spirit guide their steps as they shepherd Your flock with steadfast love and godly integrity, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('unity') || lower.includes('doctrine') || lower.includes('integrity')) {
+      return `Our FATHER in Heaven, knit our hearts together in genuine love, pure doctrine, and unwavering unity across the entire body of Christ. Guard our fellowship against division and anchor us deeply in the truth of Your eternal Word, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('marriage') || lower.includes('family') || lower.includes('youth')) {
+      return `Our FATHER in Heaven, we place our marriages, homes, and next-generation youth into Your loving hands for restoration, peace, and spiritual growth. Protect our families from worldly traps and raise our young people to walk boldly in Your truth, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('healing') || lower.includes('sick') || lower.includes('miracle')) {
+      return `Our FATHER in Heaven, we pray for Your supernatural healing touch upon every sick and hurting brother and sister today. Release Your comfort, restore strength to every weakened body, and let Your miraculous peace reign in their hearts, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('financial') || lower.includes('job') || lower.includes('provision')) {
+      return `Our FATHER in Heaven, You are our faithful Jehovah Jireh who supplies all our needs according to Your riches in glory. Open doors of fruitful employment, break cycles of lack, and grant us wise stewardship to bless Your kingdom abundantly, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('outreach') || lower.includes('evangelism') || lower.includes('community')) {
+      return `Our FATHER in Heaven, ignite our hearts with compassionate boldness to share the good news of the Gospel with our neighbors and local communities. Prepare receptive hearts to receive Christ and empower our church to be a radiant beacon of hope, in JESUS' Name, Amen.`;
+    }
+    if (lower.includes('sunday') || lower.includes('worship') || lower.includes('preaching')) {
+      return `Our FATHER in Heaven, we ask for a mighty outpouring of Your Holy Spirit upon our Sunday worship services, ministry teams, and the preaching of Your Word. Draw every attendee into heartfelt repentance and life-changing encounter with Your grace, in JESUS' Name, Amen.`;
+    }
+    return `Our FATHER in Heaven, we humbly bring this prayer before Your throne regarding ${topic}. Pour out Your grace, strengthen our faith, and let Your sovereign will be accomplished in our lives, in JESUS' Name, Amen.`;
+  }
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -434,6 +487,109 @@ SKCCI Knowledge Base:
       console.error("AI Chat Handler Error:", error);
       const fallbackReply = getChurchFallbackResponse(message, safeLang);
       return res.json({ reply: fallbackReply });
+    }
+  });
+
+  // Prayer Guide AI Generator Endpoint
+  app.post("/api/generate-prayer", async (req, res) => {
+    const { topic, day, language = 'en', variation = 1 } = req.body || {};
+    const safeTopic = (topic || 'Church and Community Intercession').trim();
+    const safeDay = (day || 'Today').trim();
+    const isTagalog = language === 'tl';
+
+    if (!process.env.GEMINI_API_KEY) {
+      const fallback = getFallbackPrayer(safeTopic, safeDay, isTagalog);
+      return res.json({ prayer: fallback });
+    }
+
+    try {
+      const genAI = getGenAI();
+      if (!genAI) {
+        const fallback = getFallbackPrayer(safeTopic, safeDay, isTagalog);
+        return res.json({ prayer: fallback });
+      }
+
+      const systemInstruction = isTagalog
+        ? `Ikaw ay isang mapanalangining pastor at prayer leader sa SAVIOR-KING Commission Church International (SKCCI).
+Sumulat ng isang mainit, taos-puso, at espiritwal na gabay sa panalangin (sample prayer) na may 2 hanggang 3 maikli at makapangyarihang pangungusap tungkol sa ibinigay na paksa sa panalangin.
+
+MGA MAHIGPIT NA PANUNTUNAN SA FORMATTING:
+1. DAPAT MAGSIMULA NANG EKSAPTO SA: "Aming AMANG nasa langit,"
+2. DAPAT MAGTAPOS NANG EKSAPTO SA: "...sa pangalan ni HESUS, Amen." (o "sa pangalan ni HESUS, Amen.")
+3. Ang haba ay dapat 2 hanggang 3 pangungusap lamang (kasama ang simula at pagtatapos).
+4. Tono: Mapitagan, nakabatay sa Salita ng Diyos, nakapagpapatibay, at diretso sa puso.
+5. Huwag maglagay ng markdown formatting tulad ng bold (**), quotation marks sa paligid, bullet points, o paliwanag. Ibigay LAMANG ang mismong panalangin.`
+        : `You are a prayerful pastoral leader and prayer director at SAVIOR-KING Commission Church International (SKCCI).
+Write a warm, heartfelt, faith-filled sample prayer guide consisting of 2 to 3 concise, powerful sentences on the specified prayer focus topic.
+
+STRICT FORMATTING RULES:
+1. MUST STRICTLY BEGIN WITH EXACTLY: "Our FATHER in Heaven,"
+2. MUST STRICTLY CONCLUDE WITH EXACTLY: "...in JESUS' Name, Amen." (or "...in JESUS' Name, Amen.")
+3. Length: Exactly 2 to 3 sentences total.
+4. Tone: Reverent, scripture-aligned, uplifting, faith-affirming, and direct.
+5. Do NOT include markdown bold markers (**), quotation marks surrounding the text, bullet points, or commentary. Output ONLY the raw prayer text itself.`;
+
+      const prompt = isTagalog
+        ? `Paksa sa Panalangin para sa ${safeDay}: "${safeTopic}". Lumikha ng panibagong gabay sa panalangin (variation #${variation}).`
+        : `Prayer Focus Item for ${safeDay}: "${safeTopic}". Generate an uplifting sample prayer guide (variation #${variation}).`;
+
+      const modelsToTry = ['gemini-3.7-flash', 'gemini-3.1-flash-lite', 'gemini-flash-latest'];
+      let lastError = null;
+
+      for (const model of modelsToTry) {
+        try {
+          const response = await Promise.race([
+            genAI.models.generateContent({
+              model,
+              contents: [{ role: 'user', parts: [{ text: prompt }] }],
+              config: {
+                systemInstruction,
+                temperature: 0.85,
+                maxOutputTokens: 300,
+                thinkingConfig: {
+                  thinkingLevel: ThinkingLevel.LOW,
+                },
+              }
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout on model ${model}`)), 6000)
+            )
+          ]);
+
+          if (response && response.text) {
+            let prayerText = response.text.trim();
+            // Ensure strict prefix/suffix if slightly altered by model
+            if (isTagalog) {
+              if (!prayerText.startsWith("Aming AMANG nasa langit,")) {
+                prayerText = "Aming AMANG nasa langit, " + prayerText.replace(/^(Aming Ama|Panginoon|Dakilang Diyos)[^,]*,?\s*/i, '');
+              }
+              if (!prayerText.endsWith("sa pangalan ni HESUS, Amen.")) {
+                prayerText = prayerText.replace(/[.\s]*in Jesus'? name.*$/i, '').replace(/[.\s]*sa pangalan.*$/i, '');
+                prayerText = prayerText.trim().replace(/\.*$/, '') + ", sa pangalan ni HESUS, Amen.";
+              }
+            } else {
+              if (!prayerText.startsWith("Our FATHER in Heaven,")) {
+                prayerText = "Our FATHER in Heaven, " + prayerText.replace(/^(Father|Lord God|Dear Heavenly Father|Heavenly Father)[^,]*,?\s*/i, '');
+              }
+              if (!prayerText.endsWith("in JESUS' Name, Amen.")) {
+                prayerText = prayerText.replace(/[.\s]*in Jesus'? name.*$/i, '');
+                prayerText = prayerText.trim().replace(/\.*$/, '') + ", in JESUS' Name, Amen.";
+              }
+            }
+            return res.json({ prayer: prayerText });
+          }
+        } catch (err: any) {
+          lastError = err;
+        }
+      }
+
+      console.warn("[Prayer AI] Using fallback prayer for:", safeTopic, lastError?.message || '');
+      const fallback = getFallbackPrayer(safeTopic, safeDay, isTagalog);
+      return res.json({ prayer: fallback });
+    } catch (err) {
+      console.error("Prayer generation error:", err);
+      const fallback = getFallbackPrayer(safeTopic, safeDay, isTagalog);
+      return res.json({ prayer: fallback });
     }
   });
 

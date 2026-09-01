@@ -3,9 +3,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
 import { isPrayerAdmin } from '../utils/roles';
 import { submitPrayerRequest, fetchPrayerRequests, updatePrayerStatus, deletePrayerRequest, logPrayerAction, subscribeToPrayerLogs, PrayerLog } from '../api/prayer';
-import { Heart, HeartHandshake, CalendarClock, Trash2, CheckCircle2, Circle, UtensilsCrossed, Send, Calendar, Users, Activity } from 'lucide-react';
+import { Heart, HeartHandshake, CalendarClock, Trash2, CheckCircle2, Circle, UtensilsCrossed, Send, Calendar, Users, Activity, Sparkles } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import toast from 'react-hot-toast';
+import SamplePrayerModal from './SamplePrayerModal';
 
 // PHT Date Utilities
 const getPHTDate = () => {
@@ -70,6 +71,9 @@ export default function PrayerHub() {
   const queryClient = useQueryClient();
 
   const [activeTab, setActiveTab] = useState<'public' | 'admin'>('public');
+
+  // Active AI Sample Prayer Guide State
+  const [activePrayerGuide, setActivePrayerGuide] = useState<{ topic: string; day: string; itemId: string } | null>(null);
 
   // Fasting State
   const [fastingCommitment, setFastingCommitment] = useState<string | null>(() => {
@@ -321,22 +325,44 @@ export default function PrayerHub() {
                         const prayerItemId = `${day}_${idx}`;
                         const isChecked = !!myChecked[prayerItemId];
                         const count = globalCounters[prayerItemId] || 0;
+                        const isGuideActive = activePrayerGuide?.itemId === prayerItemId;
                         
                         return (
-                          <div key={idx} className="flex gap-3 items-start">
+                          <div 
+                            key={idx} 
+                            className={`flex gap-3 items-start p-2.5 rounded-xl transition-all ${
+                              isGuideActive 
+                                ? 'bg-amber-50/90 border border-amber-300 ring-2 ring-amber-200/50 shadow-xs' 
+                                : 'hover:bg-slate-50/70 border border-transparent'
+                            }`}
+                          >
                             <button 
                               onClick={() => handleTogglePrayer(day, idx)}
-                              className={`mt-1 flex-shrink-0 transition-colors ${isChecked ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
+                              className={`mt-1 flex-shrink-0 transition-colors cursor-pointer ${isChecked ? 'text-green-500' : 'text-gray-300 hover:text-gray-400'}`}
+                              title={isChecked ? "Mark as unprayed" : "I prayed for this"}
                             >
-                              {isChecked ? <CheckCircle2 size={24} /> : <Circle size={24} />}
+                              {isChecked ? <CheckCircle2 size={22} /> : <Circle size={22} />}
                             </button>
-                            <div className="flex-1">
-                              <p className={`text-sm ${isChecked ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>{item}</p>
-                              {count > 0 && (
-                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0F2C59]">
-                                  <Heart size={10} className={isChecked ? "fill-current text-[#C82323]" : ""} /> {count} Warriors Prayed
-                                </span>
-                              )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm leading-snug ${isChecked ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>{item}</p>
+                              
+                              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                {count > 0 && (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0F2C59] border border-blue-100">
+                                    <Heart size={10} className={isChecked ? "fill-current text-[#C82323]" : ""} /> {count} Warriors Prayed
+                                  </span>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => setActivePrayerGuide({ topic: item, day, itemId: prayerItemId })}
+                                  className="inline-flex items-center gap-1 text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200/80 active:scale-95 transition-all cursor-pointer shadow-2xs group"
+                                  title="Open AI Sample Prayer Guide"
+                                >
+                                  <Sparkles size={11} className="text-amber-600 group-hover:scale-110 transition-transform" />
+                                  <span>Sample Prayer</span>
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
@@ -563,6 +589,16 @@ export default function PrayerHub() {
               </div>
             )}
           </div>
+        )}
+
+        {/* AI-Powered Sample Prayer Guide Modal */}
+        {activePrayerGuide && (
+          <SamplePrayerModal
+            isOpen={!!activePrayerGuide}
+            onClose={() => setActivePrayerGuide(null)}
+            topic={activePrayerGuide.topic}
+            day={activePrayerGuide.day}
+          />
         )}
 
       </div>
