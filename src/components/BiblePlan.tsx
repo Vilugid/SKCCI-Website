@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { BIBLE_PLAN } from '../data';
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Check, Save, Download, Loader2, Sparkles, BookOpen, MessageSquareText } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Check, Save, Download, Loader2, Sparkles, BookOpen, MessageSquareText, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import BibleStreakCard from './BibleStreakCard';
+import GoogleDrivePlayer from './GoogleDrivePlayer';
+import { isSuperAdmin } from '../utils/roles';
+import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId } from '../types';
 
 interface BiblePlanProps {
@@ -27,6 +30,7 @@ interface HundredDaysReflection {
 
 export default function BiblePlan({ progressArray, setProgressArray, is100DayComplete, setIs100DayComplete }: BiblePlanProps) {
   const { user, signInWithGoogle } = useAuth();
+  const isSuper = isSuperAdmin(user?.email);
   const [mounted, setMounted] = useState(false);
   const [showCelebration, setShowCelebration] = useState(false);
   
@@ -34,6 +38,9 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   const completedDays = new Set(progressArray);
   const initialDay = BIBLE_PLAN.find(item => !completedDays.has(item.day))?.day || 1;
   const [selectedDay, setSelectedDay] = useState<number>(initialDay);
+
+  // Explainer videos state for 100 Days Plan
+  const [explainerVideos, setExplainerVideos] = useState<Record<number, string>>({});
 
   // Reflections state
   const [reflections, setReflections] = useState<Record<number, HundredDaysReflection>>({});
@@ -45,6 +52,24 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fetch all 100 days explainer videos on mount
+  useEffect(() => {
+    fetchAllBibleExplainerVideos('plan_100').then((videos) => {
+      setExplainerVideos(videos);
+    });
+  }, []);
+
+  // Fetch video for selected day if not yet cached in state
+  useEffect(() => {
+    if (explainerVideos[selectedDay] === undefined) {
+      fetchBibleExplainerVideo(selectedDay, 'plan_100').then((url) => {
+        if (url !== null) {
+          setExplainerVideos(prev => ({ ...prev, [selectedDay]: url }));
+        }
+      });
+    }
+  }, [selectedDay, explainerVideos]);
 
   // Update note text when selectedDay changes
   useEffect(() => {
@@ -333,6 +358,54 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                 onChange={() => toggleDay(selectedDay)} 
               />
             </label>
+
+            {/* Bible Gateway Quick Reading Link */}
+            <div className="mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border transition-all bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#D4A373]/20 text-[#D4A373] flex items-center justify-center flex-shrink-0">
+                  <BookOpen size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#D4A373]">
+                    Read on Bible Gateway
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {currentPlanItem.book} {currentPlanItem.chapter}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center">
+                <a
+                  href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentPlanItem.book} ${currentPlanItem.chapter}`)}&version=NKJV`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] text-white text-xs font-bold transition-all shadow-xs cursor-pointer group"
+                >
+                  <span>Read Today&apos;s Chapter</span>
+                  <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                </a>
+              </div>
+            </div>
+
+            {/* Daily Explainer Video (Google Drive Player for 100 Days Plan) */}
+            <div className="mt-6">
+              <GoogleDrivePlayer
+                planId="plan_100"
+                dayNumber={selectedDay}
+                dayTitle={`Day ${selectedDay} — ${currentPlanItem.book} ${currentPlanItem.chapter}`}
+                videoUrl={explainerVideos[selectedDay] || null}
+                canEdit={isSuper}
+                adminEmail={user?.email || ''}
+                theme="light"
+                onVideoUpdated={(newUrl) => {
+                  setExplainerVideos(prev => ({
+                    ...prev,
+                    [selectedDay]: newUrl || ''
+                  }));
+                }}
+              />
+            </div>
 
             {/* Clean Reflection Card: What struck you most? */}
             <div className="mt-8 pt-6 border-t border-gray-200">

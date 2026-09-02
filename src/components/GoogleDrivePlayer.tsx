@@ -20,6 +20,7 @@ import { saveBibleExplainerVideo, deleteBibleExplainerVideo } from '../api/bible
 
 interface GoogleDrivePlayerProps {
   dayNumber: number;
+  planId?: 'plan_100' | 'plan_365';
   dayTitle?: string;
   videoUrl?: string | null;
   canEdit?: boolean;
@@ -30,6 +31,7 @@ interface GoogleDrivePlayerProps {
 
 export default function GoogleDrivePlayer({
   dayNumber,
+  planId = 'plan_365',
   dayTitle,
   videoUrl,
   canEdit = false,
@@ -81,12 +83,12 @@ export default function GoogleDrivePlayer({
     setIsSaving(true);
     try {
       if (!trimmed) {
-        await deleteBibleExplainerVideo(dayNumber);
+        await deleteBibleExplainerVideo(dayNumber, planId);
         setCurrentUrl('');
         onVideoUpdated?.(null);
         toast.success(`Explainer video for Day ${dayNumber} removed`);
       } else {
-        await saveBibleExplainerVideo(dayNumber, trimmed, adminEmail || 'captainmarkvil@gmail.com');
+        await saveBibleExplainerVideo(dayNumber, trimmed, adminEmail || 'captainmarkvil@gmail.com', planId);
         setCurrentUrl(trimmed);
         onVideoUpdated?.(trimmed);
         toast.success(`Explainer video for Day ${dayNumber} updated!`);
@@ -108,7 +110,7 @@ export default function GoogleDrivePlayer({
 
     setIsSaving(true);
     try {
-      await deleteBibleExplainerVideo(dayNumber);
+      await deleteBibleExplainerVideo(dayNumber, planId);
       setCurrentUrl('');
       setInputUrl('');
       onVideoUpdated?.(null);
