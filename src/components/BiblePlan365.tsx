@@ -1,12 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { BIBLE_PLAN_365_FULL } from '../bibleData';
-import { CheckCircle2, Circle, ChevronLeft, ChevronRight, Calendar, Sun, Moon, Check, Save, Download, AlertCircle, X, Loader2 } from 'lucide-react';
+import { 
+  CheckCircle2, 
+  Circle, 
+  ChevronLeft, 
+  ChevronRight, 
+  Calendar, 
+  Sun, 
+  Moon, 
+  Check, 
+  Save, 
+  Download, 
+  AlertCircle, 
+  X, 
+  Loader2,
+  BookOpen,
+  ExternalLink
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSyncedState } from '../hooks/useSyncedState';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
 import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import BibleStreakCard from './BibleStreakCard';
+import GoogleDrivePlayer from './GoogleDrivePlayer';
+import { isSuperAdmin } from '../utils/roles';
+import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId } from '../types';
 
 type Theme = 'light' | 'dark';
@@ -28,6 +47,7 @@ interface BiblePlan365Props {
 
 export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }: BiblePlan365Props = {}) {
   const { user, signInWithGoogle } = useAuth();
+  const isSuper = isSuperAdmin(user?.email);
   const [theme, setTheme] = useState<Theme>('light');
   const [mounted, setMounted] = useState(false);
   const currentYear = new Date().getFullYear();
@@ -47,6 +67,9 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   // Current viewed day (defaults to today)
   const [viewedDay, setViewedDay] = useState<number>(1);
   const [actualToday, setActualToday] = useState<number>(1);
+
+  // Daily Explainer Videos (Google Drive)
+  const [explainerVideos, setExplainerVideos] = useState<Record<number, string>>({});
   
   // Reflection Notes State
   const [reflections, setReflections] = useState<Record<string, ScriptureReflection>>({});
@@ -77,6 +100,23 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
     setNoteText(reflections[viewedDate]?.note || '');
   }, [viewedDate, reflections]);
   
+  useEffect(() => {
+    // Fetch explainer videos
+    fetchAllBibleExplainerVideos().then((videos) => {
+      setExplainerVideos(videos);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (explainerVideos[viewedDay] === undefined) {
+      fetchBibleExplainerVideo(viewedDay).then((url) => {
+        if (url !== null) {
+          setExplainerVideos(prev => ({ ...prev, [viewedDay]: url }));
+        }
+      });
+    }
+  }, [viewedDay, explainerVideos]);
+
   useEffect(() => {
     if (!user || !db) {
       setReflections({});
@@ -378,6 +418,66 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   onChange={() => toggleReading(viewedDay, 'nt')} 
                 />
               </label>
+            </div>
+
+            {/* Bible Gateway Quick Reading Link */}
+            <div className={`mt-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border transition-all ${
+              theme === 'light' 
+                ? 'bg-amber-500/5 border-amber-500/20 hover:border-amber-500/40' 
+                : 'bg-amber-950/20 border-amber-500/20 hover:border-amber-500/40'
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-[#D4A373]/20 text-[#D4A373] flex items-center justify-center flex-shrink-0">
+                  <BookOpen size={18} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#D4A373]">
+                    Read on Bible Gateway
+                  </p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    {currentReading.ot} &bull; {currentReading.nt}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <a
+                  href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentReading.ot}; ${currentReading.nt}`)}&version=NIV`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer group"
+                >
+                  <span>Read Today&apos;s Chapters</span>
+                  <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                </a>
+                <a
+                  href="https://www.biblegateway.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium transition-colors"
+                  title="Visit BibleGateway.com homepage"
+                >
+                  Bible Gateway ↗
+                </a>
+              </div>
+            </div>
+
+            {/* Daily Explainer Video (Google Drive Player) */}
+            <div className="mt-6">
+              <GoogleDrivePlayer
+                dayNumber={viewedDay}
+                dayTitle={`Day ${viewedDay} — ${currentReading.ot} & ${currentReading.nt}`}
+                videoUrl={explainerVideos[viewedDay] || null}
+                canEdit={isSuper}
+                adminEmail={user?.email || ''}
+                theme={theme}
+                onVideoUpdated={(newUrl) => {
+                  setExplainerVideos(prev => ({
+                    ...prev,
+                    [viewedDay]: newUrl || ''
+                  }));
+                }}
+              />
             </div>
             
             {/* Daily Scripture Reflection Note */}

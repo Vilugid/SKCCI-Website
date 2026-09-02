@@ -245,6 +245,9 @@
     "/leader_tools/{recordId}": {
       "schema": "#/entities/ServiceRecord",
       "description": "Historical leader tools content"
+    },
+    "/bible_plan_videos/{dayNumber}": {
+      "description": "Daily Google Drive explainer videos for the 365-day Bible reading plan"
     }
   }
 }

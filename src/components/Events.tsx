@@ -422,13 +422,30 @@ export default function Events() {
     }
   });
 
-  const handleRSVPClick = (eventId: string, isRSVPd: boolean) => {
+  // RSVP In-Flight Multi-Click Guard
+  const [pendingRsvps, setPendingRsvps] = useState<Set<string>>(new Set());
+
+  const handleRSVPClick = async (eventId: string, isRSVPd: boolean) => {
     if (!user) {
       toast.error('Please sign in to RSVP');
       signInWithGoogle();
       return;
     }
-    rsvpMutation.mutate({ eventId, isRSVPd });
+    if (pendingRsvps.has(eventId) || rsvpMutation.isPending) {
+      return; // Prevent rapid multi-clicking
+    }
+    setPendingRsvps(prev => new Set(prev).add(eventId));
+    try {
+      await rsvpMutation.mutateAsync({ eventId, isRSVPd });
+    } catch (err: any) {
+      console.warn("RSVP action note:", err?.message || err);
+    } finally {
+      setPendingRsvps(prev => {
+        const next = new Set(prev);
+        next.delete(eventId);
+        return next;
+      });
+    }
   };
 
   const handleEditClick = (event: ChurchEvent) => {

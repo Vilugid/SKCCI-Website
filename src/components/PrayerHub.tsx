@@ -82,6 +82,33 @@ export default function PrayerHub() {
 
   // Global Prayer Logs
   const [prayerLogs, setPrayerLogs] = useState<PrayerLog[]>([]);
+  const currentWeekId = getWeekIdPHT();
+  const currentMonthId = getMonthIdPHT();
+
+  // Optimistic local checkmarks
+  const [optimisticChecks, setOptimisticChecks] = useState<Record<string, boolean>>(() => {
+    try {
+      const localKey = `sk_prayer_checked_${user?.uid || 'guest'}_${getWeekIdPHT()}`;
+      const raw = localStorage.getItem(localKey);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  useEffect(() => {
+    if (user?.uid) {
+      try {
+        const localKey = `sk_prayer_checked_${user.uid}_${currentWeekId}`;
+        const raw = localStorage.getItem(localKey);
+        if (raw) {
+          setOptimisticChecks(JSON.parse(raw));
+        }
+      } catch (e) {
+        // ignore
+      }
+    }
+  }, [user?.uid, currentWeekId]);
 
   useEffect(() => {
     const unsubscribe = subscribeToPrayerLogs(setPrayerLogs);
@@ -89,9 +116,6 @@ export default function PrayerHub() {
   }, []);
 
   // Compute Current Context Data
-  const currentWeekId = getWeekIdPHT();
-  const currentMonthId = getMonthIdPHT();
-  
   const currentWeekLogs = prayerLogs.filter(log => log.week === currentWeekId);
   
   const globalCounters = currentWeekLogs.reduce((acc, log) => {
@@ -99,12 +123,23 @@ export default function PrayerHub() {
     return acc;
   }, {} as Record<string, number>);
 
-  const myChecked = currentWeekLogs
+  const serverChecked = currentWeekLogs
     .filter(log => log.userId === user?.uid)
     .reduce((acc, log) => {
       acc[log.prayerItemId] = true;
       return acc;
     }, {} as Record<string, boolean>);
+
+  // Merge server check with local optimistic state
+  const isItemChecked = (itemId: string): boolean => {
+    if (optimisticChecks[itemId] !== undefined) {
+      return optimisticChecks[itemId];
+    }
+    return Boolean(serverChecked[itemId]);
+  };
+  const myChecked = new Proxy(serverChecked, {
+    get: (_, prop: string) => isItemChecked(prop)
+  });
 
   const uniqueWarriorsThisWeek = new Set(currentWeekLogs.map(log => log.userId)).size;
 
@@ -194,13 +229,16 @@ export default function PrayerHub() {
     }
     
     const prayerItemId = `${day}_${idx}`;
-    const isPrayed = !myChecked[prayerItemId];
+    const nextPrayed = !isItemChecked(prayerItemId);
     
-    try {
-      await logPrayerAction(user.uid, prayerItemId, currentWeekId, currentMonthId, isPrayed);
-    } catch (e) {
-      toast.error("Failed to sync prayer counter");
-    }
+    // Instant optimistic UI feedback
+    setOptimisticChecks(prev => ({
+      ...prev,
+      [prayerItemId]: nextPrayed
+    }));
+
+    // Batched & debounced background sync
+    logPrayerAction(user.uid, prayerItemId, currentWeekId, currentMonthId, nextPrayed);
   };
 
   const handleCommitFast = (type: string) => {

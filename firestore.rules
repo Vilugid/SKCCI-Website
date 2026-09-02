@@ -95,6 +95,11 @@ service cloud.firestore {
       allow write: if isEventAdmin();
     }
 
+    match /bible_plan_videos/{videoId} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
     match /sunday_attendance/{logId} {
       allow read: if true;
       allow write: if isEventAdmin();

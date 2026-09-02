@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { 
+  initializeFirestore, 
+  persistentLocalCache, 
+  persistentMultipleTabManager,
+  getFirestore 
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import firebaseConfig from '../firebase-applet-config.json';
 
@@ -19,8 +24,17 @@ if (isFirebaseConfigured()) {
   try {
     app = initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Use the specific firestoreDatabaseId if provided in the config
-    db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+    // Initialize Firestore with multi-tab persistent local IndexedDB cache
+    try {
+      db = initializeFirestore(app, {
+        localCache: persistentLocalCache({
+          tabManager: persistentMultipleTabManager()
+        })
+      }, (firebaseConfig as any).firestoreDatabaseId);
+    } catch (cacheErr) {
+      console.warn("Persistent local cache initialization fallback:", cacheErr);
+      db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
+    }
     storage = getStorage(app);
     googleProvider = new GoogleAuthProvider();
   } catch (error) {
