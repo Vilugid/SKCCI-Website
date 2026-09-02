@@ -442,7 +442,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
 
               <div className="flex items-center gap-2">
                 <a
-                  href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentReading.ot}; ${currentReading.nt}`)}&version=NIV`}
+                  href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentReading.ot}; ${currentReading.nt}`)}&version=NKJV`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer group"
