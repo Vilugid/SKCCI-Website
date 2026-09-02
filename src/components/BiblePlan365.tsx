@@ -440,24 +440,15 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center">
                 <a
                   href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentReading.ot}; ${currentReading.nt}`)}&version=NKJV`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer group"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer group"
                 >
                   <span>Read Today&apos;s Chapters</span>
                   <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                </a>
-                <a
-                  href="https://www.biblegateway.com/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs font-medium transition-colors"
-                  title="Visit BibleGateway.com homepage"
-                >
-                  Bible Gateway ↗
                 </a>
               </div>
             </div>

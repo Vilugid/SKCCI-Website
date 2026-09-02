@@ -140,12 +140,9 @@ export default function GoogleDrivePlayer({
               <Video size={16} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#D4A373] truncate">
                   Daily Explainer Video
-                </span>
-                <span className="text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 rounded-full bg-white/10 text-gray-300 font-medium whitespace-nowrap flex-shrink-0">
-                  Day {dayNumber}
                 </span>
               </div>
               {dayTitle && (
@@ -192,6 +189,12 @@ export default function GoogleDrivePlayer({
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
                   allowFullScreen
                   onLoad={() => setIframeLoaded(true)}
+                />
+
+                {/* Top-Right Mask to hide redundant Google Drive embed pop-out button */}
+                <div 
+                  className="absolute top-0 right-0 w-16 h-12 z-20 pointer-events-auto bg-gradient-to-l from-black via-black/80 to-transparent" 
+                  aria-hidden="true" 
                 />
               </>
             ) : (
@@ -242,10 +245,6 @@ export default function GoogleDrivePlayer({
                 <ExternalLink size={11} />
                 <span>Tap to open full screen</span>
               </a>
-              <span className="text-gray-600">•</span>
-              <span className="text-gray-400 font-mono text-[10px] tracking-wide">
-                16:9 HD
-              </span>
             </div>
           </div>
         )}
