@@ -134,48 +134,35 @@ export default function GoogleDrivePlayer({
         }`}
       >
         {/* Header Bar */}
-        <div className="px-5 py-3.5 flex items-center justify-between border-b border-white/10 bg-black/25">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#C82323]/20 border border-[#C82323]/30 flex items-center justify-center text-[#E63946]">
+        <div className="px-3.5 py-2.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-2 border-b border-white/10 bg-black/25">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+            <div className="w-7 h-7 sm:w-8 h-8 rounded-lg bg-[#C82323]/20 border border-[#C82323]/30 flex items-center justify-center text-[#E63946] flex-shrink-0">
               <Video size={16} />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#D4A373]">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap sm:flex-nowrap">
+                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#D4A373] truncate">
                   Daily Explainer Video
                 </span>
-                <span className="text-[11px] px-2 py-0.5 rounded-full bg-white/10 text-gray-300 font-medium">
+                <span className="text-[10px] sm:text-xs px-1.5 py-0.5 sm:px-2 rounded-full bg-white/10 text-gray-300 font-medium whitespace-nowrap flex-shrink-0">
                   Day {dayNumber}
                 </span>
               </div>
               {dayTitle && (
-                <p className="text-xs text-gray-400 font-medium line-clamp-1">
+                <p className="text-[11px] sm:text-xs text-gray-400 font-medium truncate mt-0.5">
                   {dayTitle}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            {embedUrl && (
-              <a
-                href={embedUrl.replace('/preview', '/view')}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-200 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-                title="Open in Google Drive"
-              >
-                <ExternalLink size={13} />
-                <span>Drive</span>
-              </a>
-            )}
-
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {/* Super Admin Edit Button */}
             {canEdit && (
               <button
                 type="button"
                 onClick={handleOpenEdit}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95"
+                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm font-semibold rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
                 title="Edit Google Drive Video (Super Admin)"
               >
                 <Edit3 size={13} />
@@ -185,65 +172,81 @@ export default function GoogleDrivePlayer({
           </div>
         </div>
 
-        {/* 16:9 Zero-Layout-Shift Video Frame */}
-        <div className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center">
-          {embedUrl ? (
-            <>
-              {/* Shimmer / Skeleton while loading */}
-              {!iframeLoaded && (
-                <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3">
-                  <Loader2 size={32} className="animate-spin text-[#D4A373]" />
-                  <span className="text-xs font-medium tracking-wide">Loading video explainer...</span>
+        {/* 16:9 Zero-Layout-Shift Responsive Video Container */}
+        <div className="p-2 sm:p-3 bg-black/40">
+          <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-black flex items-center justify-center">
+            {embedUrl ? (
+              <>
+                {/* Shimmer / Skeleton while loading */}
+                {!iframeLoaded && (
+                  <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3">
+                    <Loader2 size={28} className="animate-spin text-[#D4A373]" />
+                    <span className="text-xs font-medium tracking-wide">Loading video explainer...</span>
+                  </div>
+                )}
+
+                <iframe
+                  src={embedUrl}
+                  title={`Bible Reading Explainer - Day ${dayNumber}`}
+                  className="absolute inset-0 w-full h-full border-0 z-10"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                  allowFullScreen
+                  onLoad={() => setIframeLoaded(true)}
+                />
+              </>
+            ) : (
+              /* Empty State Placeholder */
+              <div className="absolute inset-0 p-4 sm:p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-2 sm:mb-3 shadow-inner">
+                  <Play size={20} className="ml-0.5 text-[#D4A373]" />
                 </div>
-              )}
+                <h4 className="text-xs sm:text-sm font-semibold text-gray-200">
+                  Today&apos;s Video Explainer
+                </h4>
+                <p className="text-[11px] sm:text-xs text-gray-400 mt-1 mb-3 line-clamp-2 leading-relaxed">
+                  {canEdit 
+                    ? "As Super Admin, you can add today's Google Drive video lesson for the congregation."
+                    : "The video explanation for this reading will be posted shortly. Please check back later!"}
+                </p>
 
-              <iframe
-                src={embedUrl}
-                title={`Bible Reading Explainer - Day ${dayNumber}`}
-                className="w-full h-full border-0 relative z-10"
-                allow="autoplay; encrypted-media; fullscreen"
-                allowFullScreen
-                onLoad={() => setIframeLoaded(true)}
-              />
-            </>
-          ) : (
-            /* Empty State Placeholder */
-            <div className="p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto">
-              <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-3 shadow-inner">
-                <Play size={24} className="ml-1 text-[#D4A373]" />
+                {canEdit && (
+                  <button
+                    type="button"
+                    onClick={handleOpenEdit}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
+                  >
+                    <Sparkles size={13} /> Set Video for Day {dayNumber}
+                  </button>
+                )}
               </div>
-              <h4 className="text-sm font-semibold text-gray-200">
-                Today&apos;s Video Explainer
-              </h4>
-              <p className="text-xs text-gray-400 mt-1 mb-4 leading-relaxed">
-                {canEdit 
-                  ? "As Super Admin, you can add today's Google Drive video lesson for the congregation."
-                  : "The video explanation for this reading will be posted shortly. Please check back later!"}
-              </p>
-
-              {canEdit && (
-                <button
-                  type="button"
-                  onClick={handleOpenEdit}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#D4A373] hover:bg-[#c49262] text-slate-950 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
-                >
-                  <Sparkles size={14} /> Set Video for Day {dayNumber}
-                </button>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* Subtle Footer Note */}
+        {/* Subtle Footer Note & Full Screen Quick Action */}
         {embedUrl && (
-          <div className="px-5 py-2.5 bg-black/40 border-t border-white/5 flex items-center justify-between text-[11px] text-gray-400">
-            <span className="flex items-center gap-1.5">
-              <Info size={12} className="text-[#D4A373]" />
-              Audio and video stream directly from Google Drive
+          <div className="px-3.5 py-2.5 sm:px-5 bg-black/40 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
+            <span className="flex items-center gap-1.5 min-w-0 truncate text-[11px]">
+              <Info size={12} className="text-[#D4A373] flex-shrink-0" />
+              <span className="truncate">Audio and video stream directly from Google Drive</span>
             </span>
-            <span className="text-gray-500 font-mono text-[10px]">
-              16:9 HD
-            </span>
+            
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
+              <a
+                href={embedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-[#D4A373] hover:text-[#e2b484] hover:underline font-medium transition-colors"
+                title="Open video in new tab / full screen"
+              >
+                <ExternalLink size={11} />
+                <span>Tap to open full screen</span>
+              </a>
+              <span className="text-gray-600">•</span>
+              <span className="text-gray-400 font-mono text-[10px] tracking-wide">
+                16:9 HD
+              </span>
+            </div>
           </div>
         )}
       </div>
@@ -325,12 +328,13 @@ export default function GoogleDrivePlayer({
                   <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
                     Live Preview
                   </label>
-                  <div className="w-full aspect-video rounded-xl overflow-hidden bg-black border border-gray-300 dark:border-gray-700">
+                  <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-300 dark:border-gray-700">
                     <iframe
                       src={inputParsedEmbed}
                       title="Video Preview"
-                      className="w-full h-full border-0"
-                      allow="autoplay; encrypted-media; fullscreen"
+                      className="absolute inset-0 w-full h-full border-0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
+                      allowFullScreen
                     />
                   </div>
                 </div>
