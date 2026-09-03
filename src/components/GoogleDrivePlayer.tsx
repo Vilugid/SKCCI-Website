@@ -5,7 +5,6 @@ import {
   Edit3, 
   Save, 
   Trash2, 
-  ExternalLink, 
   CheckCircle2, 
   AlertCircle, 
   X, 
@@ -192,12 +191,6 @@ export default function GoogleDrivePlayer({
                   allowFullScreen
                   onLoad={() => setIframeLoaded(true)}
                 />
-
-                {/* Top-Right Mask to hide redundant Google Drive embed pop-out button */}
-                <div 
-                  className="absolute top-0 right-0 w-16 h-12 z-20 pointer-events-auto bg-gradient-to-l from-black via-black/80 to-transparent" 
-                  aria-hidden="true" 
-                />
               </>
             ) : (
               /* Empty State Placeholder */
@@ -228,26 +221,13 @@ export default function GoogleDrivePlayer({
           </div>
         </div>
 
-        {/* Subtle Footer Note & Full Screen Quick Action */}
+        {/* Subtle Footer Note */}
         {embedUrl && (
           <div className="px-3.5 py-2.5 sm:px-5 bg-black/40 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
             <span className="flex items-center gap-1.5 min-w-0 truncate text-[11px]">
               <Info size={12} className="text-[#D4A373] flex-shrink-0" />
               <span className="truncate">Audio and video stream directly from Google Drive</span>
             </span>
-            
-            <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-              <a
-                href={embedUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-[#D4A373] hover:text-[#e2b484] hover:underline font-medium transition-colors"
-                title="Open video in new tab / full screen"
-              >
-                <ExternalLink size={11} />
-                <span>Tap to open full screen</span>
-              </a>
-            </div>
           </div>
         )}
       </div>
