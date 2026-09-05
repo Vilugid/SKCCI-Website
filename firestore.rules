@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function isEventAdmin() {
-      return isSuperAdmin() || (request.auth != null && (request.auth.token.email == 'beaangelnicole.mendoza@gmail.com' || request.auth.token.email == 'beaangelnicole.mendoza@gmail.con'));
+      return isSuperAdmin() || (request.auth != null && (request.auth.token.email == 'beaangelnicole.mendoza@gmail.com' || request.auth.token.email == 'beaangelnicole.mendoza@gmail.con' || request.auth.token.email == 'lzvmndmendoza@gmail.com'));
     }
 
     function isPrayerAdmin() {

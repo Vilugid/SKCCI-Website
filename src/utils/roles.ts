@@ -28,7 +28,7 @@ const CELL_ADMINS = parseEmails(
 
 const EVENT_ADMINS = parseEmails(
   getEnvVar('VITE_EVENT_ADMIN_EMAILS'),
-  ['beaangelnicole.mendoza@gmail.com', 'beaangelnicole.mendoza@gmail.con']
+  ['beaangelnicole.mendoza@gmail.com', 'beaangelnicole.mendoza@gmail.con', 'lzvmndmendoza@gmail.com']
 );
 
 const PRAYER_ADMINS = parseEmails(
