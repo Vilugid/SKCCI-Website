@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Play, 
   Video, 
   Edit3, 
   Save, 
@@ -10,11 +9,11 @@ import {
   X, 
   Loader2, 
   ShieldCheck, 
-  Info,
-  Sparkles
+  ExternalLink,
+  Plus
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { extractGoogleDriveFileId, getGoogleDriveEmbedUrl } from '../utils/googleDrive';
+import { parseVideoSource } from '../utils/googleDrive';
 import { saveBibleExplainerVideo, deleteBibleExplainerVideo } from '../api/bibleVideos';
 
 interface GoogleDrivePlayerProps {
@@ -42,20 +41,19 @@ export default function GoogleDrivePlayer({
   const [isEditing, setIsEditing] = useState(false);
   const [inputUrl, setInputUrl] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
-  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   useEffect(() => {
     setCurrentUrl(videoUrl || '');
     setInputUrl(videoUrl || '');
-    setIframeLoaded(false);
   }, [videoUrl, dayNumber]);
 
-  const fileId = extractGoogleDriveFileId(currentUrl);
-  const embedUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : null;
+  // Parse current video source for direct opening link
+  const videoSource = parseVideoSource(currentUrl);
+  const hasVideo = Boolean(videoSource.directUrl || currentUrl.trim());
+  const directLink = videoSource.directUrl || currentUrl.trim();
 
-  // Real-time extraction for edit input modal
-  const inputParsedId = extractGoogleDriveFileId(inputUrl);
-  const inputParsedEmbed = inputParsedId ? `https://drive.google.com/file/d/${inputParsedId}/preview` : null;
+  // Real-time parsing for edit modal
+  const inputParsed = parseVideoSource(inputUrl);
 
   const handleOpenEdit = () => {
     setInputUrl(currentUrl);
@@ -74,8 +72,8 @@ export default function GoogleDrivePlayer({
     }
 
     const trimmed = inputUrl.trim();
-    if (trimmed && !inputParsedId) {
-      toast.error("Invalid Google Drive link. Please enter a valid share URL, preview link, or iframe embed code.");
+    if (trimmed && !inputParsed.directUrl && !inputParsed.embedUrl && !trimmed.startsWith('http')) {
+      toast.error("Please enter a valid Google Drive or YouTube link.");
       return;
     }
 
@@ -85,17 +83,17 @@ export default function GoogleDrivePlayer({
         await deleteBibleExplainerVideo(dayNumber, planId);
         setCurrentUrl('');
         onVideoUpdated?.(null);
-        toast.success(`Explainer video for Day ${dayNumber} removed`);
+        toast.success(`Explainer video link for Day ${dayNumber} removed`);
       } else {
         await saveBibleExplainerVideo(dayNumber, trimmed, adminEmail || 'captainmarkvil@gmail.com', planId);
         setCurrentUrl(trimmed);
         onVideoUpdated?.(trimmed);
-        toast.success(`Explainer video for Day ${dayNumber} updated!`);
+        toast.success(`Explainer video link for Day ${dayNumber} updated!`);
       }
       setIsEditing(false);
     } catch (err: any) {
       console.error("Failed to save explainer video:", err);
-      toast.error("Failed to save video. Please try again.");
+      toast.error("Failed to save video link. Please try again.");
     } finally {
       setIsSaving(false);
     }
@@ -103,7 +101,7 @@ export default function GoogleDrivePlayer({
 
   const handleDelete = async () => {
     if (!canEdit) return;
-    if (!window.confirm(`Are you sure you want to remove the explainer video for Day ${dayNumber}?`)) {
+    if (!window.confirm(`Are you sure you want to remove the video link for Day ${dayNumber}?`)) {
       return;
     }
 
@@ -114,9 +112,9 @@ export default function GoogleDrivePlayer({
       setInputUrl('');
       onVideoUpdated?.(null);
       setIsEditing(false);
-      toast.success(`Video for Day ${dayNumber} removed.`);
+      toast.success(`Video link for Day ${dayNumber} removed.`);
     } catch (err) {
-      toast.error("Failed to remove video.");
+      toast.error("Failed to remove video link.");
     } finally {
       setIsSaving(false);
     }
@@ -124,115 +122,92 @@ export default function GoogleDrivePlayer({
 
   const isDarkMode = theme === 'dark';
 
+  // If no video exists and user is not an admin, we don't clutter the UI
+  if (!hasVideo && !canEdit) {
+    return null;
+  }
+
   return (
     <div className="w-full">
-      {/* Main Video Card */}
-      <div 
-        className={`rounded-2xl overflow-hidden border shadow-md transition-all duration-300 ${
-          isDarkMode 
-            ? 'bg-gray-950 border-gray-800 text-gray-100 ring-1 ring-white/5' 
-            : 'bg-slate-900 border-slate-800 text-white'
-        }`}
-      >
-        {/* Header Bar */}
-        <div className="px-3.5 py-2.5 sm:px-5 sm:py-3.5 flex items-center justify-between gap-2 border-b border-white/10 bg-black/25">
-          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
-            <div className="w-7 h-7 sm:w-8 h-8 rounded-lg bg-[#C82323]/20 border border-[#C82323]/30 flex items-center justify-center text-[#E63946] flex-shrink-0">
-              <Video size={16} />
+      {/* Simple, Non-Intrusive Video Link Card */}
+      {hasVideo ? (
+        <div 
+          className={`flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl border transition-all ${
+            isDarkMode 
+              ? 'bg-red-950/20 border-red-500/20 hover:border-red-500/40 text-white' 
+              : 'bg-red-500/5 border-red-500/20 hover:border-red-500/30 text-gray-900'
+          }`}
+        >
+          {/* Left: Icon & Title */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-[#C82323]/15 text-[#C82323] dark:text-[#E63946] flex items-center justify-center flex-shrink-0">
+              <Video size={18} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[#D4A373] truncate">
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#C82323] dark:text-[#E63946]">
                   Daily Explainer Video
-                </span>
-              </div>
-              {dayTitle && (
-                <p className="text-[11px] sm:text-xs text-gray-400 font-medium truncate mt-0.5">
-                  {dayTitle}
                 </p>
-              )}
+                {videoSource.platformName && (
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-gray-500 dark:text-gray-400 font-medium">
+                    {videoSource.platformName}
+                  </span>
+                )}
+              </div>
+              <p className="text-sm font-semibold truncate text-gray-900 dark:text-gray-100">
+                {dayTitle || `Day ${dayNumber} Reading Lesson`}
+              </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {/* Super Admin Edit Button */}
+          {/* Right: Watch Video Button & Optional Admin Edit */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             {canEdit && (
               <button
                 type="button"
                 onClick={handleOpenEdit}
-                className="inline-flex items-center gap-1 px-2.5 py-1 text-xs sm:text-sm font-semibold rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 transition-all shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
-                title="Edit Google Drive Video (Super Admin)"
+                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                title="Edit Video Link (Super Admin)"
               >
-                <Edit3 size={13} />
-                <span>{currentUrl ? 'Edit Video' : 'Add Video'}</span>
+                <Edit3 size={15} />
               </button>
             )}
+
+            <a
+              href={directLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#C82323] hover:bg-[#a51b1b] text-white text-xs font-bold transition-all shadow-xs cursor-pointer group"
+            >
+              <span>Watch Video</span>
+              <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />
+            </a>
           </div>
         </div>
-
-        {/* 16:9 Zero-Layout-Shift Responsive Video Container */}
-        <div className="p-2 sm:p-3 bg-black/40">
-          <div className="relative w-full aspect-video overflow-hidden rounded-lg bg-black flex items-center justify-center">
-            {embedUrl ? (
-              <>
-                {/* Shimmer / Skeleton while loading */}
-                {!iframeLoaded && (
-                  <div className="absolute inset-0 z-0 flex flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3">
-                    <Loader2 size={28} className="animate-spin text-[#D4A373]" />
-                    <span className="text-xs font-medium tracking-wide">Loading video explainer...</span>
-                  </div>
-                )}
-
-                <iframe
-                  src={embedUrl}
-                  title={`Bible Reading Explainer - Day ${dayNumber}`}
-                  className="absolute inset-0 w-full h-full border-0 z-10"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                  allowFullScreen
-                  onLoad={() => setIframeLoaded(true)}
-                />
-              </>
-            ) : (
-              /* Empty State Placeholder */
-              <div className="absolute inset-0 p-4 sm:p-8 text-center flex flex-col items-center justify-center max-w-md mx-auto">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-2 sm:mb-3 shadow-inner">
-                  <Play size={20} className="ml-0.5 text-[#D4A373]" />
-                </div>
-                <h4 className="text-xs sm:text-sm font-semibold text-gray-200">
-                  Today&apos;s Video Explainer
-                </h4>
-                <p className="text-[11px] sm:text-xs text-gray-400 mt-1 mb-3 line-clamp-2 leading-relaxed">
-                  {canEdit 
-                    ? "As Super Admin, you can add today's Google Drive video lesson for the congregation."
-                    : "The video explanation for this reading will be posted shortly. Please check back later!"}
-                </p>
-
-                {canEdit && (
-                  <button
-                    type="button"
-                    onClick={handleOpenEdit}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 text-xs font-bold transition-all shadow-md cursor-pointer active:scale-95"
-                  >
-                    <Sparkles size={13} /> Set Video for Day {dayNumber}
-                  </button>
-                )}
-              </div>
-            )}
+      ) : (
+        /* Empty State for Super Admin (Add Video Link) */
+        canEdit && (
+          <div className={`p-3.5 rounded-xl border border-dashed flex items-center justify-between gap-3 text-xs ${
+            isDarkMode 
+              ? 'border-gray-800 bg-gray-950/40 text-gray-400' 
+              : 'border-gray-300 bg-gray-50 text-gray-600'
+          }`}>
+            <div className="flex items-center gap-2.5">
+              <Video size={16} className="text-gray-400" />
+              <span>No explainer video link added for Day {dayNumber}.</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleOpenEdit}
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#D4A373] hover:bg-[#c49262] text-slate-950 font-bold transition-colors cursor-pointer"
+            >
+              <Plus size={13} /> Add Video Link
+            </button>
           </div>
-        </div>
+        )
+      )}
 
-        {/* Subtle Footer Note */}
-        {embedUrl && (
-          <div className="px-3.5 py-2.5 sm:px-5 bg-black/40 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-400">
-            <span className="flex items-center gap-1.5 min-w-0 truncate text-[11px]">
-              <Info size={12} className="text-[#D4A373] flex-shrink-0" />
-              <span className="truncate">Audio and video stream directly from Google Drive</span>
-            </span>
-          </div>
-        )}
-      </div>
-
-      {/* Super Admin Edit Modal */}
+      {/* Super Admin Edit Link Modal */}
       {isEditing && canEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
           <div 
@@ -246,8 +221,10 @@ export default function GoogleDrivePlayer({
                   <ShieldCheck size={18} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold">Manage Explainer Video</h3>
-                  <p className="text-xs text-gray-400">Day {dayNumber} of 365 Reading Plan</p>
+                  <h3 className="text-sm font-bold">Set Explainer Video Link</h3>
+                  <p className="text-xs text-gray-400">
+                    Day {dayNumber} of {planId === 'plan_100' ? '100-Day Plan' : '365 Reading Plan'}
+                  </p>
                 </div>
               </div>
               <button
@@ -263,72 +240,41 @@ export default function GoogleDrivePlayer({
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                  Google Drive Video Link or Embed Code
+                  Video URL (Google Drive or YouTube)
                 </label>
-                <textarea
+                <input
+                  type="text"
                   value={inputUrl}
                   onChange={(e) => setInputUrl(e.target.value)}
-                  rows={3}
-                  placeholder="Paste Google Drive share URL, preview link, or <iframe> embed code..."
-                  className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs font-mono focus:border-[#0F2C59] dark:focus:border-[#D4A373] focus:ring-1 focus:ring-[#0F2C59] outline-none transition-all resize-none"
+                  placeholder="https://drive.google.com/file/d/... or https://youtu.be/..."
+                  className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs font-mono focus:border-[#C82323] focus:ring-1 focus:ring-[#C82323] outline-none transition-all"
                 />
               </div>
 
-              {/* Real-time Regex Parser Feedback */}
+              {/* Status Feedback */}
               {inputUrl.trim() && (
                 <div className={`p-3 rounded-xl border text-xs ${
-                  inputParsedId 
+                  inputParsed.directUrl || inputUrl.trim().startsWith('http')
                     ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' 
                     : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
                 }`}>
-                  {inputParsedId ? (
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400" />
-                        <span>Valid Google Drive File ID Detected</span>
-                      </div>
-                      <p className="font-mono text-[11px] opacity-90 truncate">
-                        ID: {inputParsedId}
-                      </p>
-                      <p className="font-mono text-[10px] opacity-75 truncate">
-                        Embed: {inputParsedEmbed}
-                      </p>
+                  {inputParsed.directUrl || inputUrl.trim().startsWith('http') ? (
+                    <div className="flex items-center gap-1.5 font-semibold">
+                      <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <span>Ready to link ({inputParsed.platformName || 'Web Link'})</span>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-1.5">
-                      <AlertCircle size={14} className="text-rose-600 dark:text-rose-400 flex-shrink-0 mt-0.5" />
-                      <span>Could not find a valid Google Drive File ID. Please verify the URL or share link.</span>
+                    <div className="flex items-center gap-1.5">
+                      <AlertCircle size={14} className="text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                      <span>Please enter a full URL (e.g. starting with https://)</span>
                     </div>
                   )}
                 </div>
               )}
 
-              {/* Live Preview Box */}
-              {inputParsedEmbed && (
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">
-                    Live Preview
-                  </label>
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border border-gray-300 dark:border-gray-700">
-                    <iframe
-                      src={inputParsedEmbed}
-                      title="Video Preview"
-                      className="absolute inset-0 w-full h-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Instructions Callout */}
-              <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2.5">
-                <Info size={16} className="text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                <div className="space-y-1 leading-relaxed text-[11px]">
-                  <p className="font-semibold">Important Drive Sharing Setting:</p>
-                  <p>In Google Drive, ensure the file permission is set to <strong>&quot;Anyone with the link can view&quot;</strong> so church members can watch without login requests.</p>
-                </div>
-              </div>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+                When members click <strong>&quot;Watch Video&quot;</strong>, it will cleanly open this link directly in their Google Drive app or browser without any black screens or navigation issues.
+              </p>
             </div>
 
             {/* Modal Footer */}
@@ -340,7 +286,7 @@ export default function GoogleDrivePlayer({
                   disabled={isSaving}
                   className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 px-3 py-2 rounded-xl transition-colors cursor-pointer"
                 >
-                  <Trash2 size={14} /> Remove Video
+                  <Trash2 size={14} /> Remove Link
                 </button>
               ) : (
                 <div />
@@ -358,15 +304,15 @@ export default function GoogleDrivePlayer({
                 <button
                   type="button"
                   onClick={handleSave}
-                  disabled={isSaving || (inputUrl.trim().length > 0 && !inputParsedId)}
-                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSaving}
+                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
                 >
                   {isSaving ? (
                     <Loader2 size={14} className="animate-spin" />
                   ) : (
                     <Save size={14} />
                   )}
-                  <span>{isSaving ? 'Saving...' : 'Save Video'}</span>
+                  <span>{isSaving ? 'Saving...' : 'Save Link'}</span>
                 </button>
               </div>
             </div>

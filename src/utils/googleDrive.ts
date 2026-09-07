@@ -1,18 +1,19 @@
 /**
- * Google Drive Video URL Parser & Utilities
- * Extracts file IDs from various Google Drive link formats:
- * - https://drive.google.com/file/d/FILE_ID/view?usp=sharing
- * - https://drive.google.com/file/d/FILE_ID/preview
- * - https://drive.google.com/open?id=FILE_ID
- * - https://drive.google.com/uc?id=FILE_ID
- * - <iframe src="https://drive.google.com/file/d/FILE_ID/preview" ...></iframe>
- * - Raw FILE_ID
+ * Google Drive & Universal Video URL Parser & Utilities
+ * Extracts file and video IDs from various formats:
+ * - Google Drive: /file/d/ID/view, /file/d/ID/preview, ?id=ID, <iframe>, raw ID
+ * - YouTube: watch?v=ID, youtu.be/ID, embed/ID, shorts/ID
  */
 
 export function extractGoogleDriveFileId(input: string): string | null {
   if (!input || typeof input !== 'string') return null;
   const trimmed = input.trim();
   if (!trimmed) return null;
+
+  // If this is obviously YouTube, don't mistakenly treat as Drive
+  if (trimmed.includes('youtube.com') || trimmed.includes('youtu.be')) {
+    return null;
+  }
 
   // 1. Check if enclosed inside an <iframe> tag (extract src attribute)
   const iframeSrcMatch = trimmed.match(/src=["']([^"']+)["']/i);
@@ -44,8 +45,97 @@ export function extractGoogleDriveFileId(input: string): string | null {
   return null;
 }
 
+export function extractYouTubeVideoId(input: string): string | null {
+  if (!input || typeof input !== 'string') return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+
+  // 1. Extract src if enclosed in iframe
+  const iframeSrcMatch = trimmed.match(/src=["']([^"']+)["']/i);
+  const target = iframeSrcMatch ? iframeSrcMatch[1] : trimmed;
+
+  // 2. youtu.be/ID
+  const youtuBeMatch = target.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+  if (youtuBeMatch && youtuBeMatch[1]) {
+    return youtuBeMatch[1];
+  }
+
+  // 3. youtube.com/watch?v=ID or /shorts/ID or /embed/ID
+  const ytMatch = target.match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/))([a-zA-Z0-9_-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return ytMatch[1];
+  }
+
+  return null;
+}
+
 export function getGoogleDriveEmbedUrl(urlOrId: string): string | null {
   const fileId = extractGoogleDriveFileId(urlOrId);
   if (!fileId) return null;
   return `https://drive.google.com/file/d/${fileId}/preview`;
+}
+
+export function getGoogleDriveDirectViewUrl(urlOrId: string): string | null {
+  const fileId = extractGoogleDriveFileId(urlOrId);
+  if (!fileId) return null;
+  return `https://drive.google.com/file/d/${fileId}/view?usp=drivesdk`;
+}
+
+export interface ParsedVideoSource {
+  type: 'google-drive' | 'youtube' | 'direct' | 'unknown';
+  id: string | null;
+  embedUrl: string | null;
+  directUrl: string | null;
+  platformName: string;
+}
+
+export function parseVideoSource(input: string): ParsedVideoSource {
+  if (!input || typeof input !== 'string') {
+    return { type: 'unknown', id: null, embedUrl: null, directUrl: null, platformName: 'Unknown' };
+  }
+
+  const trimmed = input.trim();
+
+  // Check YouTube first
+  const ytId = extractYouTubeVideoId(trimmed);
+  if (ytId) {
+    return {
+      type: 'youtube',
+      id: ytId,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${ytId}?rel=0&playsinline=1`,
+      directUrl: `https://www.youtube.com/watch?v=${ytId}`,
+      platformName: 'YouTube'
+    };
+  }
+
+  // Check Google Drive
+  const driveId = extractGoogleDriveFileId(trimmed);
+  if (driveId) {
+    return {
+      type: 'google-drive',
+      id: driveId,
+      embedUrl: `https://drive.google.com/file/d/${driveId}/preview`,
+      directUrl: `https://drive.google.com/file/d/${driveId}/view?usp=drivesdk`,
+      platformName: 'Google Drive'
+    };
+  }
+
+  // Check direct video file (.mp4, .webm)
+  if (/\.(mp4|webm|ogv)(\?.*)?$/i.test(trimmed)) {
+    return {
+      type: 'direct',
+      id: trimmed,
+      embedUrl: trimmed,
+      directUrl: trimmed,
+      platformName: 'Direct Video'
+    };
+  }
+
+  return {
+    type: 'unknown',
+    id: null,
+    embedUrl: null,
+    directUrl: null,
+    platformName: 'Video Link'
+  };
 }

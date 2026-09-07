@@ -453,8 +453,8 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
               </div>
             </div>
 
-            {/* Daily Explainer Video (Google Drive Player) */}
-            <div className="mt-6">
+            {/* Daily Explainer Video (Quick Link) */}
+            <div className="mt-3">
               <GoogleDrivePlayer
                 dayNumber={viewedDay}
                 dayTitle={`Day ${viewedDay} — ${currentReading.ot} & ${currentReading.nt}`}

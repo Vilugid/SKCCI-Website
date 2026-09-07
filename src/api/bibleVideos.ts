@@ -1,6 +1,6 @@
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
-import { extractGoogleDriveFileId } from '../utils/googleDrive';
+import { extractGoogleDriveFileId, parseVideoSource } from '../utils/googleDrive';
 import { ReadingPlanId } from '../types';
 
 export interface BibleVideoRecord {
@@ -114,8 +114,9 @@ export const saveBibleExplainerVideo = async (
   planId: 'plan_100' | 'plan_365' = 'plan_365'
 ): Promise<void> => {
   const trimmedUrl = videoUrl.trim();
-  const fileId = extractGoogleDriveFileId(trimmedUrl) || '';
-  const embedUrl = fileId ? `https://drive.google.com/file/d/${fileId}/preview` : trimmedUrl;
+  const parsed = parseVideoSource(trimmedUrl);
+  const fileId = parsed.id || '';
+  const embedUrl = parsed.embedUrl || trimmedUrl;
   const prefix = getStoragePrefix(planId);
   const docId = getDocId(dayNumber, planId);
 

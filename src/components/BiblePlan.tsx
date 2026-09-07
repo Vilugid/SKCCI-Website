@@ -388,8 +388,8 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
               </div>
             </div>
 
-            {/* Daily Explainer Video (Google Drive Player for 100 Days Plan) */}
-            <div className="mt-6">
+            {/* Daily Explainer Video (Quick Link for 100 Days Plan) */}
+            <div className="mt-3">
               <GoogleDrivePlayer
                 planId="plan_100"
                 dayNumber={selectedDay}
