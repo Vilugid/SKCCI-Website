@@ -32,6 +32,7 @@ import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firesto
 import BibleStreakCard from './BibleStreakCard';
 import GoogleDrivePlayer from './GoogleDrivePlayer';
 import BibleStudyQuestions from './BibleStudyQuestions';
+import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId, ScriptureReflection, BibleStudyAnswers } from '../types';
@@ -440,11 +441,23 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
         {/* Header & Theme Toggle */}
         <div className="flex justify-end mb-4">
           <button 
+            type="button"
             onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}
-            className={`p-2 rounded-full ${themeClasses.card} ${themeClasses.buttonHover} transition-colors`}
-            aria-label="Toggle Theme"
+            className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-2 ${themeClasses.card} ${themeClasses.border} ${themeClasses.buttonHover} transition-colors shadow-2xs`}
+            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+            aria-label={`Toggle Theme. Currently ${theme} mode`}
           >
-            {theme === 'light' ? <Moon size={20} className="text-gray-600" /> : <Sun size={20} className="text-[#D4A373]" />}
+            {theme === 'light' ? (
+              <>
+                <Moon size={15} className="text-gray-600" />
+                <span className="text-gray-700">Light Mode</span>
+              </>
+            ) : (
+              <>
+                <Sun size={15} className="text-[#D4A373]" />
+                <span className="text-amber-200">Dark Mode</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -676,6 +689,14 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                 </div>
               </div>
             </div>
+
+            {/* Praise & Worship Song Bank: Sing before reading */}
+            <SongBankSection
+              isTagalog={isTagalog}
+              theme={theme}
+              initialCollapsed={true}
+              className="mb-6"
+            />
 
             {/* Checkboxes */}
             <div className="space-y-4">

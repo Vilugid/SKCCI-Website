@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchLeaderTools, createLeaderTool, updateLeaderTool, removeLeaderTool, subscribeToMemoryVerse, updateMemoryVerse, toggleMemoryVerseMemorized, MemoryVerseData } from '../api/db';
-import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown, BookOpen, Quote, CheckCircle2 } from 'lucide-react';
+import { fetchLeaderTools, createLeaderTool, updateLeaderTool, removeLeaderTool, subscribeToLeaderTools, toggleServiceDateMemorized, updateServiceRecordMemoryVerse, subscribeToMemoryVerse, updateMemoryVerse, toggleMemoryVerseMemorized, MemoryVerseData } from '../api/db';
+import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown, BookOpen, Quote, CheckCircle2, BarChart2, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
+import { WeeklyMemorizedTracker } from './WeeklyMemorizedTracker';
 
 const StructuredOutlineViewer = ({ text, isFormatted }: { text: string, isFormatted: boolean }) => {
   if (!isFormatted) {
@@ -112,6 +113,15 @@ interface ServiceRecord {
   youtubeVideoIds: string[];
   songs: Song[];
   createdAt: any;
+  memoryVerse?: {
+    reference: string;
+    text: string;
+    translation: string;
+    memorizedUserIds?: string[];
+    updatedBy?: string;
+    updatedAt?: any;
+  };
+  memorizedUserIds?: string[];
 }
 
 export default function LeaderTools() {
@@ -126,6 +136,16 @@ export default function LeaderTools() {
 
   const records = (recordsRaw as ServiceRecord[]).filter((r) => r.id !== 'current');
 
+  // Real-time synchronization across all leader tools service records
+  useEffect(() => {
+    const unsubscribe = subscribeToLeaderTools((updatedRecords) => {
+      queryClient.setQueryData(['leader_tools'], updatedRecords);
+    });
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [queryClient]);
+
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
   
   useEffect(() => {
@@ -134,53 +154,132 @@ export default function LeaderTools() {
     }
   }, [records, selectedRecordId]);
 
+  const selectedRecord = useMemo(() => {
+    return records.find(r => r.id === selectedRecordId) || records[0];
+  }, [records, selectedRecordId]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<ServiceRecord | null>(null);
   const [isFormattedView, setIsFormattedView] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [showWeeklyVisual, setShowWeeklyVisual] = useState(true);
   
-  // Memory Verse State (Real-time sync with cell_leader_tools/weekly_memory_verse)
-  const [memoryVerse, setMemoryVerse] = useState<MemoryVerseData>({
+  // Global Fallback Memory Verse State (Real-time sync with cell_leader_tools/weekly_memory_verse)
+  const [globalFallbackVerse, setGlobalFallbackVerse] = useState<MemoryVerseData>({
     reference: 'Philippians 4:6-7',
     text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
     translation: 'NIV',
     memorizedUserIds: [],
   });
 
+  // Subscribe to Global Memory Verse fallback in real-time
+  useEffect(() => {
+    const unsubscribe = subscribeToMemoryVerse((data) => {
+      setGlobalFallbackVerse(data);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Derive the active Memory Verse and Memorized Leaders for the selected service record
+  const currentRecordVerse: MemoryVerseData = useMemo(() => {
+    if (!selectedRecord) return globalFallbackVerse;
+
+    // 1. If selectedRecord has its own explicit memoryVerse
+    if (selectedRecord.memoryVerse && (selectedRecord.memoryVerse.reference || selectedRecord.memoryVerse.text)) {
+      const memorized = Array.isArray(selectedRecord.memorizedUserIds) && selectedRecord.memorizedUserIds.length > 0
+        ? selectedRecord.memorizedUserIds
+        : Array.isArray(selectedRecord.memoryVerse.memorizedUserIds)
+        ? selectedRecord.memoryVerse.memorizedUserIds
+        : [];
+      return {
+        reference: selectedRecord.memoryVerse.reference || '',
+        text: selectedRecord.memoryVerse.text || '',
+        translation: selectedRecord.memoryVerse.translation || 'NIV',
+        memorizedUserIds: memorized,
+        updatedBy: selectedRecord.memoryVerse.updatedBy,
+        updatedAt: selectedRecord.memoryVerse.updatedAt,
+      };
+    }
+
+    // 2. If record has top-level memorizedUserIds
+    if (Array.isArray(selectedRecord.memorizedUserIds) && selectedRecord.memorizedUserIds.length > 0) {
+      return {
+        reference: globalFallbackVerse.reference || 'Philippians 4:6-7',
+        text: globalFallbackVerse.text || '',
+        translation: globalFallbackVerse.translation || 'NIV',
+        memorizedUserIds: selectedRecord.memorizedUserIds,
+      };
+    }
+
+    // 3. If it is the latest record or matches 2026-08-23 (the active record from screenshot), fallback to global
+    const isLatest = records.length > 0 && selectedRecord.id === records[0].id;
+    const isAug23 = selectedRecord.id === '2026-08-23' || selectedRecord.dateValue === '2026-08-23';
+    if ((isLatest || isAug23) && globalFallbackVerse.reference) {
+      return {
+        reference: globalFallbackVerse.reference,
+        text: globalFallbackVerse.text,
+        translation: globalFallbackVerse.translation || 'NIV',
+        memorizedUserIds: globalFallbackVerse.memorizedUserIds || [],
+      };
+    }
+
+    // 4. Default for records without an assigned memory verse yet
+    return {
+      reference: 'Philippians 4:6-7',
+      text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+      translation: 'NIV',
+      memorizedUserIds: [],
+    };
+  }, [selectedRecord, globalFallbackVerse, records]);
+
   const [editVerseRef, setEditVerseRef] = useState('Philippians 4:6-7');
   const [editVerseText, setEditVerseText] = useState('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.');
   const [editVerseTranslation, setEditVerseTranslation] = useState('NIV');
   const [isTogglingVerse, setIsTogglingVerse] = useState(false);
 
-  // Subscribe to Memory Verse changes in real-time
+  // Sync edit form fields whenever the selected record or its memory verse changes (when not actively editing)
   useEffect(() => {
-    const unsubscribe = subscribeToMemoryVerse((data) => {
-      setMemoryVerse(data);
-      if (!isEditing) {
-        setEditVerseRef(data.reference || 'Philippians 4:6-7');
-        setEditVerseText(data.text || '');
-        setEditVerseTranslation(data.translation || 'NIV');
-      }
-    });
-    return () => unsubscribe();
-  }, [isEditing]);
+    if (!isEditing) {
+      setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
+      setEditVerseText(currentRecordVerse.text || '');
+      setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
+    }
+  }, [selectedRecordId, currentRecordVerse, isEditing]);
 
   const handleToggleMemorized = async () => {
     if (!user) {
       toast('Please sign in with Google to track your memorization progress!', { icon: '🔐' });
       return;
     }
-    const currentMemorized = (memoryVerse.memorizedUserIds || []).includes(user.uid);
+    if (!selectedRecord) {
+      toast.error('No service date selected');
+      return;
+    }
+
+    const currentMemorized = (currentRecordVerse.memorizedUserIds || []).includes(user.uid);
     setIsTogglingVerse(true);
     try {
-      await toggleMemoryVerseMemorized(user.uid, !currentMemorized);
+      // Toggle for this specific service date record!
+      await toggleServiceDateMemorized(selectedRecord.id, user.uid, !currentMemorized);
+
+      // If the record didn't have memoryVerse explicitly stored yet, save it so it's tied to this record
+      if (!selectedRecord.memoryVerse || !selectedRecord.memoryVerse.reference) {
+        await updateServiceRecordMemoryVerse(selectedRecord.id, {
+          reference: currentRecordVerse.reference,
+          text: currentRecordVerse.text,
+          translation: currentRecordVerse.translation,
+        }, user.email || 'Cell Leader');
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['leader_tools'] });
+
       if (!currentMemorized) {
         toast.success("Hooray! Marked as memorized 🧠", { id: 'memory-toast' });
       } else {
         toast("Unmarked from memorized list", { id: 'memory-toast' });
       }
     } catch (err) {
-      console.error("Error toggling memory verse:", err);
+      console.error("Error toggling memory verse for service record:", err);
       toast.error("Failed to update memorization status");
     } finally {
       setIsTogglingVerse(false);
@@ -239,8 +338,6 @@ export default function LeaderTools() {
       });
     }
   };
-
-  const selectedRecord = records.find(r => r.id === selectedRecordId);
 
   // Master Song Bank Aggregation (Deduplicated, Case-Insensitive, Alphabetical A-Z)
   interface MasterSong {
@@ -327,7 +424,7 @@ export default function LeaderTools() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     handleScroll();
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [selectedRecord, masterSongs, collapsedSections, memoryVerse]);
+  }, [selectedRecord, masterSongs, collapsedSections, currentRecordVerse]);
 
   const scrollToSection = (id: string) => {
     // Automatically expand the section if it is collapsed so user can see the content
@@ -347,7 +444,7 @@ export default function LeaderTools() {
   };
 
   const navSections = [
-    { id: 'memory-verse', label: 'Memory Verse', subtitle: 'Weekly Scripture', icon: Sparkles, count: (memoryVerse.memorizedUserIds || []).length },
+    { id: 'memory-verse', label: 'Memory Verse', subtitle: 'Weekly Scripture', icon: Sparkles, count: (currentRecordVerse.memorizedUserIds || []).length },
     { id: 'sunday-service', label: 'Sunday Service', subtitle: 'Outline & Theme', icon: FileText },
     { id: 'worship-videos', label: 'Worship Videos', subtitle: 'Video Recordings', icon: Youtube },
     { id: 'song-lyrics', label: 'Song Lyrics', subtitle: 'Weekly Setlist', icon: Music },
@@ -355,9 +452,9 @@ export default function LeaderTools() {
   ];
 
   const handleEditInit = () => {
-    setEditVerseRef(memoryVerse.reference || 'Philippians 4:6-7');
-    setEditVerseText(memoryVerse.text || '');
-    setEditVerseTranslation(memoryVerse.translation || 'NIV');
+    setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
+    setEditVerseText(currentRecordVerse.text || '');
+    setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
 
     if (selectedRecord) {
       setEditDateValue(selectedRecord.dateValue);
@@ -398,9 +495,9 @@ export default function LeaderTools() {
 
   const handleCreateNew = () => {
     setSelectedRecordId(null);
-    setEditVerseRef(memoryVerse.reference || 'Philippians 4:6-7');
-    setEditVerseText(memoryVerse.text || '');
-    setEditVerseTranslation(memoryVerse.translation || 'NIV');
+    setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
+    setEditVerseText(currentRecordVerse.text || '');
+    setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
 
     const today = new Date();
     const nextSunday = new Date();
@@ -441,13 +538,17 @@ export default function LeaderTools() {
           }
         }
       }
-      // 2. Update weekly memory verse
+      // 2. Also keep global memory verse fallback synced for convenience
       if (data.memoryVerse) {
-        await updateMemoryVerse({
-          reference: data.memoryVerse.reference,
-          text: data.memoryVerse.text,
-          translation: data.memoryVerse.translation,
-        }, user?.email || 'Leader Tools Admin');
+        try {
+          await updateMemoryVerse({
+            reference: data.memoryVerse.reference,
+            text: data.memoryVerse.text,
+            translation: data.memoryVerse.translation,
+          }, user?.email || 'Leader Tools Admin');
+        } catch (e) {
+          console.warn("Could not update global fallback memory verse:", e);
+        }
       }
       return data.id;
     },
@@ -491,6 +592,26 @@ export default function LeaderTools() {
     const oldDocId = selectedRecordId;
     const isDateChanged = Boolean(oldDocId && oldDocId !== targetDocId);
 
+    // Retrieve existing memorized user IDs to preserve them on this record
+    const existingRec = records.find(r => r.id === (oldDocId || targetDocId));
+    let existingMemorized: string[] = [];
+    if (existingRec) {
+      if (Array.isArray(existingRec.memorizedUserIds) && existingRec.memorizedUserIds.length > 0) {
+        existingMemorized = existingRec.memorizedUserIds;
+      } else if (Array.isArray(existingRec.memoryVerse?.memorizedUserIds) && existingRec.memoryVerse.memorizedUserIds.length > 0) {
+        existingMemorized = existingRec.memoryVerse.memorizedUserIds;
+      } else if (existingRec.id === records[0]?.id || existingRec.id === '2026-08-23') {
+        existingMemorized = globalFallbackVerse.memorizedUserIds || [];
+      }
+    }
+
+    const versePayload = {
+      reference: editVerseRef.trim() || 'Philippians 4:6-7',
+      text: editVerseText.trim(),
+      translation: editVerseTranslation.trim() || 'NIV',
+      memorizedUserIds: existingMemorized,
+    };
+
     saveMutation.mutate({
       id: targetDocId,
       oldId: isDateChanged ? oldDocId : null,
@@ -501,13 +622,11 @@ export default function LeaderTools() {
         messageOutline: editOutline,
         youtubeVideoIds: editVideoIds.filter(id => id.trim() !== ''),
         songs: editSongs,
+        memoryVerse: versePayload,
+        memorizedUserIds: existingMemorized,
         createdAt: new Date()
       },
-      memoryVerse: {
-        reference: editVerseRef.trim() || 'Philippians 4:6-7',
-        text: editVerseText.trim(),
-        translation: editVerseTranslation.trim() || 'NIV'
-      }
+      memoryVerse: versePayload
     });
   };
 
@@ -663,6 +782,7 @@ export default function LeaderTools() {
                   <ul className="divide-y divide-gray-50">
                     {records.map((record) => {
                       const isSelected = selectedRecordId === record.id;
+
                       return (
                         <li 
                           key={record.id}
@@ -727,12 +847,14 @@ export default function LeaderTools() {
                     <h2 className="text-xl font-bold text-white font-serif truncate">
                       Weekly Memory Verse
                     </h2>
-                    <p className="text-xs text-blue-200">Scripture meditation & memory focus for cell leaders</p>
+                    <p className="text-xs text-blue-200">
+                      Scripture focus for cell leaders • {selectedRecord?.dateLabel || selectedRecord?.dateValue || 'Weekly Focus'}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="bg-white/10 text-white text-xs px-2.5 py-1 rounded-full font-medium border border-white/10">
-                    {memoryVerse.translation || 'NIV'}
+                    {currentRecordVerse.translation || 'NIV'}
                   </span>
                   <button
                     type="button"
@@ -752,9 +874,9 @@ export default function LeaderTools() {
                     <div className="space-y-4 bg-gray-50/80 p-5 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                         <span className="text-sm font-bold text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
-                          <Edit size={16} /> Edit Weekly Memory Verse
+                          <Edit size={16} /> Edit Memory Verse for {editDateLabel || editDateValue || 'Service Date'}
                         </span>
-                        <span className="text-xs text-gray-500">Syncs in real time via Firestore</span>
+                        <span className="text-xs text-gray-500">Saves specifically for this service date</span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="sm:col-span-2">
@@ -796,42 +918,47 @@ export default function LeaderTools() {
                       </div>
                     </div>
                   ) : (
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                       <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-gray-100 pb-3">
-                        <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0F2C59] font-serif tracking-tight">
-                          {memoryVerse.reference}
-                        </h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0F2C59] font-serif tracking-tight">
+                            {currentRecordVerse.reference}
+                          </h3>
+                          <span className="text-xs text-gray-400 font-normal">
+                            ({selectedRecord?.dateLabel || selectedRecord?.dateValue || 'Service Date'})
+                          </span>
+                        </div>
                         <span className="inline-flex items-center text-xs font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200 self-start sm:self-auto">
-                          {memoryVerse.translation}
+                          {currentRecordVerse.translation}
                         </span>
                       </div>
 
                       {/* Styled Quote Container */}
                       <div className="relative bg-gradient-to-br from-amber-50/50 via-white to-sky-50/30 p-6 sm:p-7 rounded-2xl border-l-4 border-[#C82323] border-y border-r border-gray-200/80 shadow-sm">
                         <p className="text-base sm:text-lg text-gray-800 font-medium leading-relaxed italic font-serif">
-                          "{memoryVerse.text}"
+                          "{currentRecordVerse.text}"
                         </p>
                       </div>
 
-                      {/* Counter Badge Styled Identically to Prayer Hub */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                      {/* Counter Badge & Actions Row */}
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
                         <button
                           type="button"
                           onClick={handleToggleMemorized}
                           disabled={isTogglingVerse}
-                          className={`font-semibold rounded-full px-3 py-1 flex items-center gap-1.5 text-xs sm:text-sm transition-all ${
-                            (memoryVerse.memorizedUserIds || []).includes(user?.uid || '')
+                          className={`font-semibold rounded-full px-3.5 py-1.5 flex items-center gap-2 text-xs sm:text-sm transition-all ${
+                            (currentRecordVerse.memorizedUserIds || []).includes(user?.uid || '')
                               ? 'bg-sky-100 text-sky-950 ring-2 ring-sky-400 border border-sky-300'
                               : 'bg-sky-50 text-sky-950 hover:bg-sky-100 border border-sky-200'
                           }`}
-                          title={user ? "Click to toggle memorized status" : "Sign in to track memorized status"}
+                          title={user ? "Click to toggle your memorization status for this date" : "Sign in to track memorization status"}
                         >
                           <span className="text-base leading-none">🧠</span>
                           <span>
-                            {(memoryVerse.memorizedUserIds || []).length}{' '}
-                            {(memoryVerse.memorizedUserIds || []).length === 1 ? 'Leader Memorized' : 'Leaders Memorized'}
+                            {(currentRecordVerse.memorizedUserIds || []).length}{' '}
+                            {(currentRecordVerse.memorizedUserIds || []).length === 1 ? 'Leader Memorized' : 'Leaders Memorized'}
                           </span>
-                          {(memoryVerse.memorizedUserIds || []).includes(user?.uid || '') && (
+                          {(currentRecordVerse.memorizedUserIds || []).includes(user?.uid || '') && (
                             <span className="ml-1 text-[10px] bg-sky-600 text-white px-1.5 py-0.5 rounded-full font-bold">
                               ✓ You
                             </span>
@@ -841,8 +968,22 @@ export default function LeaderTools() {
                         <div className="flex items-center gap-2">
                           <button
                             type="button"
+                            onClick={() => setShowWeeklyVisual(!showWeeklyVisual)}
+                            className={`text-xs flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
+                              showWeeklyVisual
+                                ? 'bg-amber-100/70 text-amber-950 border-amber-300 font-semibold'
+                                : 'text-gray-600 hover:text-[#0F2C59] hover:bg-gray-100 border-gray-200'
+                            }`}
+                            title="Toggle visual memorization trend tracker across service dates"
+                          >
+                            <BarChart3 size={13} className={showWeeklyVisual ? 'text-amber-700' : 'text-gray-500'} />
+                            <span>{showWeeklyVisual ? 'Hide Visual Chart' : 'Show Weekly Visual'}</span>
+                          </button>
+
+                          <button
+                            type="button"
                             onClick={() => {
-                              navigator.clipboard.writeText(`${memoryVerse.reference} (${memoryVerse.translation})\n"${memoryVerse.text}"`);
+                              navigator.clipboard.writeText(`${currentRecordVerse.reference} (${currentRecordVerse.translation})\n"${currentRecordVerse.text}"`);
                               toast.success("Copied memory verse to clipboard!");
                             }}
                             className="text-xs text-gray-500 hover:text-[#0F2C59] flex items-center gap-1 px-3 py-1.5 rounded-full hover:bg-gray-100 border border-gray-200 transition-colors"
@@ -851,6 +992,23 @@ export default function LeaderTools() {
                           </button>
                         </div>
                       </div>
+
+                      {/* Mini Visual: Leaders Memorized per Week / Service Date */}
+                      {showWeeklyVisual && (
+                        <div className="pt-2">
+                          <WeeklyMemorizedTracker
+                            records={records}
+                            selectedRecordId={selectedRecord?.id || selectedRecordId}
+                            onSelectRecord={(id) => {
+                              setSelectedRecordId(id);
+                              setIsEditing(false);
+                            }}
+                            currentUserId={user?.uid}
+                            fallbackVerseReference={globalFallbackVerse.reference}
+                            fallbackMemorizedUserIds={globalFallbackVerse.memorizedUserIds}
+                          />
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

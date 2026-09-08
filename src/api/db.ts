@@ -72,6 +72,43 @@ export const removeLeaderTool = async (recordId: string) => {
   }
 };
 
+export const subscribeToLeaderTools = (callback: (records: any[]) => void) => {
+  if (!db) return () => {};
+  const q = query(collection(db, 'leader_tools'), orderBy('dateValue', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const records = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    callback(records);
+  }, (error) => {
+    console.error("Error subscribing to leader tools:", error);
+  });
+};
+
+export const toggleServiceDateMemorized = async (recordId: string, userId: string, isMemorized: boolean) => {
+  if (!db) throw new Error("Database not initialized");
+  const docRef = doc(db, 'leader_tools', recordId);
+  if (isMemorized) {
+    await setDoc(docRef, {
+      memorizedUserIds: arrayUnion(userId)
+    }, { merge: true });
+  } else {
+    await setDoc(docRef, {
+      memorizedUserIds: arrayRemove(userId)
+    }, { merge: true });
+  }
+};
+
+export const updateServiceRecordMemoryVerse = async (recordId: string, memoryVerse: Partial<MemoryVerseData>, updatedBy?: string) => {
+  if (!db) throw new Error("Database not initialized");
+  const docRef = doc(db, 'leader_tools', recordId);
+  await setDoc(docRef, {
+    memoryVerse: {
+      ...memoryVerse,
+      updatedBy: updatedBy || 'Leader Tools Admin',
+      updatedAt: serverTimestamp()
+    }
+  }, { merge: true });
+};
+
 // WEEKLY MEMORY VERSE
 
 export interface MemoryVerseData {

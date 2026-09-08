@@ -64,9 +64,13 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (isCellLeaderAdmin() || request.auth.uid == resource.data.leaderId || request.auth.uid == resource.data.createdByUid);
     }
     
-    match /leader_tools/{document=**} {
+    match /leader_tools/{recordId} {
       allow read: if true;
-      allow write: if isCellLeaderAdmin();
+      allow create, delete: if isCellLeaderAdmin();
+      allow update: if isCellLeaderAdmin() || (request.auth != null && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds', 'memoryVerse'])
+      ));
     }
 
     match /cell_leader_tools/weekly_memory_verse {

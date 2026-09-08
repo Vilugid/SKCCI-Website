@@ -51,6 +51,16 @@
             }
           }
         },
+        "memoryVerse": {
+          "type": "object",
+          "properties": {
+            "reference": { "type": "string" },
+            "text": { "type": "string" },
+            "translation": { "type": "string" },
+            "memorizedUserIds": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "memorizedUserIds": { "type": "array", "items": { "type": "string" } },
         "createdAt": { "type": "string" }
       }
     },

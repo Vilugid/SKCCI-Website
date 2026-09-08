@@ -265,11 +265,11 @@ export default function BibleStudyQuestions({
               className={`rounded-xl border transition-all duration-200 overflow-hidden ${
                 isAnswered
                   ? isDarkMode
-                    ? 'bg-gray-900/60 border-[#D4A373]/30 shadow-xs'
-                    : 'bg-white border-[#D4A373]/30 shadow-xs'
+                    ? 'bg-gray-900 border-[#D4A373]/50 shadow-sm'
+                    : 'bg-white border-[#D4A373]/40 shadow-xs'
                   : isDarkMode
-                    ? 'bg-gray-950/40 border-gray-800/80'
-                    : 'bg-[#FAFAFA] border-gray-200'
+                    ? 'bg-gray-900 border-gray-700 shadow-sm'
+                    : 'bg-white border-gray-200 shadow-xs'
               }`}
             >
               {/* Question Card Header */}

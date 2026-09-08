@@ -28,6 +28,7 @@ import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import BibleStreakCard from './BibleStreakCard';
 import GoogleDrivePlayer from './GoogleDrivePlayer';
 import BibleStudyQuestions from './BibleStudyQuestions';
+import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId, HundredDaysReflection, BibleStudyAnswers } from '../types';
@@ -626,6 +627,13 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                 </div>
               </div>
             </div>
+
+            {/* Praise & Worship Song Bank: Sing before reading */}
+            <SongBankSection
+              isTagalog={isTagalog}
+              initialCollapsed={true}
+              className="mb-6"
+            />
 
             {/* Passage Reader Box */}
             <label className={`flex items-center p-5 rounded-2xl cursor-pointer transition-all border ${
