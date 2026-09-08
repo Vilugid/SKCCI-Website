@@ -190,6 +190,10 @@ export default function BibleStudyQuestions({
   const { language } = useLanguage();
   const lang = language;
   
+  // Track section-level collapse so users can collapse the entire 7-question guide
+  // Defaults to collapsed on page refresh / app open
+  const [isSectionCollapsed, setIsSectionCollapsed] = useState<boolean>(true);
+
   // Track collapsed/expanded questions to keep mobile screen neat
   // Initially, all questions are expanded so users can easily see and scroll through them
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
@@ -219,12 +223,12 @@ export default function BibleStudyQuestions({
 
   return (
     <div className="w-full space-y-4">
-      {/* Header with Language Switcher and Progress */}
-      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b ${
+      {/* Header with Title, Single Expand Guide Button, and Language Switcher */}
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b ${
         isDarkMode ? 'border-gray-800' : 'border-gray-200'
       }`}>
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="flex-1 pr-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h4 className="text-sm font-bold uppercase tracking-wider text-[#D4A373]">
               {lang === 'fil' ? 'PAGBUBULAY SA BANAL NA KASULATAN' : 'SCRIPTURE REFLECTION GUIDE'}
             </h4>
@@ -239,8 +243,32 @@ export default function BibleStudyQuestions({
           </p>
         </div>
 
-        {/* Synchronized English / Tagalog Switcher */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        {/* Action Controls: The Only Expand Guide Button & Synchronized Language Switcher */}
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          <button
+            type="button"
+            onClick={() => setIsSectionCollapsed(prev => !prev)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+              isDarkMode
+                ? 'bg-gray-800 border-gray-700 text-gray-200 hover:bg-gray-700 hover:text-white'
+                : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50 shadow-2xs'
+            }`}
+            title={isSectionCollapsed ? (lang === 'fil' ? 'Ipakita ang gabay' : 'Expand reflection guide') : (lang === 'fil' ? 'Itago ang gabay' : 'Collapse reflection guide')}
+          >
+            {isSectionCollapsed ? (
+              <>
+                <ChevronDown size={14} className="text-[#D4A373]" />
+                <span>{lang === 'fil' ? 'Buksan ang Gabay' : 'Expand Guide'}</span>
+              </>
+            ) : (
+              <>
+                <ChevronUp size={14} className="text-[#D4A373]" />
+                <span>{lang === 'fil' ? 'Itago ang Gabay' : 'Collapse Guide'}</span>
+              </>
+            )}
+          </button>
+
+          {/* Synchronized English / Tagalog Switcher */}
           <LanguageToggle 
             theme={isDarkMode ? 'dark' : 'light'} 
             id="reflection-lang-toggle" 
@@ -248,8 +276,32 @@ export default function BibleStudyQuestions({
         </div>
       </div>
 
-      {/* 7 Questions Cards */}
-      <div className="space-y-3.5">
+      {isSectionCollapsed ? (
+        /* Sleek Collapsed Placeholder Card without redundant Expand button */
+        <div
+          className={`w-full p-4 rounded-xl border border-dashed flex items-center gap-3 transition-all ${
+            isDarkMode 
+              ? 'bg-gray-900/60 border-gray-800 text-gray-300' 
+              : 'bg-amber-50/40 border-amber-200/90 text-gray-700 shadow-2xs'
+          }`}
+        >
+          <div className="w-8 h-8 rounded-lg bg-[#D4A373]/15 flex items-center justify-center text-[#D4A373] flex-shrink-0">
+            <FileText size={18} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-[#0F2C59] dark:text-gray-100">
+              {lang === 'fil' ? 'Nakatago ang Gabay sa Pagbubulay' : 'Reflection Guide Collapsed'}
+            </p>
+            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+              {answeredCount > 0 
+                ? (lang === 'fil' ? `${answeredCount} sa 7 tanong ang nasagutan` : `${answeredCount} of 7 questions answered`)
+                : (lang === 'fil' ? '7 gabay na tanong sa pagbubulay' : '7 reflection questions available')}
+            </p>
+          </div>
+        </div>
+      ) : (
+        /* 7 Questions Cards */
+        <div className="space-y-3.5">
         {QUESTIONS.map((q, idx) => {
           const content = answers[q.key] || '';
           const wordCount = countWords(content);
@@ -383,7 +435,8 @@ export default function BibleStudyQuestions({
             </div>
           );
         })}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
