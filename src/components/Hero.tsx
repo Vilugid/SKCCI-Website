@@ -38,11 +38,11 @@ export default function Hero({ handleTabClick }: HeroProps) {
                     <>
                       <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal">
                         <span className="block min-[340px]:inline">Your</span>{' '}
-                        <span className="block min-[340px]:inline">Church,</span>
+                        <span className="block min-[340px]:inline">Church</span>
                       </span>
                       <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal text-[#D4A373] mt-0.5 sm:mt-0">
                         <span className="block min-[340px]:inline">Your</span>{' '}
-                        <span className="block min-[340px]:inline">Family.</span>
+                        <span className="block min-[340px]:inline">Family</span>
                       </span>
                     </>
                   )}
