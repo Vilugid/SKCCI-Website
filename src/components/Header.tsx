@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Menu, X, User, Lock, ChevronDown, LogOut, Globe } from 'lucide-react';
+import { Menu, X, User, Lock, ChevronDown, LogOut } from 'lucide-react';
 import { TabItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 
 interface HeaderProps {
   activeTab: TabItem;
@@ -13,7 +14,7 @@ interface HeaderProps {
 export default function Header({ activeTab, handleTabClick, is100DayComplete }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, signInWithGoogle, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
+  const { dict } = useLanguage();
 
   const getTabClass = (tab: TabItem, isDropdownItem = false) => {
     if (isDropdownItem) {
@@ -47,9 +48,9 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
           </div>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex flex-1 justify-center items-center gap-2.5 md:gap-3 lg:gap-5 xl:gap-6 mx-1 lg:mx-3">
+          <nav className="hidden lg:flex flex-1 justify-center items-center gap-2 lg:gap-3 xl:gap-5 mx-1 lg:mx-2">
             <button onClick={() => handleTabClick('Home')} className={getTabClass('Home')}>
-              Home
+              {dict.nav.home}
             </button>
             
             {/* Welcome Kit Dropdown */}
@@ -58,7 +59,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                 onClick={() => handleTabClick('Welcome Kit')} 
                 className={getTabClass('Welcome Kit')}
               >
-                Welcome Kit
+                {dict.nav.welcomeKit}
                 <ChevronDown size={14} className="text-[#0F2C59] group-hover:text-[#C82323] transition-colors" />
               </button>
               
@@ -68,13 +69,13 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                     onClick={() => handleTabClick('Gospel')} 
                     className={getTabClass('Gospel', true)}
                   >
-                    Gospel
+                    {dict.nav.gospel}
                   </button>
                   <button 
                     onClick={() => handleTabClick('100 Days Bible Plan')} 
                     className={getTabClass('100 Days Bible Plan', true)}
                   >
-                    100 Days Bible Plan
+                    {dict.nav.biblePlan100}
                   </button>
                 </div>
               </div>
@@ -85,7 +86,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
               <button 
                 className={`text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
               >
-                Grow
+                {dict.nav.grow}
                 <ChevronDown size={14} className="text-[#0F2C59] group-hover:text-[#C82323] transition-colors" />
               </button>
               
@@ -95,127 +96,128 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                     onClick={() => handleTabClick('Manuals')} 
                     className={getTabClass('Manuals', true)}
                   >
-                    Manuals
+                    {dict.nav.manuals}
                   </button>
                   <button 
                     onClick={() => handleTabClick('365 Bible Reading Guide')} 
                     className={`${getTabClass('365 Bible Reading Guide', true)} flex items-center gap-2`}
                   >
                     {is100DayComplete 
-                      ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 font-bold">UNLOCKED!</span>
+                      ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 font-bold">{dict.nav.unlocked}</span>
                       : <Lock size={14} className="text-gray-400" />
                     }
-                    365-Day Guide
+                    {dict.nav.biblePlan365}
                   </button>
                   <button 
                     onClick={() => handleTabClick('Cell Group')} 
                     className={getTabClass('Cell Group', true)}
                   >
-                    Cell Group
+                    {dict.nav.cellGroup}
                   </button>
                   <button 
                     onClick={() => handleTabClick('Leader Tools')} 
                     className={getTabClass('Leader Tools', true)}
                   >
-                    Leader Tools
+                    {dict.nav.leaderTools}
                   </button>
                 </div>
               </div>
             </div>
             
             <button onClick={() => handleTabClick('Events')} className={getTabClass('Events')}>
-              Events
+              {dict.nav.events}
             </button>
             
             <button onClick={() => handleTabClick('Prayer Hub')} className={getTabClass('Prayer Hub')}>
-              Prayer Hub
+              {dict.nav.prayerHub}
             </button>
             
             <button onClick={() => handleTabClick('Giving')} className={getTabClass('Giving')}>
-              Giving
+              {dict.nav.giving}
             </button>
             
             <button onClick={() => handleTabClick('Contact')} className={getTabClass('Contact')}>
-              Contact
+              {dict.nav.contact}
             </button>
           </nav>
 
-          {/* Right Section: Profile & Sign In */}
-          <div className="hidden md:flex items-center flex-shrink-0 gap-2.5 lg:gap-3 pl-1">
-            <button
-              onClick={() => setLanguage(language === 'fil' ? 'en' : 'fil')}
-              className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-sm transition-colors cursor-pointer"
-              title={`Switch language (Current: ${language === 'fil' ? 'Filipino' : 'English'})`}
-            >
-              {language === 'fil' ? '🇵🇭' : '🇺🇸'}
-            </button>
+          {/* Right Section: Language Switcher, Profile & Sign In, Mobile Menu Toggle */}
+          <div className="flex items-center flex-shrink-0 gap-2 sm:gap-2.5 lg:gap-3 pl-1">
+            <LanguageToggle theme="light" id="header-lang-toggle" />
 
+            {/* Account Status / Sign In Button - ALWAYS visible on all screen sizes */}
             {user ? (
-              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200/70 py-1 px-2.5 rounded-full shadow-2xs">
-                <div className="flex items-center gap-2">
+              <div 
+                id="header-user-profile-badge"
+                className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 border border-gray-200/80 py-1 px-1.5 sm:px-2.5 rounded-full shadow-2xs"
+              >
+                <div className="flex items-center gap-1.5">
                   {user.photoURL ? (
-                    <img src={user.photoURL} alt={user.displayName || "User"} className="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-gray-200 object-cover" />
+                    <img 
+                      src={user.photoURL} 
+                      alt={user.displayName || "User"} 
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-gray-200 object-cover flex-shrink-0" 
+                    />
                   ) : (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-[#0F2C59] border border-gray-200">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-[#0F2C59] border border-gray-200 flex-shrink-0">
                       <User size={15} />
                     </div>
                   )}
-                  <span className="text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap max-w-[90px] lg:max-w-[120px] truncate">
+                  <span className="hidden sm:inline text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap max-w-[80px] lg:max-w-[120px] truncate">
                     {user.displayName?.split(' ')[0] || 'Member'}
                   </span>
                 </div>
                 <button 
                   onClick={logout}
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-0.5"
-                  title="Sign Out"
+                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                  title={dict.nav.signOut}
+                  aria-label={dict.nav.signOut}
                 >
                   <LogOut size={15} />
                 </button>
               </div>
             ) : (
               <button 
+                id="header-sign-in-btn"
                 onClick={signInWithGoogle}
-                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-xs sm:text-sm font-bold rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] shadow-2xs transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent text-xs sm:text-sm font-bold rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] shadow-2xs transition-all active:scale-95 whitespace-nowrap cursor-pointer"
               >
-                Sign In
+                {dict.nav.signIn}
               </button>
             )}
-          </div>
 
-          {/* Mobile right section */}
-          <div className="flex md:hidden items-center gap-2 flex-shrink-0">
-            <button
-              onClick={() => setLanguage(language === 'fil' ? 'en' : 'fil')}
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 text-base transition-colors"
-              title="Toggle Language"
-            >
-              {language === 'fil' ? '🇵🇭' : '🇺🇸'}
-            </button>
-            
-            <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500"
-            >
-              <span className="sr-only">Open main menu</span>
-              {isMobileMenuOpen ? (
-                <X className="block h-6 w-6" aria-hidden="true" />
-              ) : (
-                <Menu className="block h-6 w-6" aria-hidden="true" />
-              )}
-            </button>
+            {/* Mobile Hamburger Toggle Button */}
+            <div className="flex lg:hidden items-center">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 cursor-pointer"
+                aria-label="Toggle navigation menu"
+              >
+                <span className="sr-only">Open main menu</span>
+                {isMobileMenuOpen ? (
+                  <X className="block h-6 w-6" aria-hidden="true" />
+                ) : (
+                  <Menu className="block h-6 w-6" aria-hidden="true" />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 max-h-[calc(100vh-5rem)] overflow-y-auto">
+        <div className="lg:hidden bg-white border-t border-gray-100 max-h-[calc(100vh-5rem)] overflow-y-auto">
           <div className="px-4 pt-4 pb-6 space-y-1">
+            <div className="pb-3 border-b border-gray-100 mb-2 flex justify-center">
+              <LanguageToggle theme="light" id="mobile-drawer-lang-toggle" />
+            </div>
+
             <button
               onClick={() => { handleTabClick('Home'); setIsMobileMenuOpen(false); }}
               className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${activeTab === 'Home' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
             >
-              Home
+              {dict.nav.home}
             </button>
             
             <div className="py-2">
@@ -223,7 +225,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                 onClick={() => { handleTabClick('Welcome Kit'); setIsMobileMenuOpen(false); }}
                 className={`flex items-center justify-between w-full text-left px-4 py-3 rounded-xl text-base font-medium ${(activeTab === 'Welcome Kit' || activeTab === 'Gospel' || activeTab === '100 Days Bible Plan') ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
               >
-                Welcome Kit
+                {dict.nav.welcomeKit}
               </button>
               
               <div className="pl-6 pr-4 py-2 space-y-1 border-l-2 border-gray-100 ml-6 mt-1">
@@ -231,13 +233,13 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                   onClick={() => { handleTabClick('Gospel'); setIsMobileMenuOpen(false); }}
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Gospel' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
-                  Gospel
+                  {dict.nav.gospel}
                 </button>
                 <button
                   onClick={() => { handleTabClick('100 Days Bible Plan'); setIsMobileMenuOpen(false); }}
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === '100 Days Bible Plan' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
-                  100 Days Bible Plan
+                  {dict.nav.biblePlan100}
                 </button>
               </div>
             </div>
@@ -246,7 +248,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
               <div
                 className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59]'}`}
               >
-                Grow
+                {dict.nav.grow}
               </div>
               
               <div className="pl-6 pr-4 py-2 space-y-1 border-l-2 border-gray-100 ml-6 mt-1">
@@ -254,29 +256,29 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                   onClick={() => { handleTabClick('Manuals'); setIsMobileMenuOpen(false); }}
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Manuals' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
-                  Manuals
+                  {dict.nav.manuals}
                 </button>
                 <button
                   onClick={() => { handleTabClick('365 Bible Reading Guide'); setIsMobileMenuOpen(false); }}
                   className={`flex items-center gap-2 w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === '365 Bible Reading Guide' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
                   {is100DayComplete 
-                    ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 font-bold">UNLOCKED!</span>
+                    ? <span className="px-1.5 py-0.5 rounded text-[10px] bg-green-100 text-green-700 font-bold">{dict.nav.unlocked}</span>
                     : <Lock size={14} className="text-gray-400" />
                   }
-                  365-Day Guide
+                  {dict.nav.biblePlan365}
                 </button>
                 <button
                   onClick={() => { handleTabClick('Cell Group'); setIsMobileMenuOpen(false); }}
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Cell Group' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
-                  Cell Group
+                  {dict.nav.cellGroup}
                 </button>
                 <button
                   onClick={() => { handleTabClick('Leader Tools'); setIsMobileMenuOpen(false); }}
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Leader Tools' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
-                  Leader Tools
+                  {dict.nav.leaderTools}
                 </button>
               </div>
             </div>
@@ -285,28 +287,28 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
               onClick={() => { handleTabClick('Events'); setIsMobileMenuOpen(false); }}
               className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${activeTab === 'Events' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
             >
-              Events
+              {dict.nav.events}
             </button>
 
             <button
               onClick={() => { handleTabClick('Prayer Hub'); setIsMobileMenuOpen(false); }}
               className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${activeTab === 'Prayer Hub' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
             >
-              Prayer Hub
+              {dict.nav.prayerHub}
             </button>
 
             <button
               onClick={() => { handleTabClick('Giving'); setIsMobileMenuOpen(false); }}
               className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${activeTab === 'Giving' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
             >
-              Giving
+              {dict.nav.giving}
             </button>
             
             <button
               onClick={() => { handleTabClick('Contact'); setIsMobileMenuOpen(false); }}
               className={`block w-full text-left px-4 py-3 rounded-xl text-base font-medium ${activeTab === 'Contact' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59] hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
             >
-              Contact
+              {dict.nav.contact}
             </button>
 
             <div className="pt-6 pb-2 border-t border-gray-100 mt-6">
@@ -334,7 +336,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                   onClick={signInWithGoogle}
                   className="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b]"
                 >
-                  Sign in with Google
+                  {dict.nav.signIn}
                 </button>
               )}
             </div>

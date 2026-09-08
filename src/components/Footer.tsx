@@ -1,11 +1,24 @@
 import React from 'react';
 import { TabItem } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface FooterProps {
   handleTabClick: (tab: TabItem) => void;
 }
 
 export default function Footer({ handleTabClick }: FooterProps) {
+  const { dict } = useLanguage();
+
+  const navItems: { tab: TabItem; label: string }[] = [
+    { tab: 'Home', label: dict.nav.home },
+    { tab: 'Welcome Kit', label: dict.nav.welcomeKit },
+    { tab: 'Gospel', label: dict.nav.gospel },
+    { tab: 'Manuals', label: dict.nav.manuals },
+    { tab: '100 Days Bible Plan', label: dict.nav.biblePlan100 },
+    { tab: '365 Bible Reading Guide', label: dict.nav.bibleGuide365 },
+    { tab: 'Giving', label: dict.nav.giving },
+  ];
+
   return (
     <footer className="bg-[#0F2C59] pt-16 pb-8 border-t border-[#0a1e3f]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,7 +31,7 @@ export default function Footer({ handleTabClick }: FooterProps) {
               className="h-16 w-auto object-contain mb-6 filter brightness-0 invert" 
             />
             <p className="text-gray-300 max-w-md text-base leading-relaxed mb-6">
-              Your Church Your Family. We exist to know God and make Him known, building a community transformed by His grace.
+              {dict.hero.description}
             </p>
             <p className="text-gray-400 text-sm">
               2nd Floor 158 Mañalac Avenue, Bagong Tanyag, Taguig City
@@ -26,15 +39,17 @@ export default function Footer({ handleTabClick }: FooterProps) {
           </div>
           
           <div>
-            <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase mb-4">Quick Links</h3>
+            <h3 className="text-sm font-semibold text-gray-300 tracking-wider uppercase mb-4">
+              {dict.nav.quickLinks}
+            </h3>
             <ul className="space-y-3">
-              {['Home', 'Welcome Kit', 'Gospel', 'Manuals', '100 Days Bible Plan', '365 Bible Reading Guide', 'Giving'].map((tab) => (
-                <li key={tab}>
+              {navItems.map((item) => (
+                <li key={item.tab}>
                   <button 
-                    onClick={() => handleTabClick(tab as TabItem)}
-                    className="text-base text-gray-400 hover:text-[#D4A373] transition-colors"
+                    onClick={() => handleTabClick(item.tab)}
+                    className="text-base text-gray-400 hover:text-[#D4A373] transition-colors cursor-pointer"
                   >
-                    {tab === '365 Bible Reading Guide' ? '365-Day Guide' : tab}
+                    {item.label}
                   </button>
                 </li>
               ))}

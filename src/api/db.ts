@@ -64,7 +64,12 @@ export const updateLeaderTool = async (recordId: string, recordData: any) => {
 
 export const removeLeaderTool = async (recordId: string) => {
   if (!db) throw new Error("Database not initialized");
-  await deleteDoc(doc(db, 'leader_tools', recordId));
+  try {
+    await deleteDoc(doc(db, 'leader_tools', recordId));
+  } catch (error) {
+    console.error("Failed to delete leader tool record:", recordId, error);
+    throw error;
+  }
 };
 
 // WEEKLY MEMORY VERSE

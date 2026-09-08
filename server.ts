@@ -324,6 +324,9 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
   const lower = topic.toLowerCase();
   
   if (isTagalog) {
+    if (lower.includes('wisdom') || lower.includes('karunungan') || lower.includes('understanding') || lower.includes('pang-unawa') || lower.includes('reading') || lower.includes('pagbabasa') || lower.includes('word') || lower.includes('salita') || lower.includes('scripture')) {
+      return `Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong Banal na Espiritu upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.`;
+    }
     if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
       return `Aming AMANG nasa langit, buong puso naming ipinapanalangin ang aming mga pastor at pinuno ng iglesya, na puspusin Mo sila ng Iyong banal na karunungan, kalakasan, at proteksyon sa bawat hakbang. Gabayan Mo ang kanilang mga puso upang patuloy silang manguna nang may katapatan at pag-ibig sa Iyong kawan, sa pangalan ni HESUS, Amen.`;
     }
@@ -347,6 +350,9 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
     }
     return `Aming AMANG nasa langit, buong pagpapakumbaba naming itinataas sa Iyong harapan ang panalanging ito para sa ${topic}. Puspusin Mo kami ng Iyong biyaya, karunungan, at banal na kapayapaan habang nagtitiwala kami sa Iyong dakilang kapangyarihan, sa pangalan ni HESUS, Amen.`;
   } else {
+    if (lower.includes('wisdom') || lower.includes('understanding') || lower.includes('reading') || lower.includes('word') || lower.includes('scripture') || lower.includes('bible')) {
+      return `Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your Holy Spirit so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS' Name, Amen.`;
+    }
     if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
       return `Our FATHER in Heaven, we lift up our church leaders and pastors, asking that You endow them with divine wisdom, spiritual protection, and renewed strength each day. May Your Holy Spirit guide their steps as they shepherd Your flock with steadfast love and godly integrity, in JESUS' Name, Amen.`;
     }

@@ -135,6 +135,7 @@ export default function LeaderTools() {
   }, [records, selectedRecordId]);
 
   const [isEditing, setIsEditing] = useState(false);
+  const [recordToDelete, setRecordToDelete] = useState<ServiceRecord | null>(null);
   const [isFormattedView, setIsFormattedView] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   
@@ -428,9 +429,17 @@ export default function LeaderTools() {
 
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
-      // 1. We are using setDoc in updateLeaderTool, which allows creating or updating based on dateValue ID
+      // 1. Create or update record based on dateValue ID
       if (data.id && data.payload) {
         await updateLeaderTool(data.id, data.payload);
+        // If an existing record changed its date/ID, remove the previous record to prevent duplicate entries
+        if (data.oldId && data.oldId !== data.id) {
+          try {
+            await removeLeaderTool(data.oldId);
+          } catch (cleanupErr) {
+            console.warn("Could not clean up old record ID after date change:", cleanupErr);
+          }
+        }
       }
       // 2. Update weekly memory verse
       if (data.memoryVerse) {
@@ -448,29 +457,43 @@ export default function LeaderTools() {
       setIsEditing(false);
       toast.success("All updates saved successfully!");
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error saving tools data:", error);
-      toast.error("Failed to save changes.");
+      toast.error(error?.message || "Failed to save changes.");
     }
   });
 
   const deleteMutation = useMutation({
-    mutationFn: removeLeaderTool,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['leader_tools'] });
-      setSelectedRecordId(records.length > 1 ? records[0].id : null);
-      setIsEditing(false);
+    mutationFn: async (recordId: string) => {
+      await removeLeaderTool(recordId);
+      return recordId;
     },
-    onError: (error) => {
+    onSuccess: (deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ['leader_tools'] });
+      // If the currently selected record was the one deleted, switch to another remaining record
+      if (selectedRecordId === deletedId) {
+        const remaining = records.filter(r => r.id !== deletedId);
+        setSelectedRecordId(remaining.length > 0 ? remaining[0].id : null);
+      }
+      setRecordToDelete(null);
+      setIsEditing(false);
+      toast.success("Service record deleted successfully!");
+    },
+    onError: (error: any) => {
       console.error("Error deleting record:", error);
-      alert("Failed to delete record.");
+      toast.error(error?.message || "Failed to delete record. Please check your permissions.");
     }
   });
 
   const handleSave = () => {
     if (!isAdmin) return;
+    const targetDocId = editDateValue.trim();
+    const oldDocId = selectedRecordId;
+    const isDateChanged = Boolean(oldDocId && oldDocId !== targetDocId);
+
     saveMutation.mutate({
-      id: editDateValue,
+      id: targetDocId,
+      oldId: isDateChanged ? oldDocId : null,
       payload: {
         dateValue: editDateValue,
         dateLabel: editDateLabel,
@@ -486,13 +509,6 @@ export default function LeaderTools() {
         translation: editVerseTranslation.trim() || 'NIV'
       }
     });
-  };
-
-  const handleDelete = () => {
-    if (!isAdmin || !selectedRecordId) return;
-    if (confirm('Are you sure you want to delete this service record?')) {
-      deleteMutation.mutate(selectedRecordId);
-    }
   };
 
   const addVideoId = () => {
@@ -645,25 +661,50 @@ export default function LeaderTools() {
               <div className={`${isMobileSidebarOpen ? 'block' : 'hidden'} lg:block max-h-[60vh] overflow-y-auto`}>
                 {records.length > 0 ? (
                   <ul className="divide-y divide-gray-50">
-                    {records.map((record) => (
-                      <li key={record.id}>
-                        <button
-                          onClick={() => {
-                            setSelectedRecordId(record.id);
-                            setIsMobileSidebarOpen(false);
-                            setIsEditing(false);
-                          }}
-                          className={`w-full text-left px-5 py-3.5 transition-colors hover:bg-gray-50 ${selectedRecordId === record.id ? 'bg-[#FAFAFA] border-l-4 border-[#C82323]' : 'border-l-4 border-transparent'}`}
+                    {records.map((record) => {
+                      const isSelected = selectedRecordId === record.id;
+                      return (
+                        <li 
+                          key={record.id}
+                          className={`group flex items-center justify-between px-3.5 py-3 transition-colors hover:bg-gray-50/90 ${
+                            isSelected ? 'bg-red-50/40 border-l-4 border-[#C82323]' : 'border-l-4 border-transparent'
+                          }`}
                         >
-                          <div className={`font-medium text-sm ${selectedRecordId === record.id ? 'text-[#C82323] font-bold' : 'text-gray-900'}`}>
-                            {record.dateLabel}
-                          </div>
-                          {record.messageTitle && (
-                            <div className="text-xs text-gray-500 mt-0.5 truncate">{record.messageTitle}</div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedRecordId(record.id);
+                              setIsMobileSidebarOpen(false);
+                              setIsEditing(false);
+                            }}
+                            className="flex-1 text-left min-w-0 pr-2 cursor-pointer focus:outline-none"
+                          >
+                            <div className={`font-semibold text-sm leading-snug ${isSelected ? 'text-[#C82323]' : 'text-gray-900 group-hover:text-[#0F2C59]'}`}>
+                              {record.dateLabel || record.dateValue}
+                            </div>
+                            {record.messageTitle && (
+                              <div className="text-xs text-gray-500 mt-0.5 truncate">{record.messageTitle}</div>
+                            )}
+                          </button>
+
+                          {isAdmin && (
+                            <button
+                              type="button"
+                              id={`delete-record-btn-${record.id}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setRecordToDelete(record);
+                              }}
+                              className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors flex-shrink-0 cursor-pointer"
+                              title={`Delete ${record.dateLabel || record.dateValue}`}
+                              aria-label={`Delete record for ${record.dateLabel || record.dateValue}`}
+                            >
+                              <Trash size={15} />
+                            </button>
                           )}
-                        </button>
-                      </li>
-                    ))}
+                        </li>
+                      );
+                    })}
                   </ul>
                 ) : (
                   <div className="px-6 py-8 text-center text-gray-500 text-sm">
@@ -826,11 +867,6 @@ export default function LeaderTools() {
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  {isAdmin && isEditing && selectedRecordId && (
-                    <button onClick={handleDelete} className="text-red-400 hover:text-red-300 flex items-center text-sm mr-1" title="Delete Record">
-                      <Trash size={16} className="mr-1" /> Delete
-                    </button>
-                  )}
                   {!isEditing && selectedRecord && (
                     <button 
                       onClick={() => setIsFormattedView(!isFormattedView)} 
@@ -1341,6 +1377,85 @@ export default function LeaderTools() {
         </div>
 
       </div>
+
+      {/* Delete Service Record Confirmation Modal */}
+      {recordToDelete && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+          onClick={() => {
+            if (!deleteMutation.isPending) setRecordToDelete(null);
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 transform transition-all"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-service-dialog-title"
+          >
+            <div className="flex items-center gap-3.5 mb-4">
+              <div className="w-11 h-11 rounded-full bg-red-100 flex items-center justify-center text-red-600 flex-shrink-0">
+                <Trash size={22} />
+              </div>
+              <div>
+                <h3 id="delete-service-dialog-title" className="text-lg font-bold text-gray-900 font-serif">
+                  Delete Service Record
+                </h3>
+                <p className="text-xs text-gray-500">Remove duplicate or outdated service entry</p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-xl p-3.5 border border-gray-200/80 mb-4">
+              <div className="flex items-center justify-between text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
+                <span>Record Details</span>
+                <span className="font-mono text-[11px] text-gray-400 lowercase truncate max-w-[150px]">id: {recordToDelete.id}</span>
+              </div>
+              <div className="text-sm font-bold text-[#0F2C59]">
+                {recordToDelete.dateLabel || recordToDelete.dateValue}
+              </div>
+              {recordToDelete.messageTitle && (
+                <div className="text-xs text-gray-600 mt-0.5 truncate">
+                  {recordToDelete.messageTitle}
+                </div>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-600 mb-6 leading-relaxed">
+              Are you sure you want to delete this record? This will permanently delete the message outline, video recordings, and song setlist for this date. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={deleteMutation.isPending}
+                onClick={() => setRecordToDelete(null)}
+                className="px-4 py-2.5 rounded-xl text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                id="confirm-delete-service-btn"
+                disabled={deleteMutation.isPending}
+                onClick={() => deleteMutation.mutate(recordToDelete.id)}
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-red-600 hover:bg-red-700 active:scale-95 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              >
+                {deleteMutation.isPending ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash size={16} className="mr-1.5" />
+                    Delete Record
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

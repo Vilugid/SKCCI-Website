@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Copy, CheckCircle2, Heart, QrCode, X } from 'lucide-react';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export default function Giving() {
+  const { dict } = useLanguage();
   const [copied, setCopied] = useState(false);
   const [isQRModalOpen, setIsQRModalOpen] = useState(false);
   const accountNumber = '3819017068';
@@ -21,24 +23,24 @@ export default function Giving() {
             <Heart size={32} />
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl font-serif">
-            Giving & Stewardship
+            {dict.giving.title}
           </h2>
           <p className="mt-4 text-lg text-gray-500 max-w-2xl mx-auto">
-            Your generosity helps us continue our mission, serve our community, and share the love of Christ.
+            {dict.giving.subtitle}
           </p>
         </div>
 
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden max-w-2xl mx-auto">
           <div className="px-6 py-8 sm:p-10 border-b border-gray-100 bg-[#FAFAFA]/50">
             <h3 className="text-xl font-semibold text-gray-900 text-center flex items-center justify-center gap-2">
-              Bank Transfer <QrCode size={20} className="text-gray-400" />
+              {dict.giving.bankTransfer} <QrCode size={20} className="text-gray-400" />
             </h3>
           </div>
           <div className="px-6 py-8 sm:p-10">
             
             {/* QR Code Section */}
             <div className="flex flex-col items-center mb-8 pb-8 border-b border-gray-100">
-              <p className="text-sm font-medium text-gray-500 mb-4 text-center">Scan to Pay via InstaPay</p>
+              <p className="text-sm font-medium text-gray-500 mb-4 text-center">{dict.giving.scanToPay}</p>
               <div 
                 className="w-48 h-48 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-300 transition-colors group overflow-hidden relative"
                 onClick={() => setIsQRModalOpen(true)}
@@ -55,7 +57,7 @@ export default function Giving() {
                 />
                 <div className="hidden flex-col items-center justify-center text-gray-400 group-hover:text-red-500 transition-colors">
                   <QrCode size={40} className="mb-2" />
-                  <span className="text-xs font-medium text-center px-2">Tap to view<br/>QR Code</span>
+                  <span className="text-xs font-medium text-center px-2">{dict.giving.tapToViewQR}</span>
                 </div>
                 
                 {/* Hover overlay for image */}
@@ -69,21 +71,21 @@ export default function Giving() {
 
             <dl className="space-y-6 text-base text-gray-600">
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <dt className="font-medium text-gray-500">Bank</dt>
+                <dt className="font-medium text-gray-500">{dict.giving.bankName}</dt>
                 <dd className="font-bold text-gray-900">BPI (InstaPay enabled)</dd>
               </div>
               <div className="flex justify-between items-center py-3 border-b border-gray-100">
-                <dt className="font-medium text-gray-500">Account Name</dt>
+                <dt className="font-medium text-gray-500">{dict.giving.accountName}</dt>
                 <dd className="font-bold text-gray-900">Marianita Carandang</dd>
               </div>
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center py-3">
-                <dt className="font-medium text-gray-500 mb-2 sm:mb-0">Account Number</dt>
+                <dt className="font-medium text-gray-500 mb-2 sm:mb-0">{dict.giving.accountNumber}</dt>
                 <dd className="flex items-center">
                   <span className="font-mono text-xl font-bold text-gray-900 mr-4 tracking-wider">{accountNumber}</span>
                   <button
                     onClick={handleCopy}
-                    className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500"
-                    title="Copy Account Number"
+                    className="inline-flex items-center justify-center p-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-amber-500 cursor-pointer"
+                    title={dict.giving.copyAccount}
                   >
                     {copied ? <CheckCircle2 size={20} className="text-green-600" /> : <Copy size={20} />}
                   </button>
@@ -94,7 +96,7 @@ export default function Giving() {
             <div className={`mt-6 text-center transition-opacity duration-300 ${copied ? 'opacity-100' : 'opacity-0'}`}>
               <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                 <CheckCircle2 size={16} className="mr-2" />
-                Account Number Copied!
+                {dict.giving.copied}
               </span>
             </div>
             
@@ -111,13 +113,13 @@ export default function Giving() {
             <div className="p-4 flex justify-end absolute top-0 right-0 z-20">
               <button 
                 onClick={() => setIsQRModalOpen(false)}
-                className="bg-black/10 hover:bg-black/20 text-gray-800 rounded-full p-2 backdrop-blur transition-colors"
+                className="bg-black/10 hover:bg-black/20 text-gray-800 rounded-full p-2 backdrop-blur transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="pt-12 pb-8 px-8 text-center bg-gray-50 border-b border-gray-100">
-              <h3 className="text-xl font-bold text-gray-900 mb-1">Scan to Pay</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-1">{dict.giving.scanToPay}</h3>
               <p className="text-sm text-gray-500">BPI InstaPay</p>
             </div>
             <div className="p-8 flex justify-center bg-white">

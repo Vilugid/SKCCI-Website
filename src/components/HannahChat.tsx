@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import LanguageToggle from './LanguageToggle';
 import { 
   MessageCircle, 
   X, 
@@ -43,17 +45,8 @@ interface HannahChatProps {
 
 export default function HannahChat({ handleTabClick }: HannahChatProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState<ChatLanguage | null>(() => {
-    try {
-      const saved = localStorage.getItem('hannah_language');
-      if (saved === 'tl' || saved === 'en') {
-        return saved;
-      }
-    } catch {
-      // ignore localStorage error
-    }
-    return null;
-  });
+  const { language, setLanguage, dict } = useLanguage();
+  const selectedLanguage: ChatLanguage = language === 'fil' ? 'tl' : 'en';
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -142,57 +135,29 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
 
   // When language is selected or changed
   const handleSelectLanguage = (lang: ChatLanguage) => {
-    setSelectedLanguage(lang);
-    try {
-      localStorage.setItem('hannah_language', lang);
-    } catch {
-      // ignore
-    }
-
-    const greetingText = lang === 'tl' ? tagalogGreeting : englishGreeting;
-    setMessages([
-      {
-        id: `welcome-${Date.now()}`,
-        role: 'model',
-        content: greetingText,
-        timestamp: formatCurrentTime()
-      }
-    ]);
+    setLanguage(lang === 'tl' ? 'fil' : 'en');
   };
 
-  // Switch language via header toggle
-  const handleHeaderLanguageSwitch = (newLang: ChatLanguage) => {
-    if (selectedLanguage === newLang) return;
-    setSelectedLanguage(newLang);
-    try {
-      localStorage.setItem('hannah_language', newLang);
-    } catch {
-      // ignore
-    }
-
-    const switchNotification = newLang === 'tl'
-      ? "Pinalitan ang wika sa **Tagalog / Filipino**. Paano po kita matutulungan?"
-      : "Switched language to **English**. How can I assist you today?";
-
-    setMessages(prev => [
-      ...prev,
-      {
-        id: `switch-${Date.now()}`,
-        role: 'model',
-        content: switchNotification,
-        timestamp: formatCurrentTime()
-      }
-    ]);
-  };
-
-  // If chat is opened and user already had a saved language, ensure initial greeting exists
+  // Keep greeting synced to active language
   useEffect(() => {
-    if (isOpen && selectedLanguage && messages.length === 0) {
+    const greetingText = selectedLanguage === 'tl' ? tagalogGreeting : englishGreeting;
+    if (messages.length === 0) {
+      if (isOpen) {
+        setMessages([
+          {
+            id: 'initial-welcome',
+            role: 'model',
+            content: greetingText,
+            timestamp: formatCurrentTime()
+          }
+        ]);
+      }
+    } else if (messages.length === 1 && messages[0].id.includes('welcome')) {
       setMessages([
         {
           id: 'initial-welcome',
           role: 'model',
-          content: selectedLanguage === 'tl' ? tagalogGreeting : englishGreeting,
+          content: greetingText,
           timestamp: formatCurrentTime()
         }
       ]);
@@ -424,32 +389,7 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
             {/* Right Header: Language Switcher & Controls */}
             <div className="flex items-center gap-1.5">
               {/* Header Language Switcher Toggle */}
-              {selectedLanguage && (
-                <div className="flex items-center bg-black/25 rounded-full p-0.5 border border-white/10 text-xs font-semibold mr-1">
-                  <button
-                    onClick={() => handleHeaderLanguageSwitch('tl')}
-                    className={`px-2 py-0.5 rounded-full transition-all text-[11px] ${
-                      selectedLanguage === 'tl'
-                        ? 'bg-[#C82323] text-white font-bold shadow-xs'
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                    title="Switch to Tagalog / Filipino"
-                  >
-                    🇵🇭 TL
-                  </button>
-                  <button
-                    onClick={() => handleHeaderLanguageSwitch('en')}
-                    className={`px-2 py-0.5 rounded-full transition-all text-[11px] ${
-                      selectedLanguage === 'en'
-                        ? 'bg-white text-[#0F2C59] font-bold shadow-xs'
-                        : 'text-gray-300 hover:text-white'
-                    }`}
-                    title="Switch to English"
-                  >
-                    🇺🇸 EN
-                  </button>
-                </div>
-              )}
+              <LanguageToggle theme="dark" id="hannah-lang-toggle" className="mr-1 scale-90 sm:scale-100 origin-right" />
 
               {/* Minimize and Close Buttons */}
               <button
