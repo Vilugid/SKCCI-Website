@@ -16,8 +16,18 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
   const [hasUnreadUpdates, setHasUnreadUpdates] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const { user, signInWithGoogle, logout } = useAuth();
   const { dict, isTagalog } = useLanguage();
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 8);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   useEffect(() => {
     try {
@@ -55,9 +65,13 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-100 shadow-xs w-full">
+    <header className={`fixed top-0 left-0 right-0 z-50 w-full transition-all duration-200 ${
+      isScrolled 
+        ? 'bg-white/95 backdrop-blur-md shadow-md border-b border-gray-200/90' 
+        : 'bg-white border-b border-gray-100 shadow-xs'
+    }`}>
       <div className="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20 sm:h-24 gap-3 lg:gap-6">
+        <div className="flex justify-between items-center h-16 sm:h-20 lg:h-24 gap-1.5 sm:gap-3 lg:gap-6">
           
           {/* Logo */}
           <div 
@@ -67,7 +81,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             <img 
               src="/churchlogo2.png" 
               alt="Savior-King Commission Church Logo" 
-              className="h-14 sm:h-16 md:h-18 lg:h-20 w-auto object-contain transition-transform hover:scale-[1.02]"
+              className="h-10 sm:h-14 md:h-16 lg:h-20 w-auto object-contain transition-transform hover:scale-[1.02]"
             />
           </div>
 
@@ -166,77 +180,80 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
           </nav>
 
           {/* Right Section: What's New, Language Switcher, Profile & Sign In, Mobile Menu Toggle */}
-          <div className="flex items-center flex-shrink-0 gap-1.5 sm:gap-2 lg:gap-2.5 pl-1">
+          <div className="flex items-center flex-shrink-0 gap-1 sm:gap-2 lg:gap-2.5">
             {/* What's New Sparkles Button */}
             <button
               type="button"
               id="header-whats-new-btn"
               onClick={handleOpenWhatsNew}
-              className="relative p-2 text-gray-500 hover:text-[#0F2C59] hover:bg-gray-100 rounded-full transition-all cursor-pointer flex items-center justify-center group"
+              className="relative p-1.5 sm:p-2 text-gray-500 hover:text-[#0F2C59] hover:bg-gray-100 rounded-full transition-all cursor-pointer flex items-center justify-center flex-shrink-0 group"
               title={isTagalog ? "Mga Bagong Update" : "What's New"}
               aria-label="What's New and Recent Updates"
             >
-              <Sparkles size={18} className="text-amber-500 group-hover:scale-110 transition-transform" />
+              <Sparkles size={17} className="text-amber-500 group-hover:scale-110 transition-transform" />
               {hasUnreadUpdates && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C82323] ring-2 ring-white animate-pulse" />
+                <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 rounded-full bg-[#C82323] ring-2 ring-white animate-pulse" />
               )}
             </button>
 
             <LanguageToggle theme="light" id="header-lang-toggle" />
 
-            {/* Account Status / Sign In Button - ALWAYS visible on all screen sizes */}
+            {/* Account Status / Sign In Button */}
             {user ? (
               <div 
                 id="header-user-profile-badge"
-                className="flex items-center gap-1.5 sm:gap-2 bg-gray-50 border border-gray-200/80 py-1 px-1.5 sm:px-2.5 rounded-full shadow-2xs"
+                className="flex items-center gap-1 sm:gap-2 bg-gray-50 border border-gray-200/80 py-0.5 px-1 sm:py-1 sm:px-2.5 rounded-full shadow-2xs flex-shrink-0"
               >
                 <div className="flex items-center gap-1.5">
                   {user.photoURL ? (
                     <img 
                       src={user.photoURL} 
                       alt={user.displayName || "User"} 
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full ring-1 ring-gray-200 object-cover flex-shrink-0" 
+                      className="w-6 h-6 sm:w-8 sm:h-8 rounded-full ring-1 ring-gray-200 object-cover flex-shrink-0" 
                     />
                   ) : (
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-[#0F2C59] border border-gray-200 flex-shrink-0">
-                      <User size={15} />
+                    <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-white flex items-center justify-center text-[#0F2C59] border border-gray-200 flex-shrink-0">
+                      <User size={14} />
                     </div>
                   )}
-                  <span className="hidden sm:inline text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap max-w-[80px] lg:max-w-[120px] truncate">
+                  <span className="hidden md:inline text-xs sm:text-sm font-semibold text-gray-800 whitespace-nowrap max-w-[80px] lg:max-w-[120px] truncate">
                     {user.displayName?.split(' ')[0] || 'Member'}
                   </span>
                 </div>
                 <button 
                   onClick={logout}
-                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
+                  className="hidden sm:block p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer"
                   title={dict.nav.signOut}
                   aria-label={dict.nav.signOut}
                 >
-                  <LogOut size={15} />
+                  <LogOut size={14} />
                 </button>
               </div>
             ) : (
               <button 
                 id="header-sign-in-btn"
                 onClick={signInWithGoogle}
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent text-xs sm:text-sm font-bold rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] shadow-2xs transition-all active:scale-95 whitespace-nowrap cursor-pointer"
+                className="hidden sm:inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent text-xs sm:text-sm font-bold rounded-full text-white bg-[#C82323] hover:bg-[#a11b1b] shadow-2xs transition-all active:scale-95 whitespace-nowrap cursor-pointer flex-shrink-0"
               >
                 {dict.nav.signIn}
               </button>
             )}
 
-            {/* Mobile Hamburger Toggle Button */}
-            <div className="flex lg:hidden items-center">
+            {/* Mobile Hamburger Toggle Button - Always visible on mobile, never pushed off */}
+            <div className="flex lg:hidden items-center flex-shrink-0">
               <button
+                type="button"
+                id="mobile-hamburger-btn"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-red-500 cursor-pointer"
+                className="inline-flex items-center justify-center p-1.5 sm:p-2 rounded-xl text-[#0F2C59] hover:text-[#C82323] hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-[#0F2C59] transition-colors cursor-pointer flex-shrink-0 bg-gray-50 border border-gray-200"
                 aria-label="Toggle navigation menu"
+                aria-expanded={isMobileMenuOpen}
               >
                 <span className="sr-only">Open main menu</span>
                 {isMobileMenuOpen ? (
-                  <X className="block h-6 w-6" aria-hidden="true" />
+                  <X className="block h-6 w-6 text-[#C82323]" aria-hidden="true" />
                 ) : (
-                  <Menu className="block h-6 w-6" aria-hidden="true" />
+                  <Menu className="block h-6 w-6 text-[#0F2C59]" aria-hidden="true" />
                 )}
               </button>
             </div>

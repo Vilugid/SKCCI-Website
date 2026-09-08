@@ -169,15 +169,17 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white overflow-x-hidden w-full">
+    <div className="min-h-screen flex flex-col bg-white overflow-x-clip w-full">
       <Toaster position="bottom-right" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff' } }} />
       <Header 
         activeTab={activeTab} 
         handleTabClick={handleTabClick} 
         is100DayComplete={is100DayComplete} 
       />
+      {/* Spacer so page content flows immediately below the frozen top header without jump or overlap */}
+      <div className="h-16 sm:h-20 lg:h-24 w-full flex-shrink-0" aria-hidden="true" />
       
-      <main className="flex-grow w-full overflow-x-hidden">
+      <main className="flex-grow w-full overflow-x-clip">
         {activeTab === 'Home' && (
           <>
             <Hero handleTabClick={handleTabClick} />

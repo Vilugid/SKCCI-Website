@@ -39,7 +39,7 @@ export default function LanguageToggle({
         onClick={() => setLanguage('en')}
         aria-pressed={language === 'en'}
         title="English"
-        className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+        className={`px-2 min-[420px]:px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
           language === 'en'
             ? isDark
               ? 'bg-white text-[#0F2C59] shadow-xs'
@@ -49,7 +49,8 @@ export default function LanguageToggle({
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
         }`}
       >
-        English
+        <span className="hidden min-[420px]:inline">English</span>
+        <span className="min-[420px]:hidden">EN</span>
       </button>
 
       {/* Tagalog Option */}
@@ -59,7 +60,7 @@ export default function LanguageToggle({
         onClick={() => setLanguage('fil')}
         aria-pressed={language === 'fil'}
         title="Tagalog"
-        className={`px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
+        className={`px-2 min-[420px]:px-2.5 py-1 text-xs rounded-lg font-bold transition-all cursor-pointer whitespace-nowrap ${
           language === 'fil'
             ? isDark
               ? 'bg-[#C82323] text-white shadow-xs font-bold'
@@ -69,7 +70,8 @@ export default function LanguageToggle({
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/60'
         }`}
       >
-        Tagalog
+        <span className="hidden min-[420px]:inline">Tagalog</span>
+        <span className="min-[420px]:hidden">TL</span>
       </button>
     </div>
   );
