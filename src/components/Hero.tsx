@@ -8,7 +8,7 @@ interface HeroProps {
 }
 
 export default function Hero({ handleTabClick }: HeroProps) {
-  const { dict } = useLanguage();
+  const { dict, isTagalog } = useLanguage();
 
   return (
     <div className="relative bg-[#FAFAFA] overflow-hidden border-b border-gray-100">
@@ -22,10 +22,30 @@ export default function Hero({ handleTabClick }: HeroProps) {
                 <span className="block text-sm font-semibold uppercase tracking-wide text-[#C82323] sm:text-base lg:text-sm xl:text-base mb-2">
                   {dict.hero.welcomeBadge}
                 </span>
-                <h1 className="text-4xl tracking-tight font-extrabold sm:text-5xl xl:text-6xl text-[#0F2C59] font-serif leading-[1.1]">
-                  {dict.hero.titleLine1}
-                  <br />
-                  <span className="text-[#D4A373]">{dict.hero.titleLine2}</span>
+                <h1 className="text-3xl min-[360px]:text-[32px] min-[400px]:text-4xl sm:text-5xl xl:text-6xl tracking-tight font-extrabold text-[#0F2C59] font-serif leading-[1.12]">
+                  {isTagalog ? (
+                    <>
+                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal">
+                        <span className="block min-[340px]:inline">Ang Iyong</span>{' '}
+                        <span className="block min-[340px]:inline">Simbahan</span>
+                      </span>
+                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal text-[#D4A373] mt-0.5 sm:mt-0">
+                        <span className="block min-[340px]:inline">Ang Iyong</span>{' '}
+                        <span className="block min-[340px]:inline">Pamilya</span>
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal">
+                        <span className="block min-[340px]:inline">Your</span>{' '}
+                        <span className="block min-[340px]:inline">Church,</span>
+                      </span>
+                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal text-[#D4A373] mt-0.5 sm:mt-0">
+                        <span className="block min-[340px]:inline">Your</span>{' '}
+                        <span className="block min-[340px]:inline">Family.</span>
+                      </span>
+                    </>
+                  )}
                 </h1>
               </div>
 

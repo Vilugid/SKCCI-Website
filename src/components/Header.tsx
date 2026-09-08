@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Menu, X, User, Lock, ChevronDown, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, User, Lock, ChevronDown, LogOut, Sparkles } from 'lucide-react';
 import { TabItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import LanguageToggle from './LanguageToggle';
+import WhatsNewModal from './WhatsNewModal';
 
 interface HeaderProps {
   activeTab: TabItem;
@@ -13,8 +14,31 @@ interface HeaderProps {
 
 export default function Header({ activeTab, handleTabClick, is100DayComplete }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
+  const [hasUnreadUpdates, setHasUnreadUpdates] = useState(false);
   const { user, signInWithGoogle, logout } = useAuth();
-  const { dict } = useLanguage();
+  const { dict, isTagalog } = useLanguage();
+
+  useEffect(() => {
+    try {
+      const lastSeen = localStorage.getItem('skcci_last_seen_update');
+      if (lastSeen !== 'v1.4.0-sep-2026') {
+        setHasUnreadUpdates(true);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const handleOpenWhatsNew = () => {
+    setIsWhatsNewOpen(true);
+    setHasUnreadUpdates(false);
+    try {
+      localStorage.setItem('skcci_last_seen_update', 'v1.4.0-sep-2026');
+    } catch {
+      // ignore
+    }
+  };
 
   const getTabClass = (tab: TabItem, isDropdownItem = false) => {
     if (isDropdownItem) {
@@ -141,8 +165,23 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             </button>
           </nav>
 
-          {/* Right Section: Language Switcher, Profile & Sign In, Mobile Menu Toggle */}
-          <div className="flex items-center flex-shrink-0 gap-2 sm:gap-2.5 lg:gap-3 pl-1">
+          {/* Right Section: What's New, Language Switcher, Profile & Sign In, Mobile Menu Toggle */}
+          <div className="flex items-center flex-shrink-0 gap-1.5 sm:gap-2 lg:gap-2.5 pl-1">
+            {/* What's New Sparkles Button */}
+            <button
+              type="button"
+              id="header-whats-new-btn"
+              onClick={handleOpenWhatsNew}
+              className="relative p-2 text-gray-500 hover:text-[#0F2C59] hover:bg-gray-100 rounded-full transition-all cursor-pointer flex items-center justify-center group"
+              title={isTagalog ? "Mga Bagong Update" : "What's New"}
+              aria-label="What's New and Recent Updates"
+            >
+              <Sparkles size={18} className="text-amber-500 group-hover:scale-110 transition-transform" />
+              {hasUnreadUpdates && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C82323] ring-2 ring-white animate-pulse" />
+              )}
+            </button>
+
             <LanguageToggle theme="light" id="header-lang-toggle" />
 
             {/* Account Status / Sign In Button - ALWAYS visible on all screen sizes */}
@@ -209,7 +248,21 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100 max-h-[calc(100vh-5rem)] overflow-y-auto">
           <div className="px-4 pt-4 pb-6 space-y-1">
-            <div className="pb-3 border-b border-gray-100 mb-2 flex justify-center">
+            <div className="pb-3 border-b border-gray-100 mb-2 flex items-center justify-between px-1">
+              <button
+                type="button"
+                onClick={() => {
+                  handleOpenWhatsNew();
+                  setIsMobileMenuOpen(false);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#0F2C59] bg-amber-50 border border-amber-200/80 hover:bg-amber-100/80 transition-colors"
+              >
+                <Sparkles size={14} className="text-amber-500" />
+                <span>{isTagalog ? 'Mga Update' : "What's New"}</span>
+                {hasUnreadUpdates && (
+                  <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse" />
+                )}
+              </button>
               <LanguageToggle theme="light" id="mobile-drawer-lang-toggle" />
             </div>
 
@@ -343,6 +396,13 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
           </div>
         </div>
       )}
+
+      {/* What's New & Updates Modal */}
+      <WhatsNewModal
+        isOpen={isWhatsNewOpen}
+        onClose={() => setIsWhatsNewOpen(false)}
+        onNavigate={handleTabClick}
+      />
     </header>
   );
 }

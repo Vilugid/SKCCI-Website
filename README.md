@@ -63,10 +63,17 @@ The **SKCCI Platform** is an end-to-end, full-stack digital ministry ecosystem d
 
 ### 6. 🛠️ Leader Tools & Master Song Bank
 - **Structured Sunday Sermon Outlines**: Preaching guides complete with Main Theme / Big Idea, Scripture texts, Roman numeral teaching breakdowns (**I, II, III**), and cell discussion questions.
-- **Embedded Worship Playlists**: YouTube worship sets curated for weekly services.
-- **A–Z Song Lyrics Bank**: Searchable praise and worship lyrics database with one-click clipboard copying formatted for mobile cell meetings.
+- **Service Dates Archive & Sidebar Management**: In-sidebar record management allowing authorized admins to quickly select, edit, or delete specific Sunday service archives.
+- **In-App Deletion Modal & Duplicate Protection**: Eliminates browser-blocked dialogs with an accessible confirmation modal, and automatically cleans up old document IDs upon date revisions to avoid orphaned duplicate records.
+- **Real-Time Weekly Memory Verse Sync**: Live Firestore synchronization (`cell_leader_tools/weekly_memory_verse`) complete with scripture reference, translation, and one-click clipboard copying.
+- **Embedded Worship Playlists**: Curated weekly YouTube worship sets for service preparation.
+- **A–Z Song Lyrics Bank**: Searchable praise and worship lyrics database cataloging over 100+ songs with instant clipboard formatting for cell leaders.
 
-### 7. 🔐 Enterprise Role-Based Access Control (RBAC)
+### 7. 🌐 Bilingual Localization & Navigation Consistency
+- **Instant Language Toggle**: Effortless switching between English and Tagalog across devotional plans, welcome materials, and ministry pages.
+- **Persistent English Navigation Bar**: Ensures consistent navigational landmarks across both languages while seamlessly translating body content, guides, and reflection inputs.
+
+### 8. 🔐 Enterprise Role-Based Access Control (RBAC)
 Granular, cryptographically validated permission layers enforced directly in `firestore.rules`:
 - **Super Admin**: Complete platform management, video explainer assignment, and global database control.
 - **Cell Leader Admin**: Full access to cell group registries, meeting validations, and leader tools.
@@ -222,6 +229,29 @@ To experience the core features of the SKCCI Platform:
 6. **Inspect Leader Tools & Discipleship Manuals**:
    - Navigate to **Grow ➔ Leader Tools** to inspect sermon outlines, scripture references, Roman numeral breakdowns, and worship sets.
    - Navigate to **Grow ➔ Manuals** to view the interactive consolidation curriculum.
+
+---
+
+## 📢 Recent Platform Updates & Changelog
+
+### 🚀 September 2026 Release (v1.4.0)
+
+- **Leader Tools Sidebar Deletion**:
+  - Moved the service record delete action directly into each item in the **Service Dates** archive sidebar on the left.
+  - Added a dedicated **in-app confirmation modal** with preview details (date, message title, and document ID) and real-time loading feedback, replacing browser-blocked `window.confirm` dialogs.
+  - Implemented automatic document cleanup when updating service dates, preventing orphaned duplicate entries when dates are corrected.
+
+- **Bilingual Experience & Navigation Stability**:
+  - Streamlined the language toggle to a clean **English / Tagalog** pill.
+  - Configured the top navigation bar to retain its standard English titles across both language modes, ensuring intuitive navigation while fully localizing page contents and guides.
+
+- **Google Drive Explainer Video Player**:
+  - Integrated custom mobile-responsive 16:9 Google Drive video player into the **365-Day Bible Reading Guide**.
+  - Enabled native fullscreen viewing with zero layout shift and admin-controlled video ID mapping.
+
+- **Weekly Memory Verse & Master Song Bank**:
+  - Added real-time Firestore synchronization for the weekly memory verse across all cell groups.
+  - Expanded the searchable Master Song Bank featuring 100+ cataloged praise and worship songs with one-click clipboard copying.
 
 ---
 
