@@ -22,27 +22,23 @@ export default function Hero({ handleTabClick }: HeroProps) {
                 <span className="block text-sm font-semibold uppercase tracking-wide text-[#C82323] sm:text-base lg:text-sm xl:text-base mb-2">
                   {dict.hero.welcomeBadge}
                 </span>
-                <h1 className="text-3xl min-[360px]:text-[32px] min-[400px]:text-4xl sm:text-5xl xl:text-6xl tracking-tight font-extrabold text-[#0F2C59] font-serif leading-[1.12]">
+                <h1 className="text-3xl min-[360px]:text-[32px] min-[400px]:text-4xl sm:text-4xl md:text-5xl lg:text-[40px] xl:text-5xl 2xl:text-[56px] tracking-tight font-extrabold text-[#0F2C59] font-serif leading-[1.12]">
                   {isTagalog ? (
                     <>
-                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal">
-                        <span className="block min-[340px]:inline">Ang Iyong</span>{' '}
-                        <span className="block min-[340px]:inline">Simbahan</span>
+                      <span className="block whitespace-nowrap">
+                        Ang Iyong Simbahan
                       </span>
-                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal text-[#D4A373] mt-0.5 sm:mt-0">
-                        <span className="block min-[340px]:inline">Ang Iyong</span>{' '}
-                        <span className="block min-[340px]:inline">Pamilya</span>
+                      <span className="block whitespace-nowrap text-[#D4A373] mt-0.5 sm:mt-1">
+                        Ang Iyong Pamilya
                       </span>
                     </>
                   ) : (
                     <>
-                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal">
-                        <span className="block min-[340px]:inline">Your</span>{' '}
-                        <span className="block min-[340px]:inline">Church</span>
+                      <span className="block whitespace-nowrap">
+                        Your Church
                       </span>
-                      <span className="block min-[340px]:whitespace-nowrap sm:whitespace-normal text-[#D4A373] mt-0.5 sm:mt-0">
-                        <span className="block min-[340px]:inline">Your</span>{' '}
-                        <span className="block min-[340px]:inline">Family</span>
+                      <span className="block whitespace-nowrap text-[#D4A373] mt-0.5 sm:mt-1">
+                        Your Family
                       </span>
                     </>
                   )}
