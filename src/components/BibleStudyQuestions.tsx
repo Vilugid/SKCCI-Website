@@ -62,7 +62,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'whoIsGod',
     icon: Sparkles,
-    colorClass: 'text-amber-600 dark:text-amber-400',
+    colorClass: 'text-amber-600',
     bgClassLight: 'bg-amber-500/10 border-amber-500/20',
     bgClassDark: 'bg-amber-500/10 border-amber-500/30',
     en: {
@@ -79,7 +79,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'promises',
     icon: Bookmark,
-    colorClass: 'text-emerald-600 dark:text-emerald-400',
+    colorClass: 'text-emerald-600',
     bgClassLight: 'bg-emerald-500/10 border-emerald-500/20',
     bgClassDark: 'bg-emerald-500/10 border-emerald-500/30',
     en: {
@@ -96,7 +96,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'commands',
     icon: CheckSquare,
-    colorClass: 'text-blue-600 dark:text-blue-400',
+    colorClass: 'text-blue-600',
     bgClassLight: 'bg-blue-500/10 border-blue-500/20',
     bgClassDark: 'bg-blue-500/10 border-blue-500/30',
     en: {
@@ -113,7 +113,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'examples',
     icon: Footprints,
-    colorClass: 'text-teal-600 dark:text-teal-400',
+    colorClass: 'text-teal-600',
     bgClassLight: 'bg-teal-500/10 border-teal-500/20',
     bgClassDark: 'bg-teal-500/10 border-teal-500/30',
     en: {
@@ -130,7 +130,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'warnings',
     icon: AlertTriangle,
-    colorClass: 'text-orange-600 dark:text-orange-400',
+    colorClass: 'text-orange-600',
     bgClassLight: 'bg-orange-500/10 border-orange-500/20',
     bgClassDark: 'bg-orange-500/10 border-orange-500/30',
     en: {
@@ -147,7 +147,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'sins',
     icon: ShieldAlert,
-    colorClass: 'text-rose-600 dark:text-rose-400',
+    colorClass: 'text-rose-600',
     bgClassLight: 'bg-rose-500/10 border-rose-500/20',
     bgClassDark: 'bg-rose-500/10 border-rose-500/30',
     en: {
@@ -164,7 +164,7 @@ const QUESTIONS: QuestionConfig[] = [
   {
     key: 'others',
     icon: FileText,
-    colorClass: 'text-indigo-600 dark:text-indigo-400',
+    colorClass: 'text-indigo-600',
     bgClassLight: 'bg-indigo-500/10 border-indigo-500/20',
     bgClassDark: 'bg-indigo-500/10 border-indigo-500/30',
     isLegacyOthers: true,
@@ -220,7 +220,9 @@ export default function BibleStudyQuestions({
   return (
     <div className="w-full space-y-4">
       {/* Header with Language Switcher and Progress */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-gray-200 dark:border-gray-800">
+      <div className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b ${
+        isDarkMode ? 'border-gray-800' : 'border-gray-200'
+      }`}>
         <div>
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-bold uppercase tracking-wider text-[#D4A373]">
@@ -230,7 +232,7 @@ export default function BibleStudyQuestions({
               {answeredCount}/7 {lang === 'fil' ? 'nasagutan' : 'completed'}
             </span>
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+          <p className={`text-xs mt-0.5 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
             {lang === 'fil' 
               ? 'Sagutin ang mga tanong sa ibaba (hanggang 250 salita bawat isa)'
               : 'Reflect on today’s passage with the questions below (up to 250 words each)'}
@@ -272,7 +274,9 @@ export default function BibleStudyQuestions({
             >
               {/* Question Card Header */}
               <div 
-                className="px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-3 cursor-pointer select-none bg-black/2 dark:bg-white/2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                className={`px-3.5 py-3 sm:px-4 sm:py-3.5 flex items-center justify-between gap-3 cursor-pointer select-none transition-colors ${
+                  isDarkMode ? 'hover:bg-white/5' : 'hover:bg-gray-100/60'
+                }`}
                 onClick={() => toggleCollapse(q.key)}
               >
                 <div className="flex items-start sm:items-center gap-2.5 min-w-0 flex-1">
@@ -287,11 +291,17 @@ export default function BibleStudyQuestions({
                       <span className="text-[11px] font-bold text-[#D4A373]">
                         #{idx + 1}
                       </span>
-                      <h5 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-gray-100">
+                      <h5 className={`text-xs sm:text-sm font-bold ${
+                        isDarkMode ? 'text-white' : 'text-[#0F2C59]'
+                      }`}>
                         {texts.title}
                       </h5>
                       {q.isLegacyOthers && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-semibold border border-indigo-500/20">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${
+                          isDarkMode 
+                            ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' 
+                            : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                        }`}>
                           {lang === 'fil' ? 'Naglalaman ng dating tala' : 'Includes previous notes'}
                         </span>
                       )}
@@ -299,7 +309,9 @@ export default function BibleStudyQuestions({
                         <CheckCircle2 size={13} className="text-emerald-500 flex-shrink-0" />
                       )}
                     </div>
-                    <p className="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+                    <p className={`text-[11px] line-clamp-1 mt-0.5 ${
+                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
                       {texts.sub}
                     </p>
                   </div>
@@ -309,10 +321,16 @@ export default function BibleStudyQuestions({
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`text-[11px] font-mono px-2 py-0.5 rounded-md font-semibold ${
                     isAtLimit 
-                      ? 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/30' 
+                      ? isDarkMode
+                        ? 'bg-red-500/20 text-red-400 border border-red-500/30'
+                        : 'bg-red-50 text-red-700 border border-red-200'
                       : isAnswered
-                        ? 'bg-[#D4A373]/10 text-[#D4A373] dark:text-[#D4A373]'
-                        : 'text-gray-400 dark:text-gray-500'
+                        ? isDarkMode
+                          ? 'bg-[#D4A373]/20 text-[#D4A373]'
+                          : 'bg-[#D4A373]/15 text-[#9C6634]'
+                        : isDarkMode
+                          ? 'text-gray-400'
+                          : 'text-gray-500'
                   }`}>
                     {wordCount}/250 {lang === 'fil' ? 'salita' : 'words'}
                   </span>
@@ -320,7 +338,9 @@ export default function BibleStudyQuestions({
                   <button
                     type="button"
                     aria-label={isFieldCollapsed ? 'Expand Question' : 'Collapse Question'}
-                    className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+                    className={`p-1 transition-colors ${
+                      isDarkMode ? 'text-gray-400 hover:text-white' : 'text-gray-400 hover:text-[#0F2C59]'
+                    }`}
                   >
                     {isFieldCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
                   </button>
@@ -329,7 +349,9 @@ export default function BibleStudyQuestions({
 
               {/* Question Textarea (if not collapsed) */}
               {!isFieldCollapsed && (
-                <div className="p-3.5 sm:p-4 pt-1 sm:pt-1 border-t border-gray-100 dark:border-gray-800/80">
+                <div className={`p-3.5 sm:p-4 pt-1 sm:pt-1 border-t ${
+                  isDarkMode ? 'border-gray-800' : 'border-gray-100'
+                }`}>
                   <textarea
                     value={content}
                     onChange={(e) => handleTextChange(q.key, e.target.value)}
@@ -339,13 +361,15 @@ export default function BibleStudyQuestions({
                     className={`w-full p-3 sm:p-3.5 rounded-xl resize-none text-xs sm:text-sm leading-relaxed transition-all border outline-none ${
                       isDarkMode
                         ? 'bg-gray-900/90 border-gray-700/80 text-gray-100 placeholder:text-gray-500 focus:border-[#D4A373] focus:ring-1 focus:ring-[#D4A373]'
-                        : 'bg-white border-gray-200 text-gray-900 placeholder:text-gray-400 focus:border-[#D4A373] focus:ring-1 focus:ring-[#D4A373]'
+                        : 'bg-white border-gray-200 text-[#0F2C59] placeholder:text-gray-400 focus:border-[#0F2C59] focus:ring-1 focus:ring-[#0F2C59]'
                     } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`}
                   />
 
                   {/* Word Limit Notice if user is typing near or at 250 words */}
                   {isAtLimit && (
-                    <div className="mt-1.5 flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400">
+                    <div className={`mt-1.5 flex items-center gap-1 text-[11px] ${
+                      isDarkMode ? 'text-amber-400' : 'text-amber-700'
+                    }`}>
                       <Info size={12} />
                       <span>
                         {lang === 'fil'

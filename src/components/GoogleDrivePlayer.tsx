@@ -140,21 +140,29 @@ export default function GoogleDrivePlayer({
         >
           {/* Left: Icon & Title */}
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-lg bg-[#C82323]/15 text-[#C82323] dark:text-[#E63946] flex items-center justify-center flex-shrink-0">
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${
+              isDarkMode ? 'bg-red-500/20 text-[#E63946]' : 'bg-[#C82323]/15 text-[#C82323]'
+            }`}>
               <Video size={18} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider text-[#C82323] dark:text-[#E63946]">
+                <p className={`text-xs font-bold uppercase tracking-wider ${
+                  isDarkMode ? 'text-[#E63946]' : 'text-[#C82323]'
+                }`}>
                   Daily Explainer Video
                 </p>
                 {videoSource.platformName && (
-                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/10 dark:bg-white/10 text-gray-500 dark:text-gray-400 font-medium">
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${
+                    isDarkMode ? 'bg-white/10 text-gray-400' : 'bg-black/5 text-gray-600'
+                  }`}>
                     {videoSource.platformName}
                   </span>
                 )}
               </div>
-              <p className="text-sm font-semibold truncate text-gray-900 dark:text-gray-100">
+              <p className={`text-sm font-semibold truncate ${
+                isDarkMode ? 'text-white' : 'text-[#0F2C59]'
+              }`}>
                 {dayTitle || `Day ${dayNumber} Reading Lesson`}
               </p>
             </div>
@@ -166,7 +174,11 @@ export default function GoogleDrivePlayer({
               <button
                 type="button"
                 onClick={handleOpenEdit}
-                className="p-2 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
+                className={`p-2 rounded-lg transition-colors cursor-pointer ${
+                  isDarkMode 
+                    ? 'text-gray-400 hover:text-white hover:bg-white/5' 
+                    : 'text-gray-400 hover:text-gray-600 hover:bg-black/5'
+                }`}
                 title="Edit Video Link (Super Admin)"
               >
                 <Edit3 size={15} />
