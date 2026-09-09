@@ -324,6 +324,9 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
   const lower = topic.toLowerCase();
   
   if (isTagalog) {
+    if (lower.includes('thanksgiving') || lower.includes('pasasalamat') || lower.includes('action') || lower.includes('gawa') || lower.includes('devotional') || lower.includes('head knowledge') || lower.includes('pagsasabuhay')) {
+      return `Aming AMANG nasa langit, lubos kaming nagpapasalamat sa Iyo sa matagumpay at mapagpalang oras ng pananalangin at pagbubulay sa Iyong Banal na Salita. Puspusin Mo kami ng Iyong Banal na Espiritu upang ang aming mga natutunan ay maisagawa at maisabuhay namin sa bawat araw, at hindi manatili bilang kaalaman lamang sa isip, sa pangalan ni HESUS, Amen.`;
+    }
     if (lower.includes('wisdom') || lower.includes('karunungan') || lower.includes('understanding') || lower.includes('pang-unawa') || lower.includes('reading') || lower.includes('pagbabasa') || lower.includes('word') || lower.includes('salita') || lower.includes('scripture')) {
       return `Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong Banal na Espiritu upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.`;
     }
@@ -350,6 +353,9 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
     }
     return `Aming AMANG nasa langit, buong pagpapakumbaba naming itinataas sa Iyong harapan ang panalanging ito para sa ${topic}. Puspusin Mo kami ng Iyong biyaya, karunungan, at banal na kapayapaan habang nagtitiwala kami sa Iyong dakilang kapangyarihan, sa pangalan ni HESUS, Amen.`;
   } else {
+    if (lower.includes('thanksgiving') || lower.includes('action') || lower.includes('devotional') || lower.includes('head knowledge') || lower.includes('transform')) {
+      return `Our FATHER in Heaven, thank You with all our hearts for this fruitful devotional time and for speaking directly to our spirits through Your Word. Empower us by Your Holy Spirit to transform all that we have read into active obedience and daily love, ensuring it never remains as mere head knowledge, in JESUS' Name, Amen.`;
+    }
     if (lower.includes('wisdom') || lower.includes('understanding') || lower.includes('reading') || lower.includes('word') || lower.includes('scripture') || lower.includes('bible')) {
       return `Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your Holy Spirit so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS' Name, Amen.`;
     }

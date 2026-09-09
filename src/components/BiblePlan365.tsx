@@ -32,6 +32,7 @@ import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firesto
 import BibleStreakCard from './BibleStreakCard';
 import GoogleDrivePlayer from './GoogleDrivePlayer';
 import BibleStudyQuestions from './BibleStudyQuestions';
+import ThanksgivingPrayerItem from './ThanksgivingPrayerItem';
 import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
@@ -97,6 +98,9 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   const [samplePrayer, setSamplePrayer] = useState<string>('');
   const [isPrayerLoading, setIsPrayerLoading] = useState(false);
   const [prayerVariation, setPrayerVariation] = useState(1);
+
+  // Post-reflection thanksgiving prayer state (Thanksgiving & Life Transformation into Action)
+  const [prayedThanksgivingArray, setPrayedThanksgivingArray] = useSyncedState<number[]>(`sk_bible_thanksgiving_prayed_${currentYear}`, []);
 
   // Daily Explainer Videos (Google Drive)
   const [explainerVideos, setExplainerVideos] = useState<Record<number, string>>({});
@@ -865,6 +869,22 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : isAlreadySaved ? 'Saved to Cloud' : 'Save Reflections to Cloud'}
                 </button>
               </div>
+            </div>
+
+            {/* Post-Reflection Thanksgiving Prayer: Thanking God and Transforming the Word into Action */}
+            <div className="mt-6">
+              <ThanksgivingPrayerItem
+                dayLabel={`Day ${viewedDay} of 365`}
+                passagesSummary={`${currentReading?.ot || ''} & ${currentReading?.nt || ''}`}
+                isPrayed={prayedThanksgivingArray.includes(viewedDay)}
+                onTogglePrayed={() => {
+                  setPrayedThanksgivingArray(prev => 
+                    prev.includes(viewedDay) ? prev.filter(d => d !== viewedDay) : [...prev, viewedDay]
+                  );
+                }}
+                theme={theme}
+                isTagalog={isTagalog}
+              />
             </div>
 
             {viewedDay !== actualToday && (

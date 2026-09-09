@@ -28,6 +28,7 @@ import { doc, setDoc, getDocs, collection } from 'firebase/firestore';
 import BibleStreakCard from './BibleStreakCard';
 import GoogleDrivePlayer from './GoogleDrivePlayer';
 import BibleStudyQuestions from './BibleStudyQuestions';
+import ThanksgivingPrayerItem from './ThanksgivingPrayerItem';
 import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
@@ -81,6 +82,9 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   const [samplePrayer, setSamplePrayer] = useState<string>('');
   const [isPrayerLoading, setIsPrayerLoading] = useState(false);
   const [prayerVariation, setPrayerVariation] = useState(1);
+
+  // Post-reflection thanksgiving prayer state (Thanksgiving & Life Transformation into Action)
+  const [prayedThanksgivingArray, setPrayedThanksgivingArray] = useSyncedState<number[]>('sk_100_thanksgiving_prayed', []);
 
   // Explainer videos state for 100 Days Plan
   const [explainerVideos, setExplainerVideos] = useState<Record<number, string>>({});
@@ -778,6 +782,22 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                   {isSaving ? 'Saving...' : saveSuccess ? 'Saved!' : isAlreadySaved ? 'Saved to Cloud' : 'Save Reflections to Cloud'}
                 </button>
               </div>
+            </div>
+
+            {/* Post-Reflection Thanksgiving Prayer: Thanking God and Transforming the Word into Action */}
+            <div className="mt-6">
+              <ThanksgivingPrayerItem
+                dayLabel={`Day ${selectedDay} of 100`}
+                passagesSummary={`${currentPlanItem.book} ${currentPlanItem.chapter}`}
+                isPrayed={prayedThanksgivingArray.includes(selectedDay)}
+                onTogglePrayed={() => {
+                  setPrayedThanksgivingArray(prev => 
+                    prev.includes(selectedDay) ? prev.filter(d => d !== selectedDay) : [...prev, selectedDay]
+                  );
+                }}
+                theme="light"
+                isTagalog={isTagalog}
+              />
             </div>
 
           </div>
