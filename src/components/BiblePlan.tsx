@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BIBLE_PLAN } from '../data';
 import { 
   CheckCircle2, 
@@ -75,6 +75,26 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   const completedDays = new Set(progressArray);
   const initialDay = BIBLE_PLAN.find(item => !completedDays.has(item.day))?.day || 1;
   const [selectedDay, setSelectedDay] = useState<number>(initialDay);
+  const milestoneRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectDay = (day: number) => {
+    setSelectedDay(day);
+    // Smoothly scroll to the beginning of the Milestone Journey devotional guide
+    setTimeout(() => {
+      if (milestoneRef.current) {
+        const yOffset = -90; // offset to accommodate fixed navigation header
+        const y = milestoneRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      } else {
+        const el = document.getElementById('milestone-journey-guide');
+        if (el) {
+          const yOffset = -90;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        }
+      }
+    }, 10);
+  };
 
   // Pre-reading prayer state (Wisdom & Understanding)
   const [prayedWisdomArray, setPrayedWisdomArray] = useSyncedState<number[]>('sk_100_wisdom_prayed', []);
@@ -445,7 +465,11 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
         )}
 
         {/* Hero Card: Today's / Selected Day Passage Reader & Reflection Note */}
-        <div className="max-w-3xl mx-auto mb-16">
+        <div 
+          id="milestone-journey-guide"
+          ref={milestoneRef}
+          className="max-w-3xl mx-auto mb-16 scroll-mt-24"
+        >
           <div className={`rounded-2xl p-6 sm:p-10 border shadow-lg relative overflow-hidden transition-colors ${
             isSelectedDayCompleted ? 'bg-[#FAFAFA]/70 border-[#D4A373]/50' : 'bg-white border-gray-200'
           }`}>
@@ -824,13 +848,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                 <button
                   key={item.day}
                   type="button"
-                  onClick={() => {
-                    setSelectedDay(item.day);
-                    // scroll smoothly to passage reader if on mobile
-                    if (window.innerWidth < 768) {
-                      window.scrollTo({ top: 350, behavior: 'smooth' });
-                    }
-                  }}
+                  onClick={() => handleSelectDay(item.day)}
                   className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-sm transition-all ${
                     isSelected 
                       ? 'ring-2 ring-[#0F2C59] border-[#0F2C59] bg-white shadow-md'

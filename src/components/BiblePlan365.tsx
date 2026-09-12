@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BIBLE_PLAN_365_FULL } from '../bibleData';
 import { 
   CheckCircle2, 
@@ -91,6 +91,26 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   // Current viewed day (defaults to today)
   const [viewedDay, setViewedDay] = useState<number>(1);
   const [actualToday, setActualToday] = useState<number>(1);
+  const dayCardRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectDay = (day: number) => {
+    setViewedDay(day);
+    // Smoothly scroll to the beginning of the "Day *** of 365" devotional guide
+    setTimeout(() => {
+      if (dayCardRef.current) {
+        const yOffset = -90; // offset to accommodate fixed navigation header
+        const y = dayCardRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
+        window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+      } else {
+        const el = document.getElementById('day-365-guide');
+        if (el) {
+          const yOffset = -90;
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' });
+        }
+      }
+    }, 10);
+  };
 
   // Pre-reading prayer state (Wisdom & Understanding)
   const [prayedWisdomArray, setPrayedWisdomArray] = useSyncedState<number[]>(`sk_bible_wisdom_prayed_${currentYear}`, []);
@@ -513,7 +533,11 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
         )}
 
         {/* Hero Card: Today's / Viewed Reading */}
-        <div className="max-w-3xl mx-auto mb-16">
+        <div 
+          id="day-365-guide"
+          ref={dayCardRef}
+          className="max-w-3xl mx-auto mb-16 scroll-mt-24"
+        >
           <div className={`rounded-2xl p-6 sm:p-10 border shadow-lg relative overflow-hidden transition-colors ${isViewedAllDone ? (theme === 'light' ? 'bg-[#FAFAFA]/50 border-[#D4A373]/40' : 'bg-amber-900/10 border-amber-900/50') : (theme === 'light' ? 'bg-white border-gray-200' : 'bg-gray-800 border-gray-700')}`}>
             
             {/* View Navigation */}
@@ -931,10 +955,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
               return (
                 <button
                   key={item.day}
-                  onClick={() => {
-                    setViewedDay(item.day);
-                    window.scrollTo({ top: 100, behavior: 'smooth' });
-                  }}
+                  onClick={() => handleSelectDay(item.day)}
                   className={`relative flex flex-col items-center justify-center p-3 rounded-xl border text-sm transition-all ${cardStyle}`}
                 >
                   <div className="absolute top-2 right-2">
