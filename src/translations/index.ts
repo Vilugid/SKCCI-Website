@@ -11,6 +11,7 @@ export interface Translations {
     biblePlan365: string;
     cellGroup: string;
     leaderTools: string;
+    formalEducation: string;
     events: string;
     prayerHub: string;
     giving: string;
@@ -182,6 +183,7 @@ export const translations: Record<Language, Translations> = {
       biblePlan365: '365-Day Guide',
       cellGroup: 'Cell Group',
       leaderTools: 'Leader Tools',
+      formalEducation: 'Formal Education',
       events: 'Events',
       prayerHub: 'Prayer Hub',
       giving: 'Giving',
@@ -351,6 +353,7 @@ export const translations: Record<Language, Translations> = {
       biblePlan365: '365-Day Guide',
       cellGroup: 'Cell Group',
       leaderTools: 'Leader Tools',
+      formalEducation: 'Formal Education',
       events: 'Events',
       prayerHub: 'Prayer Hub',
       giving: 'Giving',

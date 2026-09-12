@@ -122,7 +122,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             {/* Grow Dropdown */}
             <div className="relative group flex items-center">
               <button 
-                className={`text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
+                className={`text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools' || activeTab === 'Formal Education') ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
               >
                 {dict.nav.grow}
                 <ChevronDown size={14} className="text-[#0F2C59] group-hover:text-[#C82323] transition-colors" />
@@ -157,6 +157,12 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                     className={getTabClass('Leader Tools', true)}
                   >
                     {dict.nav.leaderTools}
+                  </button>
+                  <button 
+                    onClick={() => handleTabClick('Formal Education')} 
+                    className={getTabClass('Formal Education', true)}
+                  >
+                    {dict.nav.formalEducation}
                   </button>
                 </div>
               </div>
@@ -316,7 +322,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
 
             <div className="py-2">
               <div
-                className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools') ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59]'}`}
+                className={`w-full text-left px-4 py-3 rounded-xl text-base font-medium ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools' || activeTab === 'Formal Education') ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-[#0F2C59]'}`}
               >
                 {dict.nav.grow}
               </div>
@@ -349,6 +355,12 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                   className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Leader Tools' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
                 >
                   {dict.nav.leaderTools}
+                </button>
+                <button
+                  onClick={() => { handleTabClick('Formal Education'); setIsMobileMenuOpen(false); }}
+                  className={`block w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium ${activeTab === 'Formal Education' ? 'bg-[#FAFAFA] text-[#C82323]' : 'text-gray-600 hover:text-[#C82323] hover:bg-[#FAFAFA]'}`}
+                >
+                  {dict.nav.formalEducation}
                 </button>
               </div>
             </div>

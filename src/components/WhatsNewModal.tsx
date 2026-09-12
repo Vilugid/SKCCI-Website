@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, X, ArrowRight, CheckCircle2, Shield, Film, BookOpen, Music, Trash2, Globe } from 'lucide-react';
+import { Sparkles, X, ArrowRight, CheckCircle2, Shield, Film, BookOpen, Music, Trash2, Globe, GraduationCap } from 'lucide-react';
 import { TabItem } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -13,7 +13,7 @@ interface UpdateItem {
   id: string;
   version: string;
   date: string;
-  tag: 'NEW' | 'IMPROVED' | 'FIX';
+  tag: 'NEW' | 'IMPROVED' | 'FIX' | 'New Resource' | string;
   titleEn: string;
   titleTl: string;
   descriptionEn: string;
@@ -27,6 +27,30 @@ interface UpdateItem {
 }
 
 const UPDATES: UpdateItem[] = [
+  {
+    id: 'formal-education-directory',
+    version: 'v1.4.1',
+    date: 'September 2026',
+    tag: 'New Resource',
+    titleEn: 'Formal Theological Education Directory Added',
+    titleTl: 'Direktoryo ng Pormal na Teolohikong Edukasyon',
+    descriptionEn: 'Take your ministry calling to the next level. Explore accredited on-campus degree programs via Asian Theological Seminary (ATS) and flexible, low-cost online degrees via Christian Leaders Institute (CLI) directly under the Grow menu.',
+    descriptionTl: 'Itaas ang antas ng iyong tawag sa paglilingkod. Galugarin ang mga kinikilalang programa sa seminaryo sa pamamagitan ng Asian Theological Seminary (ATS) at abot-kayang online degrees mula sa Christian Leaders Institute (CLI) sa ilalim ng Grow menu.',
+    highlightsEn: [
+      'Asian Theological Seminary (ATS): Accredited residential & blended M.Div., M.A., and doctoral programs in Quezon City',
+      'Christian Leaders Institute (CLI): 100% online, self-paced, tuition-free degree coursework for bi-vocational ministers',
+      'Direct navigation link located conveniently under the Grow header dropdown after Leader Tools'
+    ],
+    highlightsTl: [
+      'Asian Theological Seminary (ATS): Kinikilalang residential at blended M.Div., M.A., at doctoral studies sa Quezon City',
+      'Christian Leaders Institute (CLI): 100% online, sariling bilis, at murang degree coursework para sa mga manggagawa',
+      'Madaling puntahan sa ilalim ng Grow menu kasunod ng Leader Tools'
+    ],
+    icon: <GraduationCap size={18} className="text-[#C82323]" />,
+    actionTab: 'Formal Education',
+    actionLabelEn: 'Explore Formal Education',
+    actionLabelTl: 'Tingnan ang Formal Education'
+  },
   {
     id: 'sidebar-deletion',
     version: 'v1.4.0',
@@ -158,8 +182,10 @@ export default function WhatsNewModal({ isOpen, onClose, onNavigate }: WhatsNewM
     }
   };
 
-  const getTagBadge = (tag: 'NEW' | 'IMPROVED' | 'FIX') => {
+  const getTagBadge = (tag: string) => {
     switch (tag) {
+      case 'New Resource':
+        return 'bg-purple-100 text-purple-800 border-purple-200';
       case 'NEW':
         return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'IMPROVED':

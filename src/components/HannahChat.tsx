@@ -17,7 +17,8 @@ import {
   BookOpen,
   Users,
   Compass,
-  Video
+  Video,
+  GraduationCap
 } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -285,6 +286,14 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
           tab: 'Leader Tools',
           label: isTagalog ? 'Buksan ang Leader Tools (Grow)' : 'Open Leader Tools (Grow)',
           icon: <BookOpen size={13} className="text-[#0F2C59]" />
+        });
+      }
+
+      if (lower.includes('seminary') || lower.includes('seminaryo') || lower.includes('theology') || lower.includes('theological') || lower.includes('teolohiya') || lower.includes('formal education') || lower.includes('degree') || lower.includes('ats') || lower.includes('cli')) {
+        buttons.push({
+          tab: 'Formal Education',
+          label: isTagalog ? 'Pormal na Edukasyon (Grow)' : 'Formal Education (Grow)',
+          icon: <GraduationCap size={13} className="text-[#C82323]" />
         });
       }
 

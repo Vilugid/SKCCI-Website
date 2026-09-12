@@ -19,6 +19,7 @@ import CellGroup from './components/CellGroup';
 import LeaderTools from './components/LeaderTools';
 import Events from './components/Events';
 import PrayerHub from './components/PrayerHub';
+import FormalEducation from './components/FormalEducation';
 import HannahChat from './components/HannahChat';
 import { TabItem } from './types';
 import { useSyncedState } from './hooks/useSyncedState';
@@ -35,6 +36,7 @@ export const tabToParam: Record<TabItem, string> = {
   '365 Bible Reading Guide': 'bible365',
   'Cell Group': 'cellgroup',
   'Leader Tools': 'leadertools',
+  'Formal Education': 'formal-education',
   'Events': 'events',
   'Prayer Hub': 'prayer',
   'Giving': 'giving',
@@ -46,6 +48,16 @@ export const getTabFromUrl = (): TabItem => {
   const params = new URLSearchParams(window.location.search);
   const tabParam = params.get('tab')?.toLowerCase();
   
+  if (
+    tabParam === 'formal-education' || 
+    tabParam === 'formaleducation' || 
+    tabParam === 'theology' || 
+    tabParam === 'education' ||
+    window.location.hash === '#formal-education' ||
+    window.location.pathname.includes('/grow/formal-education')
+  ) {
+    return 'Formal Education';
+  }
   if (tabParam === 'events' || params.has('eventId') || params.has('event')) {
     return 'Events';
   }
@@ -206,6 +218,10 @@ export default function App() {
 
         {activeTab === 'Leader Tools' && (
           <LeaderTools />
+        )}
+
+        {activeTab === 'Formal Education' && (
+          <FormalEducation handleTabClick={handleTabClick} />
         )}
 
         {activeTab === 'Events' && (
