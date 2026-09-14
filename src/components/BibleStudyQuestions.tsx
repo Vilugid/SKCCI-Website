@@ -289,7 +289,7 @@ export default function BibleStudyQuestions({
             <FileText size={18} />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-[#0F2C59] dark:text-gray-100">
+            <p className={`text-sm font-semibold ${isDarkMode ? 'text-gray-100' : 'text-[#0F2C59]'}`}>
               {lang === 'fil' ? 'Nakatago ang Gabay sa Pagbubulay' : 'Reflection Guide Collapsed'}
             </p>
             <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>

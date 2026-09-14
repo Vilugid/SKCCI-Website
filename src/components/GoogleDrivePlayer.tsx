@@ -223,7 +223,9 @@ export default function GoogleDrivePlayer({
       {isEditing && canEdit && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-200">
           <div 
-            className="w-full max-w-lg rounded-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200"
+            className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 ${
+              isDarkMode ? 'bg-gray-900 border-gray-800' : 'bg-white border-gray-200'
+            }`}
             onClick={e => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -251,7 +253,9 @@ export default function GoogleDrivePlayer({
             {/* Modal Body */}
             <div className="p-6 space-y-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                <label className={`block text-xs font-bold uppercase tracking-wider mb-1.5 ${
+                  isDarkMode ? 'text-gray-300' : 'text-gray-700'
+                }`}>
                   Video URL (Google Drive or YouTube)
                 </label>
                 <input
@@ -259,7 +263,11 @@ export default function GoogleDrivePlayer({
                   value={inputUrl}
                   onChange={(e) => setInputUrl(e.target.value)}
                   placeholder="https://drive.google.com/file/d/... or https://youtu.be/..."
-                  className="w-full p-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs font-mono focus:border-[#C82323] focus:ring-1 focus:ring-[#C82323] outline-none transition-all"
+                  className={`w-full p-3 rounded-xl border text-xs font-mono focus:border-[#C82323] focus:ring-1 focus:ring-[#C82323] outline-none transition-all ${
+                    isDarkMode 
+                      ? 'border-gray-700 bg-gray-800 text-gray-100' 
+                      : 'border-gray-300 bg-gray-50 text-gray-900'
+                  }`}
                 />
               </div>
 
@@ -267,36 +275,46 @@ export default function GoogleDrivePlayer({
               {inputUrl.trim() && (
                 <div className={`p-3 rounded-xl border text-xs ${
                   inputParsed.directUrl || inputUrl.trim().startsWith('http')
-                    ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200' 
-                    : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200'
+                    ? isDarkMode
+                      ? 'bg-emerald-950/30 border-emerald-800 text-emerald-200' 
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : isDarkMode
+                      ? 'bg-rose-950/30 border-rose-800 text-rose-200'
+                      : 'bg-rose-50 border-rose-200 text-rose-800'
                 }`}>
                   {inputParsed.directUrl || inputUrl.trim().startsWith('http') ? (
                     <div className="flex items-center gap-1.5 font-semibold">
-                      <CheckCircle2 size={14} className="text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                      <CheckCircle2 size={14} className={isDarkMode ? 'text-emerald-400 flex-shrink-0' : 'text-emerald-600 flex-shrink-0'} />
                       <span>Ready to link ({inputParsed.platformName || 'Web Link'})</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-1.5">
-                      <AlertCircle size={14} className="text-rose-600 dark:text-rose-400 flex-shrink-0" />
+                      <AlertCircle size={14} className={isDarkMode ? 'text-rose-400 flex-shrink-0' : 'text-rose-600 flex-shrink-0'} />
                       <span>Please enter a full URL (e.g. starting with https://)</span>
                     </div>
                   )}
                 </div>
               )}
 
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-relaxed">
+              <p className={`text-[11px] leading-relaxed ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                 When members click <strong>&quot;Watch Video&quot;</strong>, it will cleanly open this link directly in their Google Drive app or browser without any black screens or navigation issues.
               </p>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between gap-3">
+            <div className={`px-6 py-4 border-t flex items-center justify-between gap-3 ${
+              isDarkMode ? 'bg-gray-800/50 border-gray-800' : 'bg-gray-50 border-gray-200'
+            }`}>
               {currentUrl ? (
                 <button
                   type="button"
                   onClick={handleDelete}
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 px-3 py-2 rounded-xl transition-colors cursor-pointer"
+                  className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl transition-colors cursor-pointer ${
+                    isDarkMode 
+                      ? 'text-red-400 hover:bg-red-950/40' 
+                      : 'text-red-600 hover:text-red-700 hover:bg-red-50'
+                  }`}
                 >
                   <Trash2 size={14} /> Remove Link
                 </button>
@@ -309,7 +327,11 @@ export default function GoogleDrivePlayer({
                   type="button"
                   onClick={handleCloseEdit}
                   disabled={isSaving}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                  className={`px-4 py-2 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700' 
+                      : 'text-gray-700 hover:bg-gray-200'
+                  }`}
                 >
                   Cancel
                 </button>
@@ -317,7 +339,11 @@ export default function GoogleDrivePlayer({
                   type="button"
                   onClick={handleSave}
                   disabled={isSaving}
-                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50"
+                  className={`flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer disabled:opacity-50 ${
+                    isDarkMode 
+                      ? 'bg-[#D4A373] hover:bg-[#c49262] text-slate-950' 
+                      : 'bg-[#0F2C59] hover:bg-[#1A365D] text-white'
+                  }`}
                 >
                   {isSaving ? (
                     <Loader2 size={14} className="animate-spin" />

@@ -639,14 +639,18 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden mt-3"
                       >
-                        <div className={`p-4 rounded-xl border relative ${
+                        <div className={`p-4 rounded-xl border relative shadow-2xs ${
                           theme === 'light'
-                            ? 'bg-amber-50/70 border-amber-200/90 text-gray-800'
-                            : 'bg-amber-950/40 border-amber-700/60 text-amber-100'
+                            ? 'bg-amber-50/90 border-amber-200 text-slate-900'
+                            : 'bg-amber-950/50 border-amber-700/60 text-amber-50'
                         }`}>
-                          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-amber-200/60 dark:border-amber-800/60">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                              <Sparkles size={12} className="text-amber-600" />
+                          <div className={`flex items-center justify-between gap-2 mb-2 pb-2 border-b ${
+                            theme === 'light' ? 'border-amber-200' : 'border-amber-800/60'
+                          }`}>
+                            <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                              theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                            }`}>
+                              <Sparkles size={12} className={theme === 'light' ? 'text-amber-700' : 'text-amber-400'} />
                               {isTagalog ? 'Gabay sa Panalangin (Gemini AI)' : 'Guided Prayer (Gemini AI)'}
                             </span>
                             
@@ -655,10 +659,14 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                                 type="button"
                                 onClick={handleRegeneratePrayer}
                                 disabled={isPrayerLoading}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
+                                  theme === 'light' 
+                                    ? 'hover:bg-amber-100 text-amber-950' 
+                                    : 'hover:bg-amber-900/50 text-amber-200'
+                                }`}
                                 title={isTagalog ? 'Lumikha ng bagong bersyon ng panalangin' : 'Generate another prayer variation'}
                               >
-                                <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-600' : ''} />
+                                <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-700' : ''} />
                                 <span>{isTagalog ? 'Bago' : 'New'}</span>
                               </button>
 
@@ -666,7 +674,11 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                                 type="button"
                                 onClick={handleCopyPrayer}
                                 disabled={isPrayerLoading || !samplePrayer}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                                className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
+                                  theme === 'light' 
+                                    ? 'hover:bg-amber-100 text-amber-950' 
+                                    : 'hover:bg-amber-900/50 text-amber-200'
+                                }`}
                                 title="Copy prayer to clipboard"
                               >
                                 <Copy size={11} />
@@ -676,20 +688,28 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                           </div>
 
                           {isPrayerLoading ? (
-                            <div className="py-4 flex flex-col items-center justify-center gap-2 text-amber-800 dark:text-amber-300">
-                              <Loader2 size={20} className="animate-spin text-amber-600" />
+                            <div className={`py-4 flex flex-col items-center justify-center gap-2 ${
+                              theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                            }`}>
+                              <Loader2 size={20} className={`animate-spin ${theme === 'light' ? 'text-amber-700' : 'text-amber-400'}`} />
                               <p className="text-xs font-medium">
                                 {isTagalog ? 'Inihahanda ang gabay sa panalangin sa pamamagitan ng Gemini...' : 'Generating prayer with Gemini AI...'}
                               </p>
                             </div>
                           ) : (
                             <div>
-                              <p className="text-sm font-serif italic leading-relaxed text-gray-800 dark:text-amber-100">
-                                "{samplePrayer}"
+                              <p className={`text-sm font-serif italic leading-relaxed font-medium ${
+                                theme === 'light' ? 'text-slate-900' : 'text-amber-50'
+                              }`}>
+                                &ldquo;{samplePrayer}&rdquo;
                               </p>
 
-                              <div className="mt-3 pt-2.5 flex items-center justify-between border-t border-amber-200/50 dark:border-amber-800/50">
-                                <span className="text-[10px] text-amber-700/80 dark:text-amber-400">
+                              <div className={`mt-3 pt-2.5 flex items-center justify-between border-t ${
+                                theme === 'light' ? 'border-amber-200' : 'border-amber-800/50'
+                              }`}>
+                                <span className={`text-[10px] font-medium ${
+                                  theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                                }`}>
                                   {isTagalog ? 'Ipanalangin bago buksan ang Salita ng Diyos' : 'Pray sincerely before opening the Word of God'}
                                 </span>
 
@@ -703,7 +723,9 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                                     <span>Amen / I Prayed This</span>
                                   </button>
                                 ) : (
-                                  <span className="text-xs font-bold text-green-700 dark:text-green-400 flex items-center gap-1">
+                                  <span className={`text-xs font-bold flex items-center gap-1 ${
+                                    theme === 'light' ? 'text-green-800' : 'text-green-400'
+                                  }`}>
                                     <Check size={13} strokeWidth={3} /> {isTagalog ? 'Amen! Naitala na.' : 'Amen! Recorded.'}
                                   </span>
                                 )}
@@ -736,7 +758,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium uppercase text-[#C82323] dark:text-[#D4A373]">Old Testament</p>
+                  <p className={`text-sm font-medium uppercase ${theme === 'light' ? 'text-[#C82323]' : 'text-[#D4A373]'}`}>Old Testament</p>
                   <p className="text-lg font-bold">{currentReading.ot}</p>
                 </div>
                 <input 
@@ -755,7 +777,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   </div>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-medium uppercase text-blue-600 dark:text-blue-400">New Testament</p>
+                  <p className={`text-sm font-medium uppercase ${theme === 'light' ? 'text-blue-600' : 'text-blue-400'}`}>New Testament</p>
                   <p className="text-lg font-bold">{currentReading.nt}</p>
                 </div>
                 <input 
@@ -781,7 +803,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   <p className="text-xs font-bold uppercase tracking-wider text-[#D4A373]">
                     Read on Bible Gateway
                   </p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  <p className={`text-sm font-semibold ${theme === 'light' ? 'text-gray-900' : 'text-gray-100'}`}>
                     {currentReading.ot} &bull; {currentReading.nt}
                   </p>
                 </div>
@@ -792,7 +814,11 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                   href={`https://www.biblegateway.com/passage/?search=${encodeURIComponent(`${currentReading.ot}; ${currentReading.nt}`)}&version=NKJV`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F2C59] hover:bg-[#1A365D] dark:bg-[#D4A373] dark:hover:bg-[#c49262] text-white dark:text-slate-950 text-xs font-bold transition-all shadow-xs cursor-pointer group"
+                  className={`w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer group ${
+                    theme === 'light' 
+                      ? 'bg-[#0F2C59] hover:bg-[#1A365D] text-white' 
+                      : 'bg-[#D4A373] hover:bg-[#c49262] text-slate-950'
+                  }`}
                 >
                   <span>Read Today&apos;s Chapters</span>
                   <ExternalLink size={13} className="group-hover:translate-x-0.5 transition-transform" />

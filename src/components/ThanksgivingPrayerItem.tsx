@@ -199,14 +199,18 @@ export default function ThanksgivingPrayerItem({
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden mt-3"
               >
-                <div className={`p-4 rounded-xl border relative ${
+                <div className={`p-4 rounded-xl border relative shadow-2xs ${
                   theme === 'light'
-                    ? 'bg-amber-50/70 border-amber-200/90 text-gray-800'
-                    : 'bg-amber-950/40 border-amber-700/60 text-amber-100'
+                    ? 'bg-amber-50/90 border-amber-200 text-slate-900'
+                    : 'bg-amber-950/50 border-amber-700/60 text-amber-50'
                 }`}>
-                  <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-amber-200/60 dark:border-amber-800/60">
-                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                      <Sparkles size={12} className="text-amber-600" />
+                  <div className={`flex items-center justify-between gap-2 mb-2 pb-2 border-b ${
+                    theme === 'light' ? 'border-amber-200' : 'border-amber-800/60'
+                  }`}>
+                    <span className={`text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+                      theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                    }`}>
+                      <Sparkles size={12} className={theme === 'light' ? 'text-amber-700' : 'text-amber-400'} />
                       {isTagalog ? 'Gabay sa Pasasalamat (Gemini AI)' : 'Thanksgiving Guided Prayer (Gemini AI)'}
                     </span>
                     
@@ -215,10 +219,14 @@ export default function ThanksgivingPrayerItem({
                         type="button"
                         onClick={handleRegeneratePrayer}
                         disabled={isPrayerLoading}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
+                          theme === 'light' 
+                            ? 'hover:bg-amber-100 text-amber-950' 
+                            : 'hover:bg-amber-900/50 text-amber-200'
+                        }`}
                         title={isTagalog ? 'Lumikha ng bagong bersyon ng panalangin' : 'Generate another prayer variation'}
                       >
-                        <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-600' : ''} />
+                        <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-700' : ''} />
                         <span>{isTagalog ? 'Bago' : 'New'}</span>
                       </button>
 
@@ -226,7 +234,11 @@ export default function ThanksgivingPrayerItem({
                         type="button"
                         onClick={handleCopyPrayer}
                         disabled={isPrayerLoading || !samplePrayer}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-900 dark:text-amber-200 transition-colors cursor-pointer disabled:opacity-50"
+                        className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md transition-colors cursor-pointer disabled:opacity-50 ${
+                          theme === 'light' 
+                            ? 'hover:bg-amber-100 text-amber-950' 
+                            : 'hover:bg-amber-900/50 text-amber-200'
+                        }`}
                         title="Copy prayer to clipboard"
                       >
                         <Copy size={11} />
@@ -236,20 +248,28 @@ export default function ThanksgivingPrayerItem({
                   </div>
 
                   {isPrayerLoading ? (
-                    <div className="py-4 flex flex-col items-center justify-center gap-2 text-amber-800 dark:text-amber-300">
-                      <Loader2 size={20} className="animate-spin text-amber-600" />
+                    <div className={`py-4 flex flex-col items-center justify-center gap-2 ${
+                      theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                    }`}>
+                      <Loader2 size={20} className={`animate-spin ${theme === 'light' ? 'text-amber-700' : 'text-amber-400'}`} />
                       <p className="text-xs font-medium">
                         {isTagalog ? 'Inihahanda ang panalangin sa pamamagitan ng Gemini AI...' : 'Generating thanksgiving prayer with Gemini AI...'}
                       </p>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-sm font-serif italic leading-relaxed text-gray-800 dark:text-amber-100">
-                        "{samplePrayer}"
+                      <p className={`text-sm font-serif italic leading-relaxed font-medium ${
+                        theme === 'light' ? 'text-slate-900' : 'text-amber-50'
+                      }`}>
+                        &ldquo;{samplePrayer}&rdquo;
                       </p>
                       
-                      <div className="mt-3 pt-2 border-t border-amber-200/50 dark:border-amber-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                        <span className="text-[11px] text-amber-900/80 dark:text-amber-300/80">
+                      <div className={`mt-3 pt-2 border-t flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                        theme === 'light' ? 'border-amber-200' : 'border-amber-800/50'
+                      }`}>
+                        <span className={`text-[11px] font-medium ${
+                          theme === 'light' ? 'text-amber-950' : 'text-amber-300'
+                        }`}>
                           {isTagalog 
                             ? 'Tapusin ang debosyon sa pagpapasalamat at paghingi ng lakas upang isabuhay ang Salita.' 
                             : 'Conclude your devotional by thanking God and asking for strength to put His Word into action.'}

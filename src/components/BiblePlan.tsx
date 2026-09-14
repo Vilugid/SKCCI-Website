@@ -581,10 +581,10 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                         transition={{ duration: 0.2 }}
                         className="overflow-hidden mt-3"
                       >
-                        <div className="p-4 rounded-xl border relative bg-amber-50/70 border-amber-200/90 text-gray-800">
-                          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-amber-200/60">
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
-                              <Sparkles size={12} className="text-amber-600" />
+                        <div className="p-4 rounded-xl border relative bg-amber-50/90 border-amber-200 text-slate-900 shadow-2xs">
+                          <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-amber-200">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-amber-950 flex items-center gap-1.5">
+                              <Sparkles size={12} className="text-amber-700" />
                               {isTagalog ? 'Gabay sa Panalangin (Gemini AI)' : 'Guided Prayer (Gemini AI)'}
                             </span>
                             
@@ -593,10 +593,10 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                                 type="button"
                                 onClick={handleRegeneratePrayer}
                                 disabled={isPrayerLoading}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 text-amber-900 transition-colors cursor-pointer disabled:opacity-50"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 text-amber-950 transition-colors cursor-pointer disabled:opacity-50"
                                 title={isTagalog ? 'Lumikha ng bagong bersyon ng panalangin' : 'Generate another prayer variation'}
                               >
-                                <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-600' : ''} />
+                                <RotateCw size={11} className={isPrayerLoading ? 'animate-spin text-amber-700' : ''} />
                                 <span>{isTagalog ? 'Bago' : 'New'}</span>
                               </button>
 
@@ -604,7 +604,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                                 type="button"
                                 onClick={handleCopyPrayer}
                                 disabled={isPrayerLoading || !samplePrayer}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 text-amber-900 transition-colors cursor-pointer disabled:opacity-50"
+                                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md hover:bg-amber-100 text-amber-950 transition-colors cursor-pointer disabled:opacity-50"
                                 title="Copy prayer to clipboard"
                               >
                                 <Copy size={11} />
@@ -614,20 +614,20 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                           </div>
 
                           {isPrayerLoading ? (
-                            <div className="py-4 flex flex-col items-center justify-center gap-2 text-amber-800">
-                              <Loader2 size={20} className="animate-spin text-amber-600" />
+                            <div className="py-4 flex flex-col items-center justify-center gap-2 text-amber-950">
+                              <Loader2 size={20} className="animate-spin text-amber-700" />
                               <p className="text-xs font-medium">
                                 {isTagalog ? 'Inihahanda ang gabay sa panalangin sa pamamagitan ng Gemini...' : 'Generating prayer with Gemini AI...'}
                               </p>
                             </div>
                           ) : (
                             <div>
-                              <p className="text-sm font-serif italic leading-relaxed text-gray-800">
-                                "{samplePrayer}"
+                              <p className="text-sm font-serif italic leading-relaxed text-slate-900 font-medium">
+                                &ldquo;{samplePrayer}&rdquo;
                               </p>
 
-                              <div className="mt-3 pt-2.5 flex items-center justify-between border-t border-amber-200/50">
-                                <span className="text-[10px] text-amber-700/80">
+                              <div className="mt-3 pt-2.5 flex items-center justify-between border-t border-amber-200">
+                                <span className="text-[10px] text-amber-950 font-medium">
                                   {isTagalog ? 'Ipanalangin bago buksan ang Salita ng Diyos' : 'Pray sincerely before opening the Word of God'}
                                 </span>
 
@@ -641,7 +641,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                                     <span>Amen / I Prayed This</span>
                                   </button>
                                 ) : (
-                                  <span className="text-xs font-bold text-green-700 flex items-center gap-1">
+                                  <span className="text-xs font-bold text-green-800 flex items-center gap-1">
                                     <Check size={13} strokeWidth={3} /> {isTagalog ? 'Amen! Naitala na.' : 'Amen! Recorded.'}
                                   </span>
                                 )}
