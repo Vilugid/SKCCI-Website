@@ -81,6 +81,21 @@ const formatShortDate = (dateString: string) => {
   }
 };
 
+// Helper to determine if an event has already concluded / passed
+// An event is considered concluded if its date & time plus a 3-hour buffer has passed (or if date is invalid)
+export const isEventConcluded = (dateTimeString: string): boolean => {
+  if (!dateTimeString) return false;
+  try {
+    const eventDate = new Date(dateTimeString);
+    if (isNaN(eventDate.getTime())) return false;
+    // Church events / gatherings conclude within 3 hours of scheduled start time
+    const conclusionTime = eventDate.getTime() + (3 * 60 * 60 * 1000);
+    return Date.now() > conclusionTime;
+  } catch {
+    return false;
+  }
+};
+
 // Category detection & default high-quality Unsplash image generator
 const getEventCategoryMeta = (title: string, description: string) => {
   const text = `${title || ''} ${description || ''}`.toLowerCase();
@@ -229,6 +244,7 @@ export default function Events() {
 
   const [activeTab, setActiveTab] = useState<'feed' | 'admin'>('feed');
   const [feedFilter, setFeedFilter] = useState<'all' | 'upcoming' | 'past'>('all');
+  const [manageFilter, setManageFilter] = useState<'active' | 'concluded'>('active');
   const [adminSubTab, setAdminSubTab] = useState<'events' | 'sunday_card' | 'attendance'>('events');
   const [sharingEvent, setSharingEvent] = useState<ChurchEvent | null>(null);
   const [recapEvent, setRecapEvent] = useState<ChurchEvent | null>(null);
@@ -522,10 +538,20 @@ export default function Events() {
     photosUrl: sundayCardSettings.photosUrl || DEFAULT_SUNDAY_SERVICE_SETTINGS.photosUrl
   } as ChurchEvent;
 
+  // Active / Upcoming vs Concluded Events for Admin Management
+  const activeEvents = events
+    .filter(e => !isEventConcluded(e.dateTime))
+    .sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+
+  const concludedEvents = events
+    .filter(e => isEventConcluded(e.dateTime))
+    .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+
+  const displayedManageEvents = manageFilter === 'active' ? activeEvents : concludedEvents;
+
   // Process & Separate events into Upcoming and Past
   const processedEvents = events.map(e => {
-    const eventDate = new Date(e.dateTime);
-    const isPast = eventDate.getTime() < todayStart.getTime();
+    const isPast = isEventConcluded(e.dateTime);
     return { ...e, isPast };
   });
 
@@ -1026,27 +1052,31 @@ export default function Events() {
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Calendar size={16} /> Total Events</div>
-                    <div className="text-3xl font-bold text-gray-900">{events.length}</div>
+                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Calendar size={16} /> Active Events</div>
+                    <div className="text-3xl font-bold text-gray-900">{activeEvents.length}</div>
+                    <div className="text-xs text-gray-400 mt-1">{concludedEvents.length} concluded in archive</div>
                   </div>
                   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Users size={16} /> Total RSVPs</div>
+                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Users size={16} /> Active RSVPs</div>
                     <div className="text-3xl font-bold text-gray-900">
-                      {Object.values(allRsvps).reduce((sum, rsvps) => sum + rsvps.length, 0)}
+                      {activeEvents.reduce((sum, e) => sum + (allRsvps[e.id]?.length || 0), 0)}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {Object.values(allRsvps).reduce((sum, rsvps) => sum + rsvps.length, 0)} all-time RSVPs
                     </div>
                   </div>
                   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Activity size={16} /> Avg Event Capacity Fill</div>
+                    <div className="text-gray-500 text-sm font-medium mb-1 flex items-center gap-2"><Activity size={16} /> Avg Active Fill</div>
                     <div className="text-3xl font-bold text-[#0F2C59]">
-                      {events.length > 0 && events.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0) > 0
-                        ? Math.round((Object.values(allRsvps).reduce((sum, rsvps) => sum + rsvps.length, 0) / events.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0)) * 100)
+                      {activeEvents.length > 0 && activeEvents.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0) > 0
+                        ? Math.round((activeEvents.reduce((sum, e) => sum + (allRsvps[e.id]?.length || 0), 0) / activeEvents.reduce((sum, e) => sum + (Number(e.capacity) || 30), 0)) * 100)
                         : 0}%
                     </div>
                   </div>
                   <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm bg-gradient-to-br from-red-50 to-white">
                     <div className="text-[#C82323] text-sm font-medium mb-1 flex items-center gap-2"><TrendingUp size={16} /> Almost Full</div>
                     <div className="text-3xl font-bold text-[#C82323]">
-                      {events.filter(e => {
+                      {activeEvents.filter(e => {
                         const count = (allRsvps[e.id] || []).length;
                         const cap = Number(e.capacity) || 30;
                         return count > 0 && count / cap >= 0.8;
@@ -1117,9 +1147,50 @@ export default function Events() {
 
                   {/* Event List */}
                   <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col">
-                    <div className="px-6 py-4 border-b border-gray-100">
-                      <h2 className="text-lg font-bold text-gray-900">Manage Events</h2>
+                    <div className="px-6 py-4 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-lg font-bold text-gray-900">Manage Events</h2>
+                          <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                            manageFilter === 'active' ? 'bg-blue-50 text-[#0F2C59]' : 'bg-gray-100 text-gray-700'
+                          }`}>
+                            {manageFilter === 'active' ? `${activeEvents.length} Active` : `${concludedEvents.length} Concluded`}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {manageFilter === 'active' 
+                            ? 'Displaying events that have not concluded yet.' 
+                            : 'Displaying archived events that have already concluded.'}
+                        </p>
+                      </div>
+
+                      {/* Active vs Concluded Filter Switch */}
+                      <div className="flex items-center bg-gray-100 p-1 rounded-xl shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setManageFilter('active')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                            manageFilter === 'active'
+                              ? 'bg-white text-[#0F2C59] shadow-xs'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Active &amp; Upcoming ({activeEvents.length})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setManageFilter('concluded')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                            manageFilter === 'concluded'
+                              ? 'bg-white text-gray-900 shadow-xs'
+                              : 'text-gray-600 hover:text-gray-900'
+                          }`}
+                        >
+                          Concluded ({concludedEvents.length})
+                        </button>
+                      </div>
                     </div>
+
                     <div className="overflow-x-auto flex-1">
                       <table className="w-full text-left text-sm whitespace-nowrap">
                         <thead className="bg-gray-50 text-gray-500">
@@ -1131,17 +1202,31 @@ export default function Events() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                          {events.map(event => {
+                          {displayedManageEvents.map(event => {
                             const cap = Number(event.capacity) || 30;
                             const rsvpsCount = allRsvps[event.id]?.length || 0;
                             const isFull = rsvpsCount >= cap;
+                            const isConcluded = isEventConcluded(event.dateTime);
                             return (
                               <tr key={event.id} className="hover:bg-gray-50">
-                                <td className="px-6 py-4 font-medium text-gray-900">{event.title}</td>
+                                <td className="px-6 py-4 font-medium text-gray-900">
+                                  <div className="flex items-center gap-2">
+                                    <span>{event.title}</span>
+                                    {isConcluded && (
+                                      <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+                                        Concluded
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
                                 <td className="px-6 py-4 text-gray-500">{formatDate(event.dateTime)}</td>
                                 <td className="px-6 py-4">
                                   <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                                    isFull ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'
+                                    isConcluded
+                                      ? 'bg-gray-100 text-gray-600'
+                                      : isFull 
+                                        ? 'bg-red-100 text-red-700' 
+                                        : 'bg-blue-50 text-blue-700'
                                   }`}>
                                     {rsvpsCount} / {cap}
                                   </span>
@@ -1153,8 +1238,34 @@ export default function Events() {
                               </tr>
                             );
                           })}
-                          {events.length === 0 && (
-                            <tr><td colSpan={4} className="px-6 py-8 text-center text-gray-500">No special events created yet.</td></tr>
+                          {displayedManageEvents.length === 0 && (
+                            <tr>
+                              <td colSpan={4} className="px-6 py-10 text-center text-gray-500">
+                                {manageFilter === 'active' ? (
+                                  <div className="flex flex-col items-center justify-center py-2">
+                                    <CalendarCheck className="w-10 h-10 text-gray-300 mb-2" />
+                                    <p className="font-semibold text-gray-700">No events waiting to conclude</p>
+                                    <p className="text-xs text-gray-400 mt-1 max-w-md">
+                                      Only events that have not concluded yet are shown here. Previous events ({concludedEvents.length}) have concluded and are archived.
+                                    </p>
+                                    {concludedEvents.length > 0 && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setManageFilter('concluded')}
+                                        className="mt-3 text-xs font-semibold text-[#0F2C59] hover:underline cursor-pointer"
+                                      >
+                                        View {concludedEvents.length} Concluded Event{concludedEvents.length !== 1 ? 's' : ''} &rarr;
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="py-2">
+                                    <p className="font-medium text-gray-700">No concluded events found</p>
+                                    <p className="text-xs text-gray-400 mt-1">Past events will appear here once their scheduled date has passed.</p>
+                                  </div>
+                                )}
+                              </td>
+                            </tr>
                           )}
                         </tbody>
                       </table>
@@ -1175,9 +1286,20 @@ export default function Events() {
                     >
                       <option value="">Select an event to view roster...</option>
                       <option value="recurring_sunday_service">Sunday Worship Service ({allRsvps['recurring_sunday_service']?.length || 0} RSVPs)</option>
-                      {events.map(e => (
-                        <option key={e.id} value={e.id}>{e.title} ({allRsvps[e.id]?.length || 0} RSVPs)</option>
-                      ))}
+                      {activeEvents.length > 0 && (
+                        <optgroup label="Active & Upcoming Events">
+                          {activeEvents.map(e => (
+                            <option key={e.id} value={e.id}>{e.title} ({allRsvps[e.id]?.length || 0} RSVPs)</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      {concludedEvents.length > 0 && (
+                        <optgroup label="Concluded Events">
+                          {concludedEvents.map(e => (
+                            <option key={e.id} value={e.id}>{e.title} (Concluded - {allRsvps[e.id]?.length || 0} RSVPs)</option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
 
                     <div className="flex-1 overflow-y-auto border border-gray-100 rounded-xl bg-gray-50 p-2">
@@ -1226,9 +1348,16 @@ export default function Events() {
                         >
                           <option value="" className="text-gray-900">Select an event...</option>
                           <option value="recurring_sunday_service" className="text-gray-900">Sunday Worship Service ({allRsvps['recurring_sunday_service']?.length || 0} RSVPs)</option>
-                          {events.map(e => (
+                          {activeEvents.map(e => (
                             <option key={e.id} value={e.id} className="text-gray-900">{e.title} ({allRsvps[e.id]?.length || 0} RSVPs)</option>
                           ))}
+                          {concludedEvents.length > 0 && (
+                            <optgroup label="Concluded Events" className="text-gray-900">
+                              {concludedEvents.map(e => (
+                                <option key={e.id} value={e.id} className="text-gray-900">{e.title} (Concluded)</option>
+                              ))}
+                            </optgroup>
+                          )}
                         </select>
                       </div>
                       <div>
