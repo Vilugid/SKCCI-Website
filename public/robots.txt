@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://skcci.org/sitemap.xml

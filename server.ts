@@ -605,6 +605,23 @@ STRICT FORMATTING RULES:
     }
   });
 
+  // Explicit SEO routes to guarantee correct MIME types and prevent SPA HTML fallback
+  app.get("/robots.txt", (req, res) => {
+    res.type("text/plain");
+    const filePath = process.env.NODE_ENV === "production"
+      ? path.join(process.cwd(), "dist", "robots.txt")
+      : path.join(process.cwd(), "public", "robots.txt");
+    res.sendFile(filePath);
+  });
+
+  app.get("/sitemap.xml", (req, res) => {
+    res.type("application/xml");
+    const filePath = process.env.NODE_ENV === "production"
+      ? path.join(process.cwd(), "dist", "sitemap.xml")
+      : path.join(process.cwd(), "public", "sitemap.xml");
+    res.sendFile(filePath);
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
