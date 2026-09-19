@@ -147,18 +147,46 @@ export default function LeaderTools() {
   }, [queryClient]);
 
   const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   
+  // Helper to calculate the next upcoming Sunday that does not already have an existing service record
+  const getNextAvailableSunday = (existingRecords: ServiceRecord[]): Date => {
+    const existingDates = new Set(
+      existingRecords.map(r => (r.dateValue || r.id || '').trim())
+    );
+    
+    const candidate = new Date();
+    const dayOfWeek = candidate.getDay(); // 0 = Sun, 1 = Mon, ..., 6 = Sat
+    const daysUntilSunday = (7 - dayOfWeek) % 7;
+    // Advance to upcoming Sunday (or next Sunday if today is already Sunday)
+    candidate.setDate(candidate.getDate() + (daysUntilSunday === 0 ? 7 : daysUntilSunday));
+    
+    // Search up to 52 Sundays ahead for an unused Sunday
+    for (let i = 0; i < 52; i++) {
+      const yyyy = candidate.getFullYear();
+      const mm = String(candidate.getMonth() + 1).padStart(2, '0');
+      const dd = String(candidate.getDate()).padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      if (!existingDates.has(dateStr)) {
+        return candidate;
+      }
+      candidate.setDate(candidate.getDate() + 7);
+    }
+    return candidate;
+  };
+
   useEffect(() => {
-    if (!selectedRecordId && records.length > 0) {
+    if (!selectedRecordId && records.length > 0 && !isCreating) {
       setSelectedRecordId(records[0].id);
     }
-  }, [records, selectedRecordId]);
+  }, [records, selectedRecordId, isCreating]);
 
   const selectedRecord = useMemo(() => {
+    if (isCreating) return null;
     return records.find(r => r.id === selectedRecordId) || records[0];
-  }, [records, selectedRecordId]);
+  }, [records, selectedRecordId, isCreating]);
 
-  const [isEditing, setIsEditing] = useState(false);
   const [recordToDelete, setRecordToDelete] = useState<ServiceRecord | null>(null);
   const [isFormattedView, setIsFormattedView] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -237,14 +265,14 @@ export default function LeaderTools() {
   const [editVerseTranslation, setEditVerseTranslation] = useState('NIV');
   const [isTogglingVerse, setIsTogglingVerse] = useState(false);
 
-  // Sync edit form fields whenever the selected record or its memory verse changes (when not actively editing)
+  // Sync edit form fields whenever the selected record or its memory verse changes (when not actively editing or creating)
   useEffect(() => {
-    if (!isEditing) {
+    if (!isEditing && !isCreating) {
       setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
       setEditVerseText(currentRecordVerse.text || '');
       setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
     }
-  }, [selectedRecordId, currentRecordVerse, isEditing]);
+  }, [selectedRecordId, currentRecordVerse, isEditing, isCreating]);
 
   const handleToggleMemorized = async () => {
     if (!user) {
@@ -452,36 +480,19 @@ export default function LeaderTools() {
   ];
 
   const handleEditInit = () => {
+    if (!selectedRecord) return;
+    setIsCreating(false);
     setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
     setEditVerseText(currentRecordVerse.text || '');
     setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
 
-    if (selectedRecord) {
-      setEditDateValue(selectedRecord.dateValue);
-      setEditDateLabel(selectedRecord.dateLabel);
-      setEditMessageTitle(selectedRecord.messageTitle || '');
-      setEditOutline(selectedRecord.messageOutline || '');
-      setEditVideoIds([...(selectedRecord.youtubeVideoIds || [])]);
-      setEditSongs([...(selectedRecord.songs || [])]);
-    } else {
-      // New record defaults
-      const today = new Date();
-      const nextSunday = new Date();
-      nextSunday.setDate(today.getDate() + ((7 - today.getDay()) % 7));
-      
-      const yyyy = nextSunday.getFullYear();
-      const mm = String(nextSunday.getMonth() + 1).padStart(2, '0');
-      const dd = String(nextSunday.getDate()).padStart(2, '0');
-      
-      const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
-      
-      setEditDateValue(`${yyyy}-${mm}-${dd}`);
-      setEditDateLabel(nextSunday.toLocaleDateString('en-US', options));
-      setEditMessageTitle('Sunday Service');
-      setEditOutline('# Sunday Message\n\nOutline will be posted here.');
-      setEditVideoIds([]);
-      setEditSongs([]);
-    }
+    setEditDateValue(selectedRecord.dateValue);
+    setEditDateLabel(selectedRecord.dateLabel);
+    setEditMessageTitle(selectedRecord.messageTitle || '');
+    setEditOutline(selectedRecord.messageOutline || '');
+    setEditVideoIds([...(selectedRecord.youtubeVideoIds || [])]);
+    setEditSongs([...(selectedRecord.songs || [])]);
+
     // Uncollapse all sections so user can immediately edit
     setCollapsedSections({
       'memory-verse': false,
@@ -494,15 +505,11 @@ export default function LeaderTools() {
   };
 
   const handleCreateNew = () => {
+    setIsCreating(true);
     setSelectedRecordId(null);
-    setEditVerseRef(currentRecordVerse.reference || 'Philippians 4:6-7');
-    setEditVerseText(currentRecordVerse.text || '');
-    setEditVerseTranslation(currentRecordVerse.translation || 'NIV');
 
-    const today = new Date();
-    const nextSunday = new Date();
-    nextSunday.setDate(today.getDate() + ((7 - today.getDay()) % 7));
-    
+    // Compute the next upcoming Sunday that isn't already used
+    const nextSunday = getNextAvailableSunday(records);
     const yyyy = nextSunday.getFullYear();
     const mm = String(nextSunday.getMonth() + 1).padStart(2, '0');
     const dd = String(nextSunday.getDate()).padStart(2, '0');
@@ -514,6 +521,12 @@ export default function LeaderTools() {
     setEditOutline('# Sunday Message\n\nOutline will be posted here.');
     setEditVideoIds([]);
     setEditSongs([]);
+    
+    // Fresh memory verse defaults for the new service date
+    setEditVerseRef('Philippians 4:6-7');
+    setEditVerseText('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.');
+    setEditVerseTranslation('NIV');
+
     setCollapsedSections({
       'memory-verse': false,
       'sunday-service': false,
@@ -522,6 +535,14 @@ export default function LeaderTools() {
       'song-bank': false,
     });
     setIsEditing(true);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setIsCreating(false);
+    if (!selectedRecordId && records.length > 0) {
+      setSelectedRecordId(records[0].id);
+    }
   };
 
   const saveMutation = useMutation({
@@ -555,8 +576,10 @@ export default function LeaderTools() {
     onSuccess: (id) => {
       queryClient.invalidateQueries({ queryKey: ['leader_tools'] });
       if (id) setSelectedRecordId(id);
+      const wasCreating = isCreating;
+      setIsCreating(false);
       setIsEditing(false);
-      toast.success("All updates saved successfully!");
+      toast.success(wasCreating ? "New service record created successfully!" : "All updates saved successfully!");
     },
     onError: (error: any) => {
       console.error("Error saving tools data:", error);
@@ -589,19 +612,34 @@ export default function LeaderTools() {
   const handleSave = () => {
     if (!isAdmin) return;
     const targetDocId = editDateValue.trim();
-    const oldDocId = selectedRecordId;
-    const isDateChanged = Boolean(oldDocId && oldDocId !== targetDocId);
+    if (!targetDocId) {
+      toast.error("Please enter a valid date (YYYY-MM-DD) for the service record.");
+      return;
+    }
 
-    // Retrieve existing memorized user IDs to preserve them on this record
-    const existingRec = records.find(r => r.id === (oldDocId || targetDocId));
+    if (isCreating) {
+      const alreadyExists = records.some(r => r.id === targetDocId || r.dateValue === targetDocId);
+      if (alreadyExists) {
+        toast.error(`A service record for ${editDateLabel || targetDocId} already exists. Please choose a different date.`);
+        return;
+      }
+    }
+
+    const oldDocId = isCreating ? null : selectedRecordId;
+    const isDateChanged = Boolean(!isCreating && oldDocId && oldDocId !== targetDocId);
+
+    // Retrieve existing memorized user IDs to preserve them on this record if editing an existing record
     let existingMemorized: string[] = [];
-    if (existingRec) {
-      if (Array.isArray(existingRec.memorizedUserIds) && existingRec.memorizedUserIds.length > 0) {
-        existingMemorized = existingRec.memorizedUserIds;
-      } else if (Array.isArray(existingRec.memoryVerse?.memorizedUserIds) && existingRec.memoryVerse.memorizedUserIds.length > 0) {
-        existingMemorized = existingRec.memoryVerse.memorizedUserIds;
-      } else if (existingRec.id === records[0]?.id || existingRec.id === '2026-08-23') {
-        existingMemorized = globalFallbackVerse.memorizedUserIds || [];
+    if (!isCreating) {
+      const existingRec = records.find(r => r.id === (oldDocId || targetDocId));
+      if (existingRec) {
+        if (Array.isArray(existingRec.memorizedUserIds) && existingRec.memorizedUserIds.length > 0) {
+          existingMemorized = existingRec.memorizedUserIds;
+        } else if (Array.isArray(existingRec.memoryVerse?.memorizedUserIds) && existingRec.memoryVerse.memorizedUserIds.length > 0) {
+          existingMemorized = existingRec.memoryVerse.memorizedUserIds;
+        } else if (existingRec.id === records[0]?.id || existingRec.id === '2026-08-23') {
+          existingMemorized = globalFallbackVerse.memorizedUserIds || [];
+        }
       }
     }
 
@@ -692,17 +730,29 @@ export default function LeaderTools() {
             {isAdmin && isEditing && (
               <>
                 <button
-                  onClick={() => setIsEditing(false)}
-                  className="px-5 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-[#FAFAFA] focus:outline-none"
+                  type="button"
+                  onClick={handleCancel}
+                  className="px-5 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-[#FAFAFA] focus:outline-none cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
+                  type="button"
+                  id="save-service-record-btn"
                   onClick={handleSave}
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 transition-colors shadow-sm"
+                  className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors shadow-sm cursor-pointer"
                 >
-                  <Save size={18} className="mr-2" />
-                  Save Changes
+                  {isCreating ? (
+                    <>
+                      <Plus size={18} className="mr-2 stroke-[2.5]" />
+                      Create Record
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} className="mr-2" />
+                      Save Changes
+                    </>
+                  )}
                 </button>
               </>
             )}
@@ -778,10 +828,23 @@ export default function LeaderTools() {
               </div>
               
               <div className={`${isMobileSidebarOpen ? 'block' : 'hidden'} lg:block max-h-[60vh] overflow-y-auto`}>
+                {isCreating && (
+                  <div className="bg-blue-50/90 border-l-4 border-[#0F2C59] px-3.5 py-3 border-b border-blue-100/60">
+                    <div className="flex items-center gap-1.5 text-[#0F2C59] font-bold text-xs uppercase tracking-wider">
+                      <Plus size={13} /> Drafting New Record
+                    </div>
+                    <div className="font-semibold text-sm text-[#0F2C59] mt-0.5">
+                      {editDateLabel || editDateValue || 'New Service Date'}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5 truncate">
+                      {editMessageTitle || 'Sunday Service'}
+                    </div>
+                  </div>
+                )}
                 {records.length > 0 ? (
                   <ul className="divide-y divide-gray-50">
                     {records.map((record) => {
-                      const isSelected = selectedRecordId === record.id;
+                      const isSelected = !isCreating && selectedRecordId === record.id;
 
                       return (
                         <li 
@@ -793,6 +856,7 @@ export default function LeaderTools() {
                           <button
                             type="button"
                             onClick={() => {
+                              setIsCreating(false);
                               setSelectedRecordId(record.id);
                               setIsMobileSidebarOpen(false);
                               setIsEditing(false);
@@ -838,6 +902,98 @@ export default function LeaderTools() {
           {/* Main Content Area */}
           <div className="flex-1 min-w-0 space-y-8 w-full">
             
+            {/* Mode Banner when Editing or Creating */}
+            {isEditing && (
+              <div className={`p-4 sm:p-5 rounded-2xl border shadow-sm transition-all ${
+                isCreating 
+                  ? 'bg-gradient-to-r from-blue-50 via-sky-50/50 to-white border-blue-200' 
+                  : 'bg-gradient-to-r from-amber-50 via-orange-50/30 to-white border-amber-200'
+              }`}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      {isCreating ? (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-[#0F2C59] text-white shadow-xs">
+                          <Plus size={13} className="mr-1" /> New Record Mode
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-600 text-white shadow-xs">
+                          <Edit size={13} className="mr-1" /> Editing Mode
+                        </span>
+                      )}
+                      <span className="text-base font-bold text-gray-900">
+                        {isCreating ? 'Creating New Service Date Record' : `Editing Record for ${selectedRecord?.dateLabel || selectedRecord?.dateValue}`}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {isCreating 
+                        ? 'Fill in the service date, memory verse, sermon outline, worship recordings, and song setlist below, then click "Create Record".'
+                        : 'Modify and save your changes for this specific gathering date.'}
+                    </p>
+                  </div>
+
+                  {/* Date Selector and Action in Mode Banner */}
+                  <div className="flex flex-wrap items-center gap-2.5 bg-white p-2.5 rounded-xl border border-gray-200 shadow-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">
+                        Service Date
+                      </label>
+                      <input
+                        type="date"
+                        value={editDateValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setEditDateValue(val);
+                          if (val) {
+                            const date = new Date(val + 'T00:00:00');
+                            const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+                            setEditDateLabel(date.toLocaleDateString('en-US', options));
+                          }
+                        }}
+                        className="text-xs font-semibold text-[#0F2C59] border border-gray-300 rounded-lg px-2.5 py-1.5 focus:ring-2 focus:ring-[#0F2C59] focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold uppercase tracking-wider text-gray-500 mb-0.5">
+                        Label Display
+                      </label>
+                      <input
+                        type="text"
+                        value={editDateLabel}
+                        onChange={(e) => setEditDateLabel(e.target.value)}
+                        placeholder="e.g. Sep 27, 2026"
+                        className="text-xs font-medium text-gray-800 border border-gray-300 rounded-lg px-2.5 py-1.5 w-32 focus:ring-2 focus:ring-[#0F2C59] focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-3 sm:pt-0 sm:self-end">
+                      <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        className="inline-flex items-center px-3.5 py-1.5 text-xs font-bold rounded-lg text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors shadow-xs cursor-pointer"
+                      >
+                        {isCreating ? (
+                          <>
+                            <Plus size={14} className="mr-1 stroke-[2.5]" /> Create Record
+                          </>
+                        ) : (
+                          <>
+                            <Save size={14} className="mr-1" /> Save Changes
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 0. Memory Verse (First Section Prior Sunday Service) */}
             <div id="memory-verse" className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden scroll-mt-24">
               <div className="bg-[#0F2C59] px-6 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -845,10 +1001,10 @@ export default function LeaderTools() {
                   <Sparkles className="text-[#D4A373] mr-3 flex-shrink-0" size={22} />
                   <div>
                     <h2 className="text-xl font-bold text-white font-serif truncate">
-                      Weekly Memory Verse
+                      {isCreating ? "New Memory Verse" : "Weekly Memory Verse"}
                     </h2>
                     <p className="text-xs text-blue-200">
-                      Scripture focus for cell leaders • {selectedRecord?.dateLabel || selectedRecord?.dateValue || 'Weekly Focus'}
+                      Scripture focus for cell leaders • {isCreating ? (editDateLabel || editDateValue || 'New Service Date') : (selectedRecord?.dateLabel || selectedRecord?.dateValue || 'Weekly Focus')}
                     </p>
                   </div>
                 </div>
@@ -874,9 +1030,14 @@ export default function LeaderTools() {
                     <div className="space-y-4 bg-gray-50/80 p-5 rounded-xl border border-gray-200">
                       <div className="flex items-center justify-between pb-2 border-b border-gray-200">
                         <span className="text-sm font-bold text-[#0F2C59] uppercase tracking-wider flex items-center gap-2">
-                          <Edit size={16} /> Edit Memory Verse for {editDateLabel || editDateValue || 'Service Date'}
+                          {isCreating ? <Plus size={16} /> : <Edit size={16} />}
+                          {isCreating 
+                            ? `New Memory Verse for ${editDateLabel || editDateValue || 'New Service Date'}` 
+                            : `Edit Memory Verse for ${editDateLabel || editDateValue || 'Service Date'}`}
                         </span>
-                        <span className="text-xs text-gray-500">Saves specifically for this service date</span>
+                        <span className="text-xs text-gray-500">
+                          {isCreating ? 'Will be saved with the new service date' : 'Saves specifically for this service date'}
+                        </span>
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="sm:col-span-2">
@@ -1021,7 +1182,7 @@ export default function LeaderTools() {
                 <div className="flex items-center min-w-0">
                   <FileText className="text-white mr-3 flex-shrink-0" />
                   <h2 className="text-xl font-bold text-white font-serif truncate">
-                    {isEditing ? "Edit Message Outline" : (selectedRecord?.messageTitle || "Sunday Service Outline")}
+                    {isCreating ? "New Sunday Service Message" : isEditing ? "Edit Message Outline" : (selectedRecord?.messageTitle || "Sunday Service Outline")}
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1056,11 +1217,13 @@ export default function LeaderTools() {
                             type="date"
                             value={editDateValue}
                             onChange={(e) => {
-                              setEditDateValue(e.target.value);
-                              // Auto-update label
-                              const date = new Date(e.target.value);
-                              const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' };
-                              setEditDateLabel(date.toLocaleDateString('en-US', options));
+                              const val = e.target.value;
+                              setEditDateValue(val);
+                              if (val) {
+                                const date = new Date(val + 'T00:00:00');
+                                const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+                                setEditDateLabel(date.toLocaleDateString('en-US', options));
+                              }
                             }}
                             className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#C82323] focus:ring-[#C82323]"
                           />
