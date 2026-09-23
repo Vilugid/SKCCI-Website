@@ -46,7 +46,9 @@ import {
   Video,
   Archive,
   History,
-  CalendarDays
+  CalendarDays,
+  Upload,
+  AlertTriangle
 } from 'lucide-react';
 import ShareEventModal, { canUseNativeShare, triggerNativeShare } from './ShareEventModal';
 import EventRecapModal from './EventRecapModal';
@@ -99,12 +101,50 @@ export const isEventConcluded = (dateTimeString: string): boolean => {
 // Category detection & default high-quality Unsplash image generator
 const getEventCategoryMeta = (title: string, description: string) => {
   const text = `${title || ''} ${description || ''}`.toLowerCase();
-  if (text.includes('young pro') || text.includes('career') || text.includes('professionals') || text.includes('calling')) {
+
+  // 1. Hiking, Mountain, Outdoor Adventure, Trekking, Camping
+  if (
+    text.includes('hiking') || 
+    text.includes('daraitan') || 
+    text.includes('mountain') || 
+    text.includes('climb') || 
+    text.includes('trek') || 
+    text.includes('trail') || 
+    text.includes('camp') || 
+    text.includes('outdoor')
+  ) {
     return {
-      category: 'Young Professionals',
-      fallbackImage: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80',
+      category: 'Outdoor & Hiking',
+      fallbackImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80', // Breathtaking mountain summit & trekking trail
     };
   }
+
+  // 2. Team Building / Fellowship Activity
+  if (
+    text.includes('team building') || 
+    text.includes('teambuilding') || 
+    text.includes('sports') || 
+    text.includes('fellowship activity')
+  ) {
+    return {
+      category: 'Team Building',
+      fallbackImage: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80', // Active group outdoors
+    };
+  }
+
+  // 3. Young Professionals
+  if (
+    text.includes('young pro') || 
+    text.includes('career') || 
+    text.includes('professionals') || 
+    text.includes('calling')
+  ) {
+    return {
+      category: 'Young Professionals',
+      fallbackImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80', // Inspiring collaborative young adults
+    };
+  }
+
   if (text.includes('youth') || text.includes('k-youth') || text.includes('student') || text.includes('campus')) {
     return {
       category: 'Youth Ministry',
@@ -141,6 +181,7 @@ function EventCardImageHeader({
   spotsLeft, 
   isPast, 
   isRecurring,
+  isAdmin,
   onShare 
 }: { 
   event: ChurchEvent; 
@@ -148,20 +189,26 @@ function EventCardImageHeader({
   spotsLeft: number; 
   isPast?: boolean; 
   isRecurring?: boolean;
+  isAdmin?: boolean;
   onShare?: (e: React.MouseEvent) => void;
 }) {
   const meta = getEventCategoryMeta(event.title, event.description);
   const initialSrc = (event.coverImage && event.coverImage.trim().length > 0) ? event.coverImage.trim() : meta.fallbackImage;
   const [imgSrc, setImgSrc] = useState(initialSrc);
   const [imgError, setImgError] = useState(false);
+  const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   // Update src if event.coverImage updates
   React.useEffect(() => {
     if (event.coverImage && event.coverImage.trim().length > 0) {
       setImgSrc(event.coverImage.trim());
       setImgError(false);
+      setIsUsingFallback(false);
+    } else {
+      setImgSrc(meta.fallbackImage);
+      setIsUsingFallback(false);
     }
-  }, [event.coverImage]);
+  }, [event.coverImage, meta.fallbackImage]);
 
   return (
     <div className={`h-52 bg-slate-800 relative overflow-hidden group ${isPast ? 'grayscale opacity-75' : ''}`}>
@@ -173,6 +220,7 @@ function EventCardImageHeader({
           onError={() => {
             if (imgSrc !== meta.fallbackImage) {
               setImgSrc(meta.fallbackImage);
+              setIsUsingFallback(true);
             } else {
               setImgError(true);
             }
@@ -193,6 +241,14 @@ function EventCardImageHeader({
       <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold text-white shadow-sm border border-white/20">
         {isRecurring ? 'Sunday Gathering' : meta.category}
       </div>
+
+      {/* Admin indicator if custom URL failed to load (e.g. Facebook CDN expired 403) */}
+      {isAdmin && isUsingFallback && event.coverImage && (
+        <div className="absolute bottom-2 left-4 z-10 bg-amber-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-md flex items-center gap-1 border border-amber-400/40">
+          <AlertTriangle size={12} className="text-white shrink-0" />
+          <span>Image link expired (HTTP 403) • Using fallback</span>
+        </div>
+      )}
 
       {/* Top-Right Badges & Actions */}
       <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
@@ -272,9 +328,118 @@ export default function Events() {
     photosUrl: ''
   });
 
+  // Banner file upload state & refs
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [bannerPreviewError, setBannerPreviewError] = useState(false);
+  const bannerFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error('Image exceeds 15MB. Please choose a smaller image.');
+      return;
+    }
+
+    setIsUploadingBanner(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const res = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: base64Data,
+            filename: file.name
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setFormData(prev => ({ ...prev, coverImage: data.url }));
+          setBannerPreviewError(false);
+          toast.success('Banner uploaded successfully!');
+        } else {
+          setFormData(prev => ({ ...prev, coverImage: base64Data }));
+          setBannerPreviewError(false);
+          toast.success('Image loaded!');
+        }
+      } catch {
+        setFormData(prev => ({ ...prev, coverImage: base64Data }));
+        setBannerPreviewError(false);
+        toast.success('Image loaded!');
+      } finally {
+        setIsUploadingBanner(false);
+        if (bannerFileInputRef.current) {
+          bannerFileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.onerror = () => {
+      toast.error('Could not read image file.');
+      setIsUploadingBanner(false);
+    };
+    reader.readAsDataURL(file);
+  };
+
   // Admin Sunday Service Card Editor State
   const [sundayCardForm, setSundayCardForm] = useState<SundayServiceCardSettings>(DEFAULT_SUNDAY_SERVICE_SETTINGS);
   const [isSundayCardLoaded, setIsSundayCardLoaded] = useState(false);
+  const [isUploadingSundayBanner, setIsUploadingSundayBanner] = useState(false);
+  const sundayBannerFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  const handleSundayBannerFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please choose a valid image file (JPG, PNG, WebP).');
+      return;
+    }
+
+    setIsUploadingSundayBanner(true);
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const base64Data = reader.result as string;
+      try {
+        const res = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: base64Data,
+            filename: file.name
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.url) {
+          setSundayCardForm(prev => ({ ...prev, coverImage: data.url }));
+          toast.success('Sunday service banner uploaded!');
+        } else {
+          setSundayCardForm(prev => ({ ...prev, coverImage: base64Data }));
+          toast.success('Image loaded!');
+        }
+      } catch {
+        setSundayCardForm(prev => ({ ...prev, coverImage: base64Data }));
+        toast.success('Image loaded!');
+      } finally {
+        setIsUploadingSundayBanner(false);
+        if (sundayBannerFileInputRef.current) {
+          sundayBannerFileInputRef.current.value = '';
+        }
+      }
+    };
+    reader.onerror = () => {
+      toast.error('Could not read image file.');
+      setIsUploadingSundayBanner(false);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Admin Sunday Attendance Form State
   const [attendanceForm, setAttendanceForm] = useState({
@@ -666,6 +831,7 @@ export default function Events() {
           spotsLeft={spotsLeft} 
           isPast={isPast}
           isRecurring={event.isRecurring}
+          isAdmin={isAdmin}
           onShare={(e) => handleShareClick(e, event)}
         />
         
@@ -1108,8 +1274,149 @@ export default function Events() {
                         <input type="number" min="1" required value={formData.capacity} onChange={e => setFormData({...formData, capacity: parseInt(e.target.value) || 1})} className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image URL</label>
-                        <input type="url" value={formData.coverImage} onChange={e => setFormData({...formData, coverImage: e.target.value})} className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" placeholder="https://..." />
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-sm font-semibold text-gray-700">Cover Banner Image</label>
+                          <input 
+                            ref={bannerFileInputRef}
+                            type="file" 
+                            accept="image/*" 
+                            onChange={handleBannerFileUpload}
+                            className="hidden" 
+                          />
+                          <button
+                            type="button"
+                            disabled={isUploadingBanner}
+                            onClick={() => bannerFileInputRef.current?.click()}
+                            className="inline-flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-[#0F2C59] border border-blue-200 rounded-lg hover:bg-blue-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          >
+                            {isUploadingBanner ? (
+                              <>
+                                <span className="w-3.5 h-3.5 border-2 border-[#0F2C59]/30 border-t-[#0F2C59] rounded-full animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload size={13} />
+                                Upload Image from Device
+                              </>
+                            )}
+                          </button>
+                        </div>
+                        <input 
+                          type="text" 
+                          value={formData.coverImage} 
+                          onChange={e => {
+                            setFormData({...formData, coverImage: e.target.value});
+                            setBannerPreviewError(false);
+                          }} 
+                          className="w-full rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59] text-sm" 
+                          placeholder="Paste image URL (e.g. Unsplash or direct link) or upload your poster above" 
+                        />
+
+                        {/* Facebook CDN Warning */}
+                        {Boolean(formData.coverImage && (
+                          formData.coverImage.includes('fbcdn.net') || 
+                          formData.coverImage.includes('scontent.') || 
+                          formData.coverImage.includes('facebook.com')
+                        )) && (
+                          <div className="mt-2 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 space-y-1">
+                            <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                              <AlertTriangle size={14} className="text-amber-600 shrink-0" />
+                              Facebook Image Link Notice
+                            </div>
+                            <p className="text-[11px] text-amber-700 leading-relaxed">
+                              Facebook CDN URLs expire quickly and block external websites (HTTP 403 Forbidden). We recommend saving the image to your phone or computer and clicking <strong>Upload Image from Device</strong> above so the poster stays permanent on your site.
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Quick Theme Presets */}
+                        <div className="mt-2 flex flex-wrap gap-1.5 items-center">
+                          <span className="text-[11px] text-gray-500 font-medium">Quick Presets:</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80' }));
+                              setBannerPreviewError(false);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 cursor-pointer"
+                          >
+                            ⛰️ Mt. Daraitan / Hiking
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80' }));
+                              setBannerPreviewError(false);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer"
+                          >
+                            🤝 Team Building
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80' }));
+                              setBannerPreviewError(false);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 cursor-pointer"
+                          >
+                            💼 Young Pro
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80' }));
+                              setBannerPreviewError(false);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 cursor-pointer"
+                          >
+                            ⛪ Sunday Worship
+                          </button>
+                        </div>
+
+                        {/* Live Image Preview */}
+                        {Boolean(formData.coverImage && formData.coverImage.trim().length > 0) && (
+                          <div className="mt-2.5 rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-2">
+                            <div className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1 flex items-center justify-between">
+                              <span className="flex items-center gap-1">
+                                {!bannerPreviewError ? (
+                                  <span className="text-emerald-600 flex items-center gap-1 font-semibold">✓ Preview Loaded</span>
+                                ) : (
+                                  <span className="text-red-600 flex items-center gap-1 font-semibold">⚠️ Load Error</span>
+                                )}
+                              </span>
+                              <button 
+                                type="button" 
+                                onClick={() => {
+                                  setFormData(prev => ({ ...prev, coverImage: '' }));
+                                  setBannerPreviewError(false);
+                                }} 
+                                className="text-xs text-red-500 hover:underline cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                            <div className="relative h-28 w-full rounded-lg overflow-hidden bg-gray-200">
+                              <img 
+                                src={formData.coverImage} 
+                                alt="Banner Preview" 
+                                className="w-full h-full object-cover"
+                                onLoad={() => setBannerPreviewError(false)}
+                                onError={() => setBannerPreviewError(true)}
+                              />
+                              {bannerPreviewError && (
+                                <div className="absolute inset-0 bg-red-950/85 text-white p-3 flex flex-col items-center justify-center text-center text-xs">
+                                  <AlertTriangle size={18} className="text-red-300 mb-1" />
+                                  <span className="font-bold">Image Cannot Be Displayed</span>
+                                  <span className="text-[10px] text-red-200 mt-0.5">
+                                    The link is expired or blocked (HTTP 403 Forbidden). Please click &quot;Upload Image from Device&quot; to upload the picture file directly.
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
@@ -1459,15 +1766,42 @@ export default function Events() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-1">Image Banner URL</label>
+                      <div className="flex items-center justify-between mb-1">
+                        <label className="block text-sm font-semibold text-gray-700">Image Banner</label>
+                        <input 
+                          ref={sundayBannerFileInputRef}
+                          type="file" 
+                          accept="image/*" 
+                          onChange={handleSundayBannerFileUpload}
+                          className="hidden" 
+                        />
+                        <button
+                          type="button"
+                          disabled={isUploadingSundayBanner}
+                          onClick={() => sundayBannerFileInputRef.current?.click()}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-50 text-[#0F2C59] border border-blue-200 rounded-lg hover:bg-blue-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                        >
+                          {isUploadingSundayBanner ? (
+                            <>
+                              <span className="w-3 h-3 border-2 border-[#0F2C59]/30 border-t-[#0F2C59] rounded-full animate-spin" />
+                              Uploading...
+                            </>
+                          ) : (
+                            <>
+                              <Upload size={12} />
+                              Upload Image
+                            </>
+                          )}
+                        </button>
+                      </div>
                       <div className="flex gap-2">
                         <input 
-                          type="url" 
+                          type="text" 
                           required 
                           value={sundayCardForm.coverImage} 
                           onChange={e => setSundayCardForm({ ...sundayCardForm, coverImage: e.target.value })}
-                          className="flex-1 rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59]" 
-                          placeholder="https://images.unsplash.com/..."
+                          className="flex-1 rounded-xl border-gray-300 shadow-sm focus:border-[#0F2C59] focus:ring-[#0F2C59] text-sm" 
+                          placeholder="https://images.unsplash.com/... or click Upload Image"
                         />
                         <button
                           type="button"
@@ -1475,7 +1809,7 @@ export default function Events() {
                             ...sundayCardForm,
                             coverImage: DEFAULT_SUNDAY_SERVICE_SETTINGS.coverImage
                           })}
-                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                          className="px-3 py-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 text-xs font-semibold flex items-center gap-1 cursor-pointer shrink-0"
                           title="Reset to Default Image"
                         >
                           <RotateCcw size={14} /> Reset

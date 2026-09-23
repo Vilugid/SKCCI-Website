@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI, ThinkingLevel } from "@google/genai";
@@ -396,7 +397,110 @@ async function startServer() {
     next();
   });
 
-  app.use(express.json({ limit: "1mb" }));
+  app.use(express.json({ limit: "25mb" }));
+  app.use(express.urlencoded({ limit: "25mb", extended: true }));
+
+  // Static serving for locally uploaded event banners & assets
+  app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
+
+  // API endpoint for uploading event banner images directly
+  app.post("/api/upload-image", async (req, res) => {
+    try {
+      const { imageBase64, filename } = req.body || {};
+      if (!imageBase64 || typeof imageBase64 !== "string") {
+        return res.status(400).json({ error: "No image data provided" });
+      }
+
+      // Parse data URL format: data:image/jpeg;base64,...
+      const matches = imageBase64.match(/^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/);
+      let ext = "jpg";
+      let base64Data = imageBase64;
+
+      if (matches && matches.length === 3) {
+        const rawExt = matches[1].toLowerCase();
+        ext = rawExt === "jpeg" ? "jpg" : (rawExt === "png" ? "png" : (rawExt === "webp" ? "webp" : "jpg"));
+        base64Data = matches[2];
+      }
+
+      const buffer = Buffer.from(base64Data, "base64");
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", "events");
+      await fs.promises.mkdir(uploadsDir, { recursive: true });
+
+      const safeBase = (filename || "event-banner").toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 40);
+      const uniqueName = `${safeBase}-${Date.now()}.${ext}`;
+      const targetPath = path.join(uploadsDir, uniqueName);
+
+      await fs.promises.writeFile(targetPath, buffer);
+
+      // Mirror to dist/uploads/events if dist directory exists
+      try {
+        const distUploads = path.join(process.cwd(), "dist", "uploads", "events");
+        await fs.promises.mkdir(distUploads, { recursive: true });
+        await fs.promises.writeFile(path.join(distUploads, uniqueName), buffer);
+      } catch {}
+
+      return res.json({
+        success: true,
+        url: `/uploads/events/${uniqueName}`
+      });
+    } catch (err: any) {
+      console.error("[Upload] Error saving image:", err);
+      return res.status(500).json({ error: err.message || "Failed to process image upload" });
+    }
+  });
+
+  // API endpoint to attempt caching external image URLs permanently
+  app.post("/api/cache-image", async (req, res) => {
+    try {
+      const { imageUrl, filename } = req.body || {};
+      if (!imageUrl || typeof imageUrl !== "string") {
+        return res.status(400).json({ error: "No image URL provided" });
+      }
+
+      const response = await fetch(imageUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+        }
+      });
+
+      if (!response.ok) {
+        return res.status(400).json({ error: `Image source returned HTTP ${response.status}` });
+      }
+
+      const contentType = response.headers.get("content-type") || "";
+      let ext = "jpg";
+      if (contentType.includes("png")) ext = "png";
+      else if (contentType.includes("webp")) ext = "webp";
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", "events");
+      await fs.promises.mkdir(uploadsDir, { recursive: true });
+
+      const safeBase = (filename || "cached-banner").toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 40);
+      const uniqueName = `${safeBase}-${Date.now()}.${ext}`;
+      const targetPath = path.join(uploadsDir, uniqueName);
+
+      await fs.promises.writeFile(targetPath, buffer);
+
+      // Mirror to dist if exists
+      try {
+        const distUploads = path.join(process.cwd(), "dist", "uploads", "events");
+        await fs.promises.mkdir(distUploads, { recursive: true });
+        await fs.promises.writeFile(path.join(distUploads, uniqueName), buffer);
+      } catch {}
+
+      return res.json({
+        success: true,
+        url: `/uploads/events/${uniqueName}`
+      });
+    } catch (err: any) {
+      console.warn("[Cache Image] Could not download image:", err.message);
+      return res.status(500).json({ error: "Could not cache external image" });
+    }
+  });
 
   app.post("/api/chat", async (req, res) => {
     const { message = "", history = [], language = "tl" } = req.body || {};
