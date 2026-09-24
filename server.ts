@@ -423,25 +423,26 @@ async function startServer() {
       }
 
       const buffer = Buffer.from(base64Data, "base64");
-      const uploadsDir = path.join(process.cwd(), "public", "uploads", "events");
+      const subFolder = (req.body.folder === 'cell-groups' || req.body.folder === 'cell') ? 'cell-groups' : 'events';
+      const uploadsDir = path.join(process.cwd(), "public", "uploads", subFolder);
       await fs.promises.mkdir(uploadsDir, { recursive: true });
 
-      const safeBase = (filename || "event-banner").toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 40);
+      const safeBase = (filename || "photo").toLowerCase().replace(/[^a-z0-9_-]/g, "_").slice(0, 40);
       const uniqueName = `${safeBase}-${Date.now()}.${ext}`;
       const targetPath = path.join(uploadsDir, uniqueName);
 
       await fs.promises.writeFile(targetPath, buffer);
 
-      // Mirror to dist/uploads/events if dist directory exists
+      // Mirror to dist/uploads if dist directory exists
       try {
-        const distUploads = path.join(process.cwd(), "dist", "uploads", "events");
+        const distUploads = path.join(process.cwd(), "dist", "uploads", subFolder);
         await fs.promises.mkdir(distUploads, { recursive: true });
         await fs.promises.writeFile(path.join(distUploads, uniqueName), buffer);
       } catch {}
 
       return res.json({
         success: true,
-        url: `/uploads/events/${uniqueName}`
+        url: `/uploads/${subFolder}/${uniqueName}`
       });
     } catch (err: any) {
       console.error("[Upload] Error saving image:", err);

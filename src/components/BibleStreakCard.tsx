@@ -5,7 +5,7 @@ import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { ReadingPlanId, UserReadingStreak } from '../types';
-import { subscribeToUserStreak, recordReadingCompletion, getLocalDateString, getDayDifference, MAX_SHIELDS, SHIELD_REWARD_DAYS, getDefaultStreak } from '../api/streaks';
+import { subscribeToUserStreak, recordReadingCompletion, reconcileUserStreak, getLocalDateString, getDayDifference, MAX_SHIELDS, SHIELD_REWARD_DAYS, getDefaultStreak } from '../api/streaks';
 
 interface BibleStreakCardProps {
   planId: ReadingPlanId;
@@ -32,11 +32,12 @@ export default function BibleStreakCard({
   const [isMarking, setIsMarking] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showCelebrationBadge, setShowCelebrationBadge] = useState(false);
+  const [shieldProtectedNotice, setShieldProtectedNotice] = useState<string | null>(null);
 
   const todayStr = getLocalDateString(new Date());
   const isCompletedToday = streakData.lastCompletedDate === todayStr;
 
-  // Real-time Firestore sync
+  // Real-time Firestore sync & automatic shield evaluation
   useEffect(() => {
     setLoading(true);
     if (!user) {
@@ -45,7 +46,19 @@ export default function BibleStreakCard({
       const saved = localStorage.getItem(localKey);
       if (saved) {
         try {
-          setStreakData(JSON.parse(saved));
+          const parsed = JSON.parse(saved);
+          const { reconciledStreak, hasChanges, shieldedDates } = reconcileUserStreak(parsed, todayStr);
+          setStreakData(reconciledStreak);
+          if (hasChanges) {
+            localStorage.setItem(localKey, JSON.stringify(reconciledStreak));
+          }
+          if (shieldedDates.length > 0) {
+            const formatted = shieldedDates.map(d => {
+              const [y, m, day] = d.split('-').map(Number);
+              return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }).join(', ');
+            setShieldProtectedNotice(`Your Streak Shield automatically protected your ${reconciledStreak.currentStreak}-day streak for ${formatted}! You have ${reconciledStreak.shieldsAvailable} ${reconciledStreak.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
+          }
         } catch {
           setStreakData(getDefaultStreak('guest', planId));
         }
@@ -56,13 +69,20 @@ export default function BibleStreakCard({
       return;
     }
 
-    const unsubscribe = subscribeToUserStreak(user.uid, planId, (data) => {
+    const unsubscribe = subscribeToUserStreak(user.uid, planId, (data, meta) => {
       setStreakData(data);
+      if (meta?.shieldedDates && meta.shieldedDates.length > 0) {
+        const formatted = meta.shieldedDates.map(d => {
+          const [y, m, day] = d.split('-').map(Number);
+          return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }).join(', ');
+        setShieldProtectedNotice(`Your Streak Shield automatically protected your ${data.currentStreak}-day streak for ${formatted}! You have ${data.shieldsAvailable} ${data.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
+      }
       setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [user, planId]);
+  }, [user, planId, todayStr]);
 
   const triggerConfetti = (isMilestone = false) => {
     try {
@@ -180,6 +200,9 @@ export default function BibleStreakCard({
       status = 'completed';
     } else if (isToday) {
       status = isCompletedToday ? 'completed' : 'pending';
+    } else if (streakData.lastCompletedDate && streakData.shieldsAvailable > 0 && dateStr > streakData.lastCompletedDate && dateStr < todayStr) {
+      // Past day within shield coverage
+      status = 'shield_used';
     } else {
       // Past day with no record
       status = 'missed';
@@ -260,6 +283,33 @@ export default function BibleStreakCard({
         </div>
       ) : (
         <div className="p-4 sm:p-6 space-y-5">
+          {/* Active Streak Shield Notification Banner */}
+          {shieldProtectedNotice && (
+            <div className="bg-sky-50/90 border border-sky-200/90 rounded-xl p-3 sm:p-3.5 flex items-start gap-3 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                <ShieldCheck size={18} className="fill-white" />
+              </div>
+              <div className="flex-1 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-[#0F2C59] text-xs sm:text-sm flex items-center gap-1.5">
+                    Streak Shield Automatically Activated!
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => setShieldProtectedNotice(null)}
+                    className="text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded hover:bg-gray-100"
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-sky-900 mt-0.5 leading-relaxed">
+                  {shieldProtectedNotice}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Main Highlights Grid: Active Streak, Shields, Longest Record */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             

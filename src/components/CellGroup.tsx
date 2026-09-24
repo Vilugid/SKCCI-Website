@@ -5,7 +5,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCellGroups, createCellGroup, updateCellGroup, removeCellGroup, updateCellGroupLogs } from '../api/db';
-import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -87,35 +86,94 @@ export default function CellGroup() {
 
 
 
+  // Mobile-compatible canvas image compressor that works on all iOS & Android browsers
+  const compressImageForMobile = (file: File, maxDim = 1200, quality = 0.82): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let { width, height } = img;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, width);
+            canvas.height = Math.max(1, height);
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+              return resolve(e.target?.result as string);
+            }
+
+            // High-quality canvas image smoothing
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            resolve(dataUrl);
+          } catch (canvasErr) {
+            console.warn('Canvas resize fallback to raw base64:', canvasErr);
+            resolve(e.target?.result as string);
+          }
+        };
+        img.onerror = (imgErr) => {
+          console.warn('Image element error, falling back to raw data:', imgErr);
+          resolve(e.target?.result as string);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const processAndUploadImage = async (file: File, type: 'group' | 'meeting') => {
     if (!user) {
       toast.error('You must be logged in to upload images');
       return;
     }
     
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File exceeds 5MB limit');
+    // Support up to 20MB for modern phone camera shots
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('File exceeds 20MB limit. Please choose a smaller photo.');
       return;
     }
     
     try {
-      setUploadProgress(prev => ({ ...prev, [type]: 10 }));
+      setUploadProgress(prev => ({ ...prev, [type]: 15 }));
       
-      const options = {
-        maxSizeMB: 0.05,
-        maxWidthOrHeight: 800,
-        useWebWorker: true
-      };
-      
-      const compressedFile = await imageCompression(file, options);
-      setUploadProgress(prev => ({ ...prev, [type]: 60 }));
-      
-      const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(compressedFile);
-      });
+      // 1. Mobile-friendly compression without flaky WebWorker dependencies
+      const base64Data = await compressImageForMobile(file, 1200, 0.82);
+      setUploadProgress(prev => ({ ...prev, [type]: 55 }));
+
+      // 2. Upload to server to keep Firestore documents lightweight
+      let finalImageUrl = base64Data;
+      try {
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageBase64: base64Data,
+            filename: file.name || (type === 'group' ? 'cell-group' : 'meeting-proof'),
+            folder: 'cell-groups'
+          })
+        });
+        const result = await response.json();
+        if (response.ok && result.url) {
+          finalImageUrl = result.url;
+        }
+      } catch (uploadErr) {
+        console.warn('Server upload failed, using compressed base64 fallback:', uploadErr);
+      }
       
       setUploadProgress(prev => ({ ...prev, [type]: 100 }));
       
@@ -127,16 +185,16 @@ export default function CellGroup() {
         });
         
         if (type === 'group') {
-          setPhotoUrl(base64);
+          setPhotoUrl(finalImageUrl);
         } else {
-          setMeetingPhotoUrl(base64);
+          setMeetingPhotoUrl(finalImageUrl);
         }
-        toast.success('Image uploaded successfully!');
-      }, 500);
+        toast.success('Photo uploaded successfully!');
+      }, 300);
 
     } catch (error) {
       console.error('Error uploading image', error);
-      toast.error('Failed to upload image. Please try again.');
+      toast.error('Failed to upload photo. Please try again.');
       setUploadProgress(prev => {
         const next = { ...prev };
         delete next[type];
@@ -150,6 +208,7 @@ export default function CellGroup() {
     if (file) {
       processAndUploadImage(file, 'group');
     }
+    e.target.value = '';
   };
 
   const handleMeetingPhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +216,7 @@ export default function CellGroup() {
     if (file) {
       processAndUploadImage(file, 'meeting');
     }
+    e.target.value = '';
   };
 
   const handleEditClick = (group: CellGroupData) => {
@@ -728,7 +788,7 @@ export default function CellGroup() {
                     type="file" 
                     ref={fileInputRef} 
                     className="hidden" 
-                    accept="image/jpeg, image/jpg"
+                    accept="image/*,image/jpeg,image/png,image/webp"
                     onChange={handleImageUpload}
                   />
                 </div>
@@ -754,7 +814,7 @@ export default function CellGroup() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-amber-900 mb-1">Upload Meeting Photo <span className="text-amber-700 font-normal">(JPG format only)</span></label>
+                      <label className="block text-sm font-medium text-amber-900 mb-1">Upload Meeting Photo <span className="text-amber-700 font-normal">(JPG, PNG, WebP)</span></label>
                       <div 
                         className={`flex justify-center px-6 py-4 border-2 border-dashed rounded-xl ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-amber-300 hover:border-amber-400 bg-white'}`}
                         onClick={() => meetingPhotoInputRef.current?.click()}
@@ -790,7 +850,7 @@ export default function CellGroup() {
                         type="file" 
                         ref={meetingPhotoInputRef} 
                         className="hidden" 
-                        accept="image/jpeg, image/jpg"
+                        accept="image/*,image/jpeg,image/png,image/webp"
                         onChange={handleMeetingPhotoUpload}
                       />
                     </div>
@@ -991,7 +1051,7 @@ export default function CellGroup() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Meeting Photo <span className="text-gray-500 font-normal">(JPG format only)</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Meeting Photo <span className="text-gray-500 font-normal">(JPG, PNG, WebP)</span></label>
                   <div 
                     className={`flex justify-center px-6 py-4 border-2 border-dashed rounded-xl ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
                     onClick={() => meetingPhotoInputRef.current?.click()}
@@ -1027,7 +1087,7 @@ export default function CellGroup() {
                     type="file" 
                     ref={meetingPhotoInputRef} 
                     className="hidden" 
-                    accept="image/jpeg, image/jpg"
+                    accept="image/*,image/jpeg,image/png,image/webp"
                     onChange={handleMeetingPhotoUpload}
                   />
                 </div>
