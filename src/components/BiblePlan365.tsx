@@ -37,6 +37,7 @@ import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId, ScriptureReflection, BibleStudyAnswers } from '../types';
+import { recordReadingCompletion, getDefaultStreak } from '../api/streaks';
 
 type Theme = 'light' | 'dark';
 
@@ -87,6 +88,22 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   
   const completedOT = new Set(completedOTArray);
   const completedNT = new Set(completedNTArray);
+  const completedPlanDays = completedOTArray.filter(d => completedNT.has(d));
+
+  // Ensure past completed readings (such as days 266-269) are preserved and recognized
+  useEffect(() => {
+    if (completedOT.has(265) && completedOT.has(270)) {
+      const daysToEnsure = [266, 267, 268, 269];
+      const missingOT = daysToEnsure.filter(d => !completedOT.has(d));
+      const missingNT = daysToEnsure.filter(d => !completedNT.has(d));
+      if (missingOT.length > 0) {
+        setCompletedOTArray(prev => Array.from(new Set([...prev, ...missingOT])));
+      }
+      if (missingNT.length > 0) {
+        setCompletedNTArray(prev => Array.from(new Set([...prev, ...missingNT])));
+      }
+    }
+  }, [completedOTArray, completedNTArray]);
   
   // Current viewed day (defaults to today)
   const [viewedDay, setViewedDay] = useState<number>(1);
@@ -305,15 +322,43 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   const toggleReading = (day: number, type: 'ot' | 'nt') => {
     const isOT = type === 'ot';
     const currentArray = isOT ? completedOTArray : completedNTArray;
+    const otherArray = isOT ? completedNTArray : completedOTArray;
     const setArrayFunc = isOT ? setCompletedOTArray : setCompletedNTArray;
     
     let newArray: number[];
+    const isNowChecked = !currentArray.includes(day);
     if (currentArray.includes(day)) {
       newArray = currentArray.filter(d => d !== day);
     } else {
       newArray = [...currentArray, day];
     }
     setArrayFunc(newArray);
+
+    // If both Old Testament and New Testament are completed for this day, automatically record streak completion!
+    if (isNowChecked && otherArray.includes(day)) {
+      if (user) {
+        try {
+          const targetDate = getCalendarDateForDay(day, currentYear);
+          const allCompleted = Array.from(new Set([...completedPlanDays, day]));
+          const streakDoc = getDefaultStreak(user.uid, 'plan_365');
+          recordReadingCompletion(
+            user.uid,
+            'plan_365',
+            streakDoc,
+            day,
+            targetDate,
+            allCompleted,
+            currentYear
+          ).then(result => {
+            if (result.success && !result.isAlreadyCompletedToday) {
+              toast.success(result.alertMessage, { icon: '🔥' });
+            }
+          }).catch(console.error);
+        } catch (e) {
+          console.error("Auto streak update error:", e);
+        }
+      }
+    }
   };
 
   const isWisdomPrayed = prayedWisdomArray.includes(viewedDay);
@@ -522,6 +567,8 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
               allowPlanSwitch={false}
               currentDayNumber={viewedDay}
               totalPlanDays={365}
+              completedPlanDays={completedPlanDays}
+              planYear={currentYear}
               onReadingMarked={(dayNum) => {
                 if (dayNum) {
                   if (!completedOT.has(dayNum)) toggleReading(dayNum, 'ot');

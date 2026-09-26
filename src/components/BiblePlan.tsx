@@ -33,6 +33,7 @@ import SongBankSection from './SongBankSection';
 import { isSuperAdmin } from '../utils/roles';
 import { fetchBibleExplainerVideo, fetchAllBibleExplainerVideos } from '../api/bibleVideos';
 import { ReadingPlanId, HundredDaysReflection, BibleStudyAnswers } from '../types';
+import { recordReadingCompletion, getDefaultStreak } from '../api/streaks';
 
 interface BiblePlanProps {
   progressArray: number[];
@@ -207,6 +208,19 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
     if (newArray.length === 100 && !is100DayComplete) {
       setIs100DayComplete(true);
       setShowCelebration(true);
+    }
+
+    if (isNowCompleted && user) {
+      const allCompleted = Array.from(new Set([...progressArray, day]));
+      const streakDoc = getDefaultStreak(user.uid, 'plan_100');
+      recordReadingCompletion(
+        user.uid,
+        'plan_100',
+        streakDoc,
+        day,
+        undefined,
+        allCompleted
+      ).catch(console.error);
     }
   };
 
@@ -455,6 +469,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
               allowPlanSwitch={false}
               currentDayNumber={selectedDay}
               totalPlanDays={100}
+              completedPlanDays={progressArray}
               onReadingMarked={(dayNum) => {
                 if (dayNum && !completedDays.has(dayNum)) {
                   toggleDay(dayNum);

@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, Shield, ShieldAlert, ShieldCheck, Trophy, Calendar, Sparkles, CheckCircle2, AlertCircle, Info, ChevronRight, HelpCircle, Loader2 } from 'lucide-react';
+import { Flame, Shield, ShieldAlert, ShieldCheck, Trophy, Calendar, Sparkles, CheckCircle2, AlertCircle, Info, ChevronRight, HelpCircle, Loader2, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import confetti from 'canvas-confetti';
 import toast from 'react-hot-toast';
 import { useAuth } from '../contexts/AuthContext';
 import { ReadingPlanId, UserReadingStreak } from '../types';
-import { subscribeToUserStreak, recordReadingCompletion, reconcileUserStreak, getLocalDateString, getDayDifference, MAX_SHIELDS, SHIELD_REWARD_DAYS, getDefaultStreak } from '../api/streaks';
+import { 
+  subscribeToUserStreak, 
+  recordReadingCompletion, 
+  reconcileUserStreak, 
+  restoreUserStreak,
+  getLocalDateString, 
+  getDayDifference, 
+  MAX_SHIELDS, 
+  SHIELD_REWARD_DAYS, 
+  getDefaultStreak 
+} from '../api/streaks';
 
 interface BibleStreakCardProps {
   planId: ReadingPlanId;
@@ -15,6 +25,8 @@ interface BibleStreakCardProps {
   totalPlanDays?: number;
   className?: string;
   onReadingMarked?: (dayNum?: number) => void;
+  completedPlanDays?: number[];
+  planYear?: number;
 }
 
 export default function BibleStreakCard({
@@ -24,15 +36,19 @@ export default function BibleStreakCard({
   currentDayNumber,
   totalPlanDays,
   className = '',
-  onReadingMarked
+  onReadingMarked,
+  completedPlanDays = [],
+  planYear = new Date().getFullYear()
 }: BibleStreakCardProps) {
   const { user, signInWithGoogle } = useAuth();
   const [streakData, setStreakData] = useState<UserReadingStreak>(getDefaultStreak(user?.uid || 'guest', planId));
   const [loading, setLoading] = useState(true);
   const [isMarking, setIsMarking] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showCelebrationBadge, setShowCelebrationBadge] = useState(false);
   const [shieldProtectedNotice, setShieldProtectedNotice] = useState<string | null>(null);
+  const [restoredNotice, setRestoredNotice] = useState<string | null>(null);
 
   const todayStr = getLocalDateString(new Date());
   const isCompletedToday = streakData.lastCompletedDate === todayStr;
@@ -47,12 +63,19 @@ export default function BibleStreakCard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const { reconciledStreak, hasChanges, shieldedDates } = reconcileUserStreak(parsed, todayStr);
+          const { reconciledStreak, hasChanges, shieldedDates, wasRestored } = reconcileUserStreak(
+            parsed,
+            todayStr,
+            completedPlanDays,
+            planYear
+          );
           setStreakData(reconciledStreak);
           if (hasChanges) {
             localStorage.setItem(localKey, JSON.stringify(reconciledStreak));
           }
-          if (shieldedDates.length > 0) {
+          if (wasRestored) {
+            setRestoredNotice(`🎉 Great news! Your reading streak has been restored to ${reconciledStreak.currentStreak} days with ${reconciledStreak.shieldsAvailable}/${MAX_SHIELDS} shields intact! Your readings from the past couple of days were recognized.`);
+          } else if (shieldedDates.length > 0) {
             const formatted = shieldedDates.map(d => {
               const [y, m, day] = d.split('-').map(Number);
               return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -69,20 +92,29 @@ export default function BibleStreakCard({
       return;
     }
 
-    const unsubscribe = subscribeToUserStreak(user.uid, planId, (data, meta) => {
-      setStreakData(data);
-      if (meta?.shieldedDates && meta.shieldedDates.length > 0) {
-        const formatted = meta.shieldedDates.map(d => {
-          const [y, m, day] = d.split('-').map(Number);
-          return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        }).join(', ');
-        setShieldProtectedNotice(`Your Streak Shield automatically protected your ${data.currentStreak}-day streak for ${formatted}! You have ${data.shieldsAvailable} ${data.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
-      }
-      setLoading(false);
-    });
+    const unsubscribe = subscribeToUserStreak(
+      user.uid,
+      planId,
+      (data, meta) => {
+        setStreakData(data);
+        if (meta?.wasRestored) {
+          setRestoredNotice(`🎉 Great news! Your reading streak has been restored to ${data.currentStreak} days with ${data.shieldsAvailable}/${MAX_SHIELDS} shields intact! Your readings from the past couple of days were recognized.`);
+          setShieldProtectedNotice(null);
+        } else if (meta?.shieldedDates && meta.shieldedDates.length > 0) {
+          const formatted = meta.shieldedDates.map(d => {
+            const [y, m, day] = d.split('-').map(Number);
+            return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          }).join(', ');
+          setShieldProtectedNotice(`Your Streak Shield automatically protected your ${data.currentStreak}-day streak for ${formatted}! You have ${data.shieldsAvailable} ${data.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
+        }
+        setLoading(false);
+      },
+      completedPlanDays,
+      planYear
+    );
 
     return () => unsubscribe();
-  }, [user, planId, todayStr]);
+  }, [user, planId, todayStr, completedPlanDays.length, planYear]);
 
   const triggerConfetti = (isMilestone = false) => {
     try {
@@ -113,6 +145,31 @@ export default function BibleStreakCard({
       }
     } catch {
       // Fallback gracefully if canvas is constrained
+    }
+  };
+
+  const handleRestoreStreak = async () => {
+    if (!user) {
+      toast.error("Please sign in with Google to manage your reading streak.");
+      return;
+    }
+    setIsRestoring(true);
+    try {
+      const restored = await restoreUserStreak(user.uid, planId, streakData, completedPlanDays, planYear);
+      setStreakData(restored);
+      triggerConfetti(true);
+      toast.success(`🛡️ Streak restored! ${restored.currentStreak}-Day Streak active with ${restored.shieldsAvailable}/${MAX_SHIELDS} Shields!`, {
+        duration: 5000,
+        icon: '✨'
+      });
+      setRestoredNotice(`🎉 Great news! Your reading streak has been restored to ${restored.currentStreak} days with ${restored.shieldsAvailable}/${MAX_SHIELDS} shields intact!`);
+      setShieldProtectedNotice(null);
+      if (showRulesModal) setShowRulesModal(false);
+    } catch (err: any) {
+      console.error("Error restoring streak:", err);
+      toast.error(err?.message || "Failed to restore streak. Please try again.");
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -154,7 +211,15 @@ export default function BibleStreakCard({
 
     setIsMarking(true);
     try {
-      const result = await recordReadingCompletion(user.uid, planId, streakData, currentDayNumber);
+      const result = await recordReadingCompletion(
+        user.uid,
+        planId,
+        streakData,
+        currentDayNumber,
+        undefined,
+        completedPlanDays,
+        planYear
+      );
       
       if (result.isNewShieldAwarded) {
         triggerConfetti(true);
@@ -267,6 +332,21 @@ export default function BibleStreakCard({
 
           <button
             type="button"
+            onClick={handleRestoreStreak}
+            disabled={isRestoring}
+            className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-lg bg-white/10 hover:bg-white/20 text-white transition-all border border-white/15 cursor-pointer active:scale-95"
+            title="Verify and restore reading streak from your completed chapters"
+          >
+            {isRestoring ? (
+              <Loader2 size={13} className="animate-spin text-amber-300" />
+            ) : (
+              <Sparkles size={13} className="text-amber-300" />
+            )}
+            <span className="hidden sm:inline">{isRestoring ? 'Restoring...' : 'Sync & Restore'}</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowRulesModal(true)}
             className="text-blue-200 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors"
             title="How Streaks & Shields work"
@@ -283,6 +363,33 @@ export default function BibleStreakCard({
         </div>
       ) : (
         <div className="p-4 sm:p-6 space-y-5">
+          {/* Restored Reading Streak Notification Banner */}
+          {restoredNotice && (
+            <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 sm:p-3.5 flex items-start gap-3 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
+                <Sparkles size={18} className="fill-white" />
+              </div>
+              <div className="flex-1 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-bold text-emerald-950 text-xs sm:text-sm flex items-center gap-1.5">
+                    Streak & Shields Restored!
+                  </span>
+                  <button 
+                    type="button" 
+                    onClick={() => setRestoredNotice(null)}
+                    className="text-emerald-600 hover:text-emerald-800 text-xs px-1.5 py-0.5 rounded hover:bg-emerald-100 font-bold"
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <p className="text-emerald-900 mt-0.5 leading-relaxed font-medium">
+                  {restoredNotice}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Active Streak Shield Notification Banner */}
           {shieldProtectedNotice && (
             <div className="bg-sky-50/90 border border-sky-200/90 rounded-xl p-3 sm:p-3.5 flex items-start gap-3 shadow-xs">
@@ -555,6 +662,37 @@ export default function BibleStreakCard({
                     <strong className="text-gray-900 block font-semibold mb-0.5">Earn More Shields</strong>
                     Every <span className="font-bold text-emerald-800">7 consecutive reading days</span>, you earn +1 new Streak Shield (up to a maximum cap of 3).
                   </div>
+                </div>
+
+                {/* Instant Streak & Shield Recovery Tool */}
+                <div className="p-3 rounded-xl bg-indigo-50/80 border border-indigo-200/90 text-indigo-950">
+                  <div className="flex items-start gap-2 mb-2">
+                    <span className="text-base">⚡</span>
+                    <div>
+                      <strong className="text-indigo-950 block font-semibold">Streak & Shield Recovery</strong>
+                      <p className="text-[11px] text-indigo-800 mt-0.5">
+                        Completed your readings but lost your streak or shields? Click below to recalculate from your completed readings and restore your streak.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRestoreStreak}
+                    disabled={isRestoring}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer active:scale-98"
+                  >
+                    {isRestoring ? (
+                      <>
+                        <Loader2 size={13} className="animate-spin" />
+                        Restoring Streak & Shields...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={13} className="text-amber-300" />
+                        Sync & Restore My Streak & Shields
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
