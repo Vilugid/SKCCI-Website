@@ -215,9 +215,29 @@
         "updatedAt": { "type": "string" }
       },
       "required": ["userId", "planId", "currentStreak", "longestStreak", "shieldsAvailable"]
+    },
+    "ChurchEvent": {
+      "title": "Church Event",
+      "description": "Church gatherings, services, and special events",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "dateTime": { "type": "string" },
+        "location": { "type": "string" },
+        "capacity": { "type": "number" },
+        "coverImage": { "type": "string" },
+        "photosUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "dateTime", "location", "capacity"]
     }
   },
   "firestore": {
+    "/events/{eventId}": {
+      "schema": "#/entities/ChurchEvent",
+      "description": "Church gathering and event details"
+    },
     "/sunday_attendance/{logId}": {
       "schema": "#/entities/SundayAttendance",
       "description": "Historical logs of actual Sunday church attendees"

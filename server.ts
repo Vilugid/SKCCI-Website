@@ -403,6 +403,20 @@ async function startServer() {
   // Static serving for locally uploaded event banners & assets
   app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
+  // Graceful fallback for missing ephemeral uploads so requests never return index.html SPA
+  app.use("/uploads", (req, res) => {
+    const rawPath = req.path || "";
+    if (rawPath.includes("roots_and_grace")) {
+      return res.redirect("https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80");
+    }
+    if (rawPath.includes("daraitan")) {
+      return res.redirect("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80");
+    }
+    // Return SVG fallback with proper image header so img tags don't choke on HTML
+    res.setHeader("Content-Type", "image/svg+xml");
+    res.status(404).send(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0F2C59"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#ffffff" opacity="0.8">SKCCI Event Banner</text></svg>`);
+  });
+
   // API endpoint for uploading event banner images directly
   app.post("/api/upload-image", async (req, res) => {
     try {

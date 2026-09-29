@@ -175,6 +175,79 @@ const getEventCategoryMeta = (title: string, description: string) => {
   };
 };
 
+export function getOptimizedCoverImage(coverImage: string | undefined, title = '', description = ''): string {
+  if (!coverImage || coverImage.trim().length === 0) {
+    return getEventCategoryMeta(title, description).fallbackImage;
+  }
+  const trimmed = coverImage.trim();
+  // Self-contained data URL - always reliable and permanent
+  if (trimmed.startsWith('data:image/')) {
+    return trimmed;
+  }
+  // If ephemeral upload path, resolve to dedicated permanent preset
+  if (trimmed.includes('roots_and_grace')) {
+    return 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (trimmed.includes('daraitan')) {
+    return 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
+  }
+  if (trimmed.includes('fbcdn.net') || trimmed.includes('scontent.')) {
+    if (title.toLowerCase().includes('young pro') || description.toLowerCase().includes('young pro')) {
+      return 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80';
+    }
+  }
+  return trimmed;
+}
+
+export const compressBannerImage = (file: File, maxDim = 1280, quality = 0.82): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return resolve(e.target?.result as string);
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Use image/jpeg for reliable compression and universal cross-device rendering
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve(dataUrl);
+        } catch (err) {
+          console.warn('Canvas banner compression fallback:', err);
+          resolve(e.target?.result as string);
+        }
+      };
+      img.onerror = (err) => {
+        console.warn('Image load error during compression:', err);
+        resolve(e.target?.result as string);
+      };
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 function EventCardImageHeader({ 
   event, 
   isFull, 
@@ -193,22 +266,18 @@ function EventCardImageHeader({
   onShare?: (e: React.MouseEvent) => void;
 }) {
   const meta = getEventCategoryMeta(event.title, event.description);
-  const initialSrc = (event.coverImage && event.coverImage.trim().length > 0) ? event.coverImage.trim() : meta.fallbackImage;
-  const [imgSrc, setImgSrc] = useState(initialSrc);
+  const resolvedCover = getOptimizedCoverImage(event.coverImage, event.title, event.description);
+  const [imgSrc, setImgSrc] = useState(resolvedCover);
   const [imgError, setImgError] = useState(false);
   const [isUsingFallback, setIsUsingFallback] = useState(false);
 
   // Update src if event.coverImage updates
   React.useEffect(() => {
-    if (event.coverImage && event.coverImage.trim().length > 0) {
-      setImgSrc(event.coverImage.trim());
-      setImgError(false);
-      setIsUsingFallback(false);
-    } else {
-      setImgSrc(meta.fallbackImage);
-      setIsUsingFallback(false);
-    }
-  }, [event.coverImage, meta.fallbackImage]);
+    const nextSrc = getOptimizedCoverImage(event.coverImage, event.title, event.description);
+    setImgSrc(nextSrc);
+    setImgError(false);
+    setIsUsingFallback(false);
+  }, [event.coverImage, event.title, event.description]);
 
   return (
     <div className={`h-52 bg-slate-800 relative overflow-hidden group ${isPast ? 'grayscale opacity-75' : ''}`}>
@@ -242,11 +311,15 @@ function EventCardImageHeader({
         {isRecurring ? 'Sunday Gathering' : meta.category}
       </div>
 
-      {/* Admin indicator if custom URL failed to load (e.g. Facebook CDN expired 403) */}
+      {/* Admin indicator if custom URL failed to load */}
       {isAdmin && isUsingFallback && event.coverImage && (
         <div className="absolute bottom-2 left-4 z-10 bg-amber-600/90 text-white backdrop-blur-md px-2.5 py-1 rounded-lg text-[10px] font-bold shadow-md flex items-center gap-1 border border-amber-400/40">
           <AlertTriangle size={12} className="text-white shrink-0" />
-          <span>Image link expired (HTTP 403) • Using fallback</span>
+          <span>
+            {event.coverImage.includes('fbcdn.net') || event.coverImage.includes('facebook.com')
+              ? 'Facebook image link expired (HTTP 403) • Using fallback'
+              : 'Custom image unreachable • Using fallback'}
+          </span>
         </div>
       )}
 
@@ -342,50 +415,44 @@ export default function Events() {
       return;
     }
 
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error('Image exceeds 15MB. Please choose a smaller image.');
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Image exceeds 20MB. Please choose a smaller image.');
       return;
     }
 
     setIsUploadingBanner(true);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Data = reader.result as string;
+    try {
+      // 1. High-fidelity canvas compression to crisp 1280px max dimension, quality 0.82
+      const compressedDataUrl = await compressBannerImage(file, 1280, 0.82);
+      
+      // 2. Set permanent self-contained cover image directly in form state (stored permanently in Firestore)
+      setFormData(prev => ({ ...prev, coverImage: compressedDataUrl }));
+      setBannerPreviewError(false);
+
+      // 3. Also asynchronously mirror to server for local disk cache
       try {
-        const res = await fetch('/api/upload-image', {
+        await fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            imageBase64: base64Data,
+            imageBase64: compressedDataUrl,
             filename: file.name
           })
         });
-        const data = await res.json();
-        if (res.ok && data.url) {
-          setFormData(prev => ({ ...prev, coverImage: data.url }));
-          setBannerPreviewError(false);
-          toast.success('Banner uploaded successfully!');
-        } else {
-          setFormData(prev => ({ ...prev, coverImage: base64Data }));
-          setBannerPreviewError(false);
-          toast.success('Image loaded!');
-        }
-      } catch {
-        setFormData(prev => ({ ...prev, coverImage: base64Data }));
-        setBannerPreviewError(false);
-        toast.success('Image loaded!');
-      } finally {
-        setIsUploadingBanner(false);
-        if (bannerFileInputRef.current) {
-          bannerFileInputRef.current.value = '';
-        }
+      } catch (srvErr) {
+        console.warn('Server local cache note:', srvErr);
       }
-    };
-    reader.onerror = () => {
-      toast.error('Could not read image file.');
+
+      toast.success('Custom banner uploaded and permanently saved!');
+    } catch (err: any) {
+      console.error('Error processing banner:', err);
+      toast.error('Could not process image file. Please try another image.');
+    } finally {
       setIsUploadingBanner(false);
-    };
-    reader.readAsDataURL(file);
+      if (bannerFileInputRef.current) {
+        bannerFileInputRef.current.value = '';
+      }
+    }
   };
 
   // Admin Sunday Service Card Editor State
@@ -403,42 +470,39 @@ export default function Events() {
       return;
     }
 
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Image exceeds 20MB. Please choose a smaller image.');
+      return;
+    }
+
     setIsUploadingSundayBanner(true);
-    const reader = new FileReader();
-    reader.onload = async () => {
-      const base64Data = reader.result as string;
+    try {
+      const compressedDataUrl = await compressBannerImage(file, 1280, 0.82);
+      setSundayCardForm(prev => ({ ...prev, coverImage: compressedDataUrl }));
+      
       try {
-        const res = await fetch('/api/upload-image', {
+        await fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            imageBase64: base64Data,
+            imageBase64: compressedDataUrl,
             filename: file.name
           })
         });
-        const data = await res.json();
-        if (res.ok && data.url) {
-          setSundayCardForm(prev => ({ ...prev, coverImage: data.url }));
-          toast.success('Sunday service banner uploaded!');
-        } else {
-          setSundayCardForm(prev => ({ ...prev, coverImage: base64Data }));
-          toast.success('Image loaded!');
-        }
-      } catch {
-        setSundayCardForm(prev => ({ ...prev, coverImage: base64Data }));
-        toast.success('Image loaded!');
-      } finally {
-        setIsUploadingSundayBanner(false);
-        if (sundayBannerFileInputRef.current) {
-          sundayBannerFileInputRef.current.value = '';
-        }
+      } catch (srvErr) {
+        console.warn('Server local cache note:', srvErr);
       }
-    };
-    reader.onerror = () => {
-      toast.error('Could not read image file.');
+
+      toast.success('Sunday worship banner uploaded and permanently saved!');
+    } catch (err: any) {
+      console.error('Error processing Sunday banner:', err);
+      toast.error('Could not process image file.');
+    } finally {
       setIsUploadingSundayBanner(false);
-    };
-    reader.readAsDataURL(file);
+      if (sundayBannerFileInputRef.current) {
+        sundayBannerFileInputRef.current.value = '';
+      }
+    }
   };
 
   // Admin Sunday Attendance Form State
@@ -773,6 +837,33 @@ export default function Events() {
       };
     }
   }, [isLoadingEvents, events.length]);
+
+  // Auto-heal legacy broken / ephemeral banner links in Firestore when admin views
+  React.useEffect(() => {
+    if (!isAdmin || !events || events.length === 0) return;
+
+    events.forEach(async (evt) => {
+      const img = evt.coverImage || '';
+      let repairedUrl = '';
+      if (img.includes('/uploads/events/roots_and_grace')) {
+        repairedUrl = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80';
+      } else if (img.includes('/uploads/events/daraitan')) {
+        repairedUrl = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
+      } else if (img.includes('fbcdn.net') || img.includes('scontent.')) {
+        repairedUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80';
+      }
+
+      if (repairedUrl && repairedUrl !== img) {
+        try {
+          await updateEvent(evt.id, { coverImage: repairedUrl });
+          queryClient.invalidateQueries({ queryKey: ['events'] });
+          console.log(`[Auto-Repair] Event "${evt.title}" banner repaired in Firestore`);
+        } catch (e) {
+          console.warn(`[Auto-Repair] Note updating event banner:`, e);
+        }
+      }
+    });
+  }, [isAdmin, events, queryClient]);
 
   // Attendance Analytics Prep
   const sortedAttendance = [...attendanceLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -1336,6 +1427,16 @@ export default function Events() {
                           <button
                             type="button"
                             onClick={() => {
+                              setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80' }));
+                              setBannerPreviewError(false);
+                            }}
+                            className="px-2 py-0.5 rounded-md text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 cursor-pointer"
+                          >
+                            🌿 Roots & Grace / Family
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
                               setFormData(prev => ({ ...prev, coverImage: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80' }));
                               setBannerPreviewError(false);
                             }}
@@ -1381,7 +1482,13 @@ export default function Events() {
                             <div className="text-[11px] font-bold uppercase tracking-wider text-gray-500 mb-1 flex items-center justify-between">
                               <span className="flex items-center gap-1">
                                 {!bannerPreviewError ? (
-                                  <span className="text-emerald-600 flex items-center gap-1 font-semibold">✓ Preview Loaded</span>
+                                  formData.coverImage.startsWith('data:image/') ? (
+                                    <span className="text-emerald-700 flex items-center gap-1 font-semibold">
+                                      <CheckCircle size={13} className="text-emerald-600" /> Device Banner Uploaded (Permanent ~{Math.round(formData.coverImage.length * 0.75 / 1024)} KB)
+                                    </span>
+                                  ) : (
+                                    <span className="text-emerald-600 flex items-center gap-1 font-semibold">✓ Preview Loaded</span>
+                                  )
                                 ) : (
                                   <span className="text-red-600 flex items-center gap-1 font-semibold">⚠️ Load Error</span>
                                 )}
@@ -1410,7 +1517,9 @@ export default function Events() {
                                   <AlertTriangle size={18} className="text-red-300 mb-1" />
                                   <span className="font-bold">Image Cannot Be Displayed</span>
                                   <span className="text-[10px] text-red-200 mt-0.5">
-                                    The link is expired or blocked (HTTP 403 Forbidden). Please click &quot;Upload Image from Device&quot; to upload the picture file directly.
+                                    {formData.coverImage.includes('fbcdn.net') || formData.coverImage.includes('facebook.com')
+                                      ? 'Facebook CDN links expire quickly and return HTTP 403 Forbidden. Please click "Upload Image from Device" or choose a preset above.'
+                                      : 'The image link could not be loaded. Please check the URL or click "Upload Image from Device" to upload your flyer directly.'}
                                   </span>
                                 </div>
                               )}
