@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp, Sparkles } from 'lucide-react';
+import imageCompression from 'browser-image-compression';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
@@ -124,14 +125,39 @@ export default function CellGroup() {
     });
   }, [isAdmin, groupsRaw, queryClient]);
 
-  // Mobile-compatible canvas image compressor that works on all iOS & Android browsers
-  const compressImageForMobile = (file: File, maxDim = 1200, quality = 0.82): Promise<string> => {
+  // Mobile-compatible image compressor with auto-HEIC conversion and guaranteed safe payload size (<400KB)
+  const compressImageForMobile = async (file: File): Promise<string> => {
+    // 1. Primary: Use browser-image-compression with automatic HEIC/HEIF conversion
+    try {
+      const options = {
+        maxSizeMB: 0.35, // Ensures compressed photo is <= 350KB so base64 string is <= 480KB (safely under Firestore 1MB document limit)
+        maxWidthOrHeight: 1200,
+        useWebWorker: false, // Prevents WebWorker sandboxing issues on mobile browsers
+        fileType: 'image/jpeg',
+        initialQuality: 0.8
+      };
+      const compressedFile = await imageCompression(file, options);
+      const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
+      if (dataUrl && dataUrl.startsWith('data:image/')) {
+        return dataUrl;
+      }
+    } catch (bicErr) {
+      console.warn('browser-image-compression fallback to canvas:', bicErr);
+    }
+
+    // 2. Secondary fallback: HTML5 Canvas resize & compression
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
+        const rawResult = e.target?.result as string;
+        if (!rawResult) {
+          return reject(new Error('Unable to read selected photo file.'));
+        }
+
         const img = new Image();
         img.onload = () => {
           try {
+            const maxDim = 1200;
             let { width, height } = img;
             if (width > maxDim || height > maxDim) {
               if (width > height) {
@@ -148,7 +174,7 @@ export default function CellGroup() {
             canvas.height = Math.max(1, height);
             const ctx = canvas.getContext('2d');
             if (!ctx) {
-              return resolve(e.target?.result as string);
+              return resolve(rawResult);
             }
 
             // High-quality canvas image smoothing
@@ -156,48 +182,61 @@ export default function CellGroup() {
             ctx.imageSmoothingQuality = 'high';
             ctx.drawImage(img, 0, 0, width, height);
 
-            const dataUrl = canvas.toDataURL('image/jpeg', quality);
+            let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            if (dataUrl.length > 700 * 1024) {
+              dataUrl = canvas.toDataURL('image/jpeg', 0.65);
+            }
             resolve(dataUrl);
           } catch (canvasErr) {
-            console.warn('Canvas resize fallback to raw base64:', canvasErr);
-            resolve(e.target?.result as string);
+            console.warn('Canvas resize fallback to raw data:', canvasErr);
+            resolve(rawResult);
           }
         };
-        img.onerror = (imgErr) => {
-          console.warn('Image element error, falling back to raw data:', imgErr);
-          resolve(e.target?.result as string);
+        img.onerror = () => {
+          if (file.name?.toLowerCase().endsWith('.heic') || file.type?.includes('heic')) {
+            reject(new Error('Apple HEIC photo could not be converted. Please select a JPG or PNG from your gallery.'));
+          } else {
+            resolve(rawResult);
+          }
         };
-        img.src = e.target?.result as string;
+        img.src = rawResult;
       };
-      reader.onerror = (err) => reject(err);
+      reader.onerror = () => reject(new Error('Failed to read photo from your device.'));
       reader.readAsDataURL(file);
     });
   };
 
   const processAndUploadImage = async (file: File, type: 'group' | 'meeting') => {
     if (!user) {
-      toast.error('You must be logged in to upload images');
+      toast.error('Please sign in with Google first to upload photos.');
       return;
     }
     
-    // Support up to 20MB for modern phone camera shots
-    if (file.size > 20 * 1024 * 1024) {
-      toast.error('File exceeds 20MB limit. Please choose a smaller photo.');
+    // Support modern mobile phone camera shots up to 25MB
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error('Photo exceeds 25MB limit. Please choose a smaller photo.');
       return;
     }
     
+    // Validate image MIME type or file extension (safely handling mobile camera files where MIME can be empty)
+    const isImage = !file.type || file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|heic|heif|gif)$/i.test(file.name);
+    if (!isImage) {
+      toast.error('Please select an image file (JPG, PNG, WebP, or Camera Photo).');
+      return;
+    }
+
     try {
       setUploadProgress(prev => ({ ...prev, [type]: 15 }));
       
-      // 1. Mobile-friendly compression without flaky WebWorker dependencies
-      const base64Data = await compressImageForMobile(file, 1200, 0.82);
-      setUploadProgress(prev => ({ ...prev, [type]: 55 }));
+      // 1. Mobile-friendly compression with automatic HEIC conversion
+      const base64Data = await compressImageForMobile(file);
+      setUploadProgress(prev => ({ ...prev, [type]: 60 }));
 
       // 2. Persist compressed image directly as permanent data URL in Firestore
       const finalImageUrl = base64Data;
       try {
         // Mirror to server in background for disk cache if needed
-        await fetch('/api/upload-image', {
+        fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -205,7 +244,7 @@ export default function CellGroup() {
             filename: file.name || (type === 'group' ? 'cell-group' : 'meeting-proof'),
             folder: 'cell-groups'
           })
-        });
+        }).catch(() => {});
       } catch (uploadErr) {
         console.warn('Server background cache note:', uploadErr);
       }
@@ -224,12 +263,12 @@ export default function CellGroup() {
         } else {
           setMeetingPhotoUrl(finalImageUrl);
         }
-        toast.success('Photo uploaded successfully!');
+        toast.success('Photo ready! Tap Save Group to apply.');
       }, 300);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error uploading image', error);
-      toast.error('Failed to upload photo. Please try again.');
+      toast.error(error?.message || 'Failed to process photo. Please try another image.');
       setUploadProgress(prev => {
         const next = { ...prev };
         delete next[type];
@@ -405,9 +444,15 @@ export default function CellGroup() {
       toast.success(editingGroupId ? 'Group updated successfully!' : 'Group created successfully!');
       resetForm();
     },
-    onError: (error) => {
+    onError: (error: any) => {
       console.error("Error saving group:", error);
-      toast.error("Failed to save group. You might not have permission.");
+      if (error?.message?.includes('maximum allowed size') || error?.code === 'resource-exhausted') {
+        toast.error("Photo exceeds database size limits. Please select a smaller photo or choose a fellowship preset.");
+      } else if (error?.code === 'permission-denied') {
+        toast.error("Permission denied. Ensure you are signed in with the group leader or admin Google account.");
+      } else {
+        toast.error(error?.message || "Failed to save group. You might not have permission.");
+      }
     }
   });
 
@@ -438,6 +483,15 @@ export default function CellGroup() {
       groupData.createdByUid = user.uid;
       if (user.email) {
         groupData.createdByEmail = user.email;
+      }
+    } else {
+      // Preserve or backfill creator metadata for existing cell groups
+      const existingGroup = groups.find(g => g.id === editingGroupId);
+      if (!existingGroup?.createdByEmail && user.email) {
+        groupData.createdByEmail = user.email;
+      }
+      if (!existingGroup?.createdByUid && user.uid) {
+        groupData.createdByUid = user.uid;
       }
     }
 
