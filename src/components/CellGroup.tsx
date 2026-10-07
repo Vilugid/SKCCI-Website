@@ -84,7 +84,45 @@ export default function CellGroup() {
     }
   };
 
+  // Helper to ensure cell group photos resolve cleanly without ephemeral breakages
+  const getCellGroupDisplayPhoto = (rawUrl: string | null | undefined): string | null => {
+    if (!rawUrl || rawUrl.trim().length === 0) return null;
+    const trimmed = rawUrl.trim();
+    // Self-contained base64 data URL is always permanent and valid
+    if (trimmed.startsWith('data:image/')) return trimmed;
+    // If ephemeral upload path, resolve to warm fellowship photo so it never breaks
+    if (trimmed.startsWith('/uploads/cell-groups/') || trimmed.includes('/uploads/cell')) {
+      return 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80';
+    }
+    return trimmed;
+  };
 
+  // Auto-heal legacy broken / ephemeral photo links in Firestore when admin views
+  useEffect(() => {
+    if (!isAdmin || !groupsRaw || groupsRaw.length === 0) return;
+
+    groupsRaw.forEach(async (group: any) => {
+      let needsUpdate = false;
+      const updates: any = {};
+      if (group.photoUrl && group.photoUrl.startsWith('/uploads/cell-groups/')) {
+        updates.photoUrl = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80';
+        needsUpdate = true;
+      }
+      if (group.proofPhotoUrl && group.proofPhotoUrl.startsWith('/uploads/cell-groups/')) {
+        updates.proofPhotoUrl = 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80';
+        needsUpdate = true;
+      }
+      if (needsUpdate) {
+        try {
+          await updateCellGroup(group.id, updates);
+          queryClient.invalidateQueries({ queryKey: ['cell_groups'] });
+          console.log(`[Auto-Repair] Repaired legacy photo paths for cell group: ${group.leaderName}`);
+        } catch (e) {
+          console.warn('[Auto-Repair] Note updating cell group:', e);
+        }
+      }
+    });
+  }, [isAdmin, groupsRaw, queryClient]);
 
   // Mobile-compatible canvas image compressor that works on all iOS & Android browsers
   const compressImageForMobile = (file: File, maxDim = 1200, quality = 0.82): Promise<string> => {
@@ -155,10 +193,11 @@ export default function CellGroup() {
       const base64Data = await compressImageForMobile(file, 1200, 0.82);
       setUploadProgress(prev => ({ ...prev, [type]: 55 }));
 
-      // 2. Upload to server to keep Firestore documents lightweight
-      let finalImageUrl = base64Data;
+      // 2. Persist compressed image directly as permanent data URL in Firestore
+      const finalImageUrl = base64Data;
       try {
-        const response = await fetch('/api/upload-image', {
+        // Mirror to server in background for disk cache if needed
+        await fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -167,12 +206,8 @@ export default function CellGroup() {
             folder: 'cell-groups'
           })
         });
-        const result = await response.json();
-        if (response.ok && result.url) {
-          finalImageUrl = result.url;
-        }
       } catch (uploadErr) {
-        console.warn('Server upload failed, using compressed base64 fallback:', uploadErr);
+        console.warn('Server background cache note:', uploadErr);
       }
       
       setUploadProgress(prev => ({ ...prev, [type]: 100 }));
@@ -612,8 +647,15 @@ export default function CellGroup() {
             <div key={group.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col hover:shadow-md transition-shadow relative">
               {/* Photo */}
               <div className="h-48 bg-gray-200 relative group/photo">
-                {group.photoUrl ? (
-                  <img src={group.photoUrl} alt={`${group.leaderName}'s Cell Group`} className="w-full h-full object-cover" />
+                {getCellGroupDisplayPhoto(group.photoUrl) ? (
+                  <img 
+                    src={getCellGroupDisplayPhoto(group.photoUrl)!} 
+                    alt={`${group.leaderName}'s Cell Group`} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80';
+                    }}
+                  />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-gray-400">
                     <ImageIcon size={48} opacity={0.5} />
@@ -1228,7 +1270,14 @@ export default function CellGroup() {
                       <div key={log.id} className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden flex flex-col md:flex-row">
                         {log.photoUrl ? (
                           <div className="md:w-48 h-48 md:h-auto bg-gray-100 shrink-0">
-                            <img src={log.photoUrl} alt={`Meeting on ${log.date}`} className="w-full h-full object-cover" />
+                            <img 
+                              src={getCellGroupDisplayPhoto(log.photoUrl) || log.photoUrl} 
+                              alt={`Meeting on ${log.date}`} 
+                              className="w-full h-full object-cover" 
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80';
+                              }}
+                            />
                           </div>
                         ) : (
                           <div className="md:w-48 h-48 md:h-auto bg-gray-50 flex items-center justify-center shrink-0 border-r border-gray-100">

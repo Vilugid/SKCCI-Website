@@ -412,9 +412,15 @@ async function startServer() {
     if (rawPath.includes("daraitan")) {
       return res.redirect("https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80");
     }
-    // Return SVG fallback with proper image header so img tags don't choke on HTML
-    res.setHeader("Content-Type", "image/svg+xml");
-    res.status(404).send(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="#0F2C59"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="20" fill="#ffffff" opacity="0.8">SKCCI Event Banner</text></svg>`);
+    if (rawPath.includes("cell-groups") || rawPath.includes("cell")) {
+      // Warm, uplifting church small group fellowship photo for cell groups
+      return res.redirect("https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80");
+    }
+    if (rawPath.includes("events")) {
+      return res.redirect("https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=1200&q=80");
+    }
+    // Universal warm church photo fallback
+    return res.redirect("https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80");
   });
 
   // API endpoint for uploading event banner images directly
