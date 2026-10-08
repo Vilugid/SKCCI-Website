@@ -32,7 +32,8 @@ const EVENT_ADMINS = parseEmails(
     'beaangelnicole.mendoza@gmail.com',
     'beaangelnicole.mendoza@gmail.con',
     'lzvmndmendoza@gmail.com',
-    'martin.loves17@gmail.com'
+    'martin.loves17@gmail.com',
+    'mendoza.biancangela@gmail.com'
   ]
 );
 
