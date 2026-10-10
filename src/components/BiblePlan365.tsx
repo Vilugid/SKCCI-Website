@@ -80,15 +80,18 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   // Synced 100-day completion status check
   const [synced100Complete] = useSyncedState<boolean>('sk_100_day_completed', false);
   const [synced100Progress] = useSyncedState<number[]>('sk_100_day_progress', []);
-  const is100Completed = propIs100DayComplete ?? (synced100Complete || synced100Progress.length >= 100);
+  const safe100Progress = Array.isArray(synced100Progress) ? synced100Progress : [];
+  const is100Completed = propIs100DayComplete ?? (synced100Complete || safe100Progress.length >= 100);
   
   // Progress sets via useSyncedState
   const [completedOTArray, setCompletedOTArray] = useSyncedState<number[]>(`sk_bible_ot_${currentYear}`, []);
   const [completedNTArray, setCompletedNTArray] = useSyncedState<number[]>(`sk_bible_nt_${currentYear}`, []);
   
-  const completedOT = new Set(completedOTArray);
-  const completedNT = new Set(completedNTArray);
-  const completedPlanDays = completedOTArray.filter(d => completedNT.has(d));
+  const safeCompletedOTArray = Array.isArray(completedOTArray) ? completedOTArray : [];
+  const safeCompletedNTArray = Array.isArray(completedNTArray) ? completedNTArray : [];
+  const completedOT = new Set(safeCompletedOTArray);
+  const completedNT = new Set(safeCompletedNTArray);
+  const completedPlanDays = safeCompletedOTArray.filter(d => completedNT.has(d));
 
   // Ensure past completed readings (such as days 266-269) are preserved and recognized
   useEffect(() => {
@@ -97,10 +100,10 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
       const missingOT = daysToEnsure.filter(d => !completedOT.has(d));
       const missingNT = daysToEnsure.filter(d => !completedNT.has(d));
       if (missingOT.length > 0) {
-        setCompletedOTArray(prev => Array.from(new Set([...prev, ...missingOT])));
+        setCompletedOTArray(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...missingOT])));
       }
       if (missingNT.length > 0) {
-        setCompletedNTArray(prev => Array.from(new Set([...prev, ...missingNT])));
+        setCompletedNTArray(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...missingNT])));
       }
     }
   }, [completedOTArray, completedNTArray]);

@@ -106,7 +106,8 @@ export default function App() {
   const [progressArray, setProgressArray] = useSyncedState<number[]>('sk_100_day_progress', []);
   const [is100DayComplete, setIs100DayComplete] = useSyncedState<boolean>('sk_100_day_completed', false);
 
-  const progressCount = progressArray.length;
+  const safeProgressArray = Array.isArray(progressArray) ? progressArray : [];
+  const progressCount = safeProgressArray.length;
 
   // Handle URL sync on browser back/forward and initial mount
   useEffect(() => {
