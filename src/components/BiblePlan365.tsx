@@ -188,9 +188,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   useEffect(() => {
     if (explainerVideos[viewedDay] === undefined) {
       fetchBibleExplainerVideo(viewedDay).then((url) => {
-        if (url !== null) {
-          setExplainerVideos(prev => ({ ...prev, [viewedDay]: url }));
-        }
+        setExplainerVideos(prev => ({ ...prev, [viewedDay]: url || '' }));
       });
     }
   }, [viewedDay, explainerVideos]);

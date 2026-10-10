@@ -71,7 +71,9 @@ export default function BibleStreakCard({
           );
           setStreakData(reconciledStreak);
           if (hasChanges) {
-            localStorage.setItem(localKey, JSON.stringify(reconciledStreak));
+            try {
+              localStorage.setItem(localKey, JSON.stringify(reconciledStreak));
+            } catch (e) {}
           }
           if (wasRestored) {
             setRestoredNotice(`🎉 Great news! Your reading streak has been restored to ${reconciledStreak.currentStreak} days with ${reconciledStreak.shieldsAvailable}/${MAX_SHIELDS} shields intact! Your readings from the past couple of days were recognized.`);
@@ -202,7 +204,9 @@ export default function BibleStreakCard({
           : streakData.completedDays
       };
       setStreakData(updatedLocal);
-      localStorage.setItem(`sk_local_streak_${planId}`, JSON.stringify(updatedLocal));
+      try {
+        localStorage.setItem(`sk_local_streak_${planId}`, JSON.stringify(updatedLocal));
+      } catch (e) {}
       triggerConfetti(false);
       toast.success("Reading completed for today! 🔥");
       if (onReadingMarked && currentDayNumber) onReadingMarked(currentDayNumber);

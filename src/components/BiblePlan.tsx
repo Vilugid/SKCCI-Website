@@ -132,9 +132,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   useEffect(() => {
     if (explainerVideos[selectedDay] === undefined) {
       fetchBibleExplainerVideo(selectedDay, 'plan_100').then((url) => {
-        if (url !== null) {
-          setExplainerVideos(prev => ({ ...prev, [selectedDay]: url }));
-        }
+        setExplainerVideos(prev => ({ ...prev, [selectedDay]: url || '' }));
       });
     }
   }, [selectedDay, explainerVideos]);
