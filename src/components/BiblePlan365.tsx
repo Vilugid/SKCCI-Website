@@ -93,9 +93,12 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   const completedNT = new Set(safeCompletedNTArray);
   const completedPlanDays = safeCompletedOTArray.filter(d => completedNT.has(d));
 
-  // Ensure past completed readings (such as days 266-269) are preserved and recognized
+  // Ensure past completed readings (such as days 266-269) are preserved and recognized (runs at most once)
+  const hasEnsuredDaysRef = useRef(false);
   useEffect(() => {
+    if (hasEnsuredDaysRef.current) return;
     if (completedOT.has(265) && completedOT.has(270)) {
+      hasEnsuredDaysRef.current = true;
       const daysToEnsure = [266, 267, 268, 269];
       const missingOT = daysToEnsure.filter(d => !completedOT.has(d));
       const missingNT = daysToEnsure.filter(d => !completedNT.has(d));

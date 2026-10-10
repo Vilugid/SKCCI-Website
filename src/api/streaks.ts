@@ -200,7 +200,7 @@ export const restoreAndHealStreak = (
       shieldsAvailable,
       lastCompletedDate,
       completedDays,
-      history: history.slice(-60),
+      history: history.slice(-365),
       updatedAt: new Date().toISOString()
     },
     wasRestored
@@ -323,7 +323,7 @@ export const reconcileUserStreak = (
     shieldsAvailable: recalculated.shieldsAvailable,
     lastCompletedDate: lastEffectiveDate,
     completedDays,
-    history: history.slice(-60),
+    history: history.slice(-365),
     updatedAt: new Date().toISOString()
   };
 
@@ -371,9 +371,9 @@ export const subscribeToUserStreak = (
           updatedAt: data.updatedAt
         };
 
-        // Reconcile and auto-heal missed days or mistakenly burned shields
+        // Reconcile and auto-heal missed days or mistakenly burned shields in-memory for UI presentation
         const todayStr = getLocalDateString(new Date());
-        const { reconciledStreak, hasChanges, shieldedDates, wasRestored } = reconcileUserStreak(
+        const { reconciledStreak, shieldedDates, wasRestored } = reconcileUserStreak(
           rawStreak,
           todayStr,
           completedPlanDays,
@@ -381,16 +381,6 @@ export const subscribeToUserStreak = (
         );
 
         callback(reconciledStreak, { shieldedDates, wasRestored });
-
-        // If shields were consumed or days were restored, persist to Firestore
-        if (hasChanges && db && userId && userId !== 'anonymous' && userId !== 'guest') {
-          setDoc(docRef, {
-            ...reconciledStreak,
-            updatedAt: serverTimestamp()
-          }, { merge: true }).catch(err => {
-            console.error("Error auto-persisting reconciled streak:", err);
-          });
-        }
       } else {
         // Document does not exist yet; return default initialized streak
         callback(getDefaultStreak(userId, planId));
