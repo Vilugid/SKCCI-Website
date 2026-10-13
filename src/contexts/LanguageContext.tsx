@@ -81,8 +81,17 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return typeof current === 'string' ? current : (fallback !== undefined ? fallback : path);
   }, [dict]);
 
+  const contextValue = useMemo(() => ({
+    language,
+    setLanguage,
+    toggleLanguage,
+    t,
+    dict,
+    isTagalog: language === 'fil'
+  }), [language, setLanguage, toggleLanguage, t, dict]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t, dict, isTagalog: language === 'fil' }}>
+    <LanguageContext.Provider value={contextValue}>
       {children}
     </LanguageContext.Provider>
   );

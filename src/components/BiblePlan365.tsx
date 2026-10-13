@@ -97,8 +97,8 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   const hasEnsuredDaysRef = useRef(false);
   useEffect(() => {
     if (hasEnsuredDaysRef.current) return;
+    hasEnsuredDaysRef.current = true;
     if (completedOT.has(265) && completedOT.has(270)) {
-      hasEnsuredDaysRef.current = true;
       const daysToEnsure = [266, 267, 268, 269];
       const missingOT = daysToEnsure.filter(d => !completedOT.has(d));
       const missingNT = daysToEnsure.filter(d => !completedNT.has(d));
@@ -109,7 +109,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
         setCompletedNTArray(prev => Array.from(new Set([...(Array.isArray(prev) ? prev : []), ...missingNT])));
       }
     }
-  }, [completedOTArray, completedNTArray]);
+  }, []);
   
   // Current viewed day (defaults to today)
   const [viewedDay, setViewedDay] = useState<number>(1);
@@ -191,20 +191,24 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
   useEffect(() => {
     if (explainerVideos[viewedDay] === undefined) {
       fetchBibleExplainerVideo(viewedDay).then((url) => {
-        setExplainerVideos(prev => ({ ...prev, [viewedDay]: url || '' }));
+        setExplainerVideos(prev => {
+          if (prev[viewedDay] !== undefined) return prev;
+          return { ...prev, [viewedDay]: url || '' };
+        });
       });
     }
-  }, [viewedDay, explainerVideos]);
+  }, [viewedDay]);
 
   useEffect(() => {
-    if (!user || !db) {
+    const uid = user?.uid;
+    if (!uid || !db) {
       setReflections({});
       return;
     }
     const fetchReflections = async () => {
       try {
         const q = query(
-          collection(db, `users/${user.uid}/scripture_reflections`),
+          collection(db, `users/${uid}/scripture_reflections`),
           where('year', '==', currentYear)
         );
         const snapshot = await getDocs(q);
@@ -219,7 +223,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
       }
     };
     fetchReflections();
-  }, [user, currentYear]);
+  }, [user?.uid, currentYear]);
 
   const handleSaveNote = async () => {
     if (!user) {

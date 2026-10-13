@@ -1,10 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../firebase';
-import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 export function useSyncedState<T>(key: string, initialValue: T) {
   const { user } = useAuth();
+  const userId = user?.uid;
+  const isArrayExpected = useRef(Array.isArray(initialValue));
   
   // Initialize from local storage first for fast render
   const [state, setState] = useState<T>(() => {
@@ -12,7 +14,7 @@ export function useSyncedState<T>(key: string, initialValue: T) {
       const item = localStorage.getItem(key);
       if (!item) return initialValue;
       const parsed = JSON.parse(item);
-      if (Array.isArray(initialValue) && !Array.isArray(parsed)) {
+      if (isArrayExpected.current && !Array.isArray(parsed)) {
         return initialValue;
       }
       return (parsed !== null && parsed !== undefined) ? parsed : initialValue;
@@ -22,21 +24,32 @@ export function useSyncedState<T>(key: string, initialValue: T) {
     }
   });
 
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   // Sync from Firestore when user logs in
   useEffect(() => {
-    if (!user || !db) return;
+    if (!userId || !db) return;
     
-    const docRef = doc(db, 'users', user.uid, 'bible_progress', 'data');
+    const docRef = doc(db, 'users', userId, 'bible_progress', 'data');
     
     const unsubscribe = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         if (data && data[key] !== undefined) {
           const remoteVal = data[key];
-          if (Array.isArray(initialValue) && !Array.isArray(remoteVal)) {
+          if (isArrayExpected.current && !Array.isArray(remoteVal)) {
             return;
           }
-          setState(remoteVal);
+          // Only update state if remote value is actually different to prevent infinite update depth
+          setState((prev) => {
+            if (JSON.stringify(prev) === JSON.stringify(remoteVal)) {
+              return prev;
+            }
+            return remoteVal;
+          });
           try {
             localStorage.setItem(key, JSON.stringify(remoteVal));
           } catch (e) {
@@ -49,15 +62,21 @@ export function useSyncedState<T>(key: string, initialValue: T) {
     });
 
     return () => unsubscribe();
-  }, [user, key, initialValue]);
+  }, [userId, key]);
 
-  // Update function that saves to both
+  // Stable update function
   const setSyncedState = useCallback(async (value: T | ((val: T) => T)) => {
     try {
-      const newValue = value instanceof Function ? value(state) : value;
+      const newValue = value instanceof Function ? value(stateRef.current) : value;
       
+      // Avoid redundant state updates and duplicate Firestore writes if unchanged
+      if (JSON.stringify(stateRef.current) === JSON.stringify(newValue)) {
+        return;
+      }
+
       // 1. Update React state
       setState(newValue);
+      stateRef.current = newValue;
       
       // 2. Update Local Storage
       try {
@@ -67,14 +86,14 @@ export function useSyncedState<T>(key: string, initialValue: T) {
       }
       
       // 3. Update Firestore if logged in
-      if (user && db) {
-        const docRef = doc(db, 'users', user.uid, 'bible_progress', 'data');
+      if (userId && db) {
+        const docRef = doc(db, 'users', userId, 'bible_progress', 'data');
         await setDoc(docRef, { [key]: newValue }, { merge: true });
       }
     } catch (error) {
       console.error(`Error updating synced state for ${key}`, error);
     }
-  }, [state, user, key]);
+  }, [userId, key]);
 
   return [state, setSyncedState] as const;
 }

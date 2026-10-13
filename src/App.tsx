@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import WelcomeKit from './components/WelcomeKit';
@@ -126,23 +126,29 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const hasMigratedRef = useRef(false);
   useEffect(() => {
+    if (hasMigratedRef.current) return;
+    hasMigratedRef.current = true;
     // Migration from old key if new key is empty
-    if (progressArray.length === 0) {
+    const currentProgress = Array.isArray(progressArray) ? progressArray : [];
+    if (currentProgress.length === 0) {
       const oldSaved = localStorage.getItem('skcci_bible_plan');
       if (oldSaved) {
         try { 
           const parsed = JSON.parse(oldSaved);
-          setProgressArray(parsed);
-          if (parsed.length === 100) {
-            setIs100DayComplete(true);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setProgressArray(parsed);
+            if (parsed.length === 100) {
+              setIs100DayComplete(true);
+            }
           }
         } catch(e) {}
       }
-    } else if (progressArray.length === 100 && !is100DayComplete) {
+    } else if (currentProgress.length === 100 && !is100DayComplete) {
       setIs100DayComplete(true);
     }
-  }, [progressArray.length, is100DayComplete, setProgressArray, setIs100DayComplete]);
+  }, []);
 
   const handleTabClick = (tab: TabItem, pushHistory = true) => {
     if (tab === '365 Bible Reading Guide' && !is100DayComplete) {

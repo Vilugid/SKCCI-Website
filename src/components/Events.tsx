@@ -838,33 +838,6 @@ export default function Events() {
     }
   }, [isLoadingEvents, events.length]);
 
-  // Auto-heal legacy broken / ephemeral banner links in Firestore when admin views
-  React.useEffect(() => {
-    if (!isAdmin || !events || events.length === 0) return;
-
-    events.forEach(async (evt) => {
-      const img = evt.coverImage || '';
-      let repairedUrl = '';
-      if (img.includes('/uploads/events/roots_and_grace')) {
-        repairedUrl = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=1200&q=80';
-      } else if (img.includes('/uploads/events/daraitan')) {
-        repairedUrl = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80';
-      } else if (img.includes('fbcdn.net') || img.includes('scontent.')) {
-        repairedUrl = 'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1200&q=80';
-      }
-
-      if (repairedUrl && repairedUrl !== img) {
-        try {
-          await updateEvent(evt.id, { coverImage: repairedUrl });
-          queryClient.invalidateQueries({ queryKey: ['events'] });
-          console.log(`[Auto-Repair] Event "${evt.title}" banner repaired in Firestore`);
-        } catch (e) {
-          console.warn(`[Auto-Repair] Note updating event banner:`, e);
-        }
-      }
-    });
-  }, [isAdmin, events, queryClient]);
-
   // Attendance Analytics Prep
   const sortedAttendance = [...attendanceLogs].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   const chartData = sortedAttendance.map(item => ({

@@ -139,3 +139,58 @@ export function parseVideoSource(input: string): ParsedVideoSource {
     platformName: 'Video Link'
   };
 }
+
+export interface ParsedPresentationSource {
+  type: 'slides' | 'pdf' | 'link';
+  embedUrl: string | null;
+  directUrl: string;
+  label: string;
+  rawInput: string;
+}
+
+export function parsePresentationUrl(input: string): ParsedPresentationSource {
+  if (!input || typeof input !== 'string') {
+    return { type: 'link', embedUrl: null, directUrl: '', label: 'Link', rawInput: '' };
+  }
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return { type: 'link', embedUrl: null, directUrl: '', label: 'Link', rawInput: '' };
+  }
+
+  // 1. Google Slides (docs.google.com/presentation/d/...)
+  const slidesMatch = trimmed.match(/docs\.google\.com\/presentation\/d\/([a-zA-Z0-9_-]+)/);
+  if (slidesMatch && slidesMatch[1]) {
+    const id = slidesMatch[1];
+    return {
+      type: 'slides',
+      embedUrl: `https://docs.google.com/presentation/d/${id}/embed?start=false&loop=false&delayms=3000`,
+      directUrl: `https://docs.google.com/presentation/d/${id}/preview`,
+      label: 'Google Slides Presentation',
+      rawInput: trimmed
+    };
+  }
+
+  // 2. Google Drive File (PDF or Slides file)
+  const driveId = extractGoogleDriveFileId(trimmed);
+  if (driveId) {
+    const isExplicitPdf = trimmed.toLowerCase().includes('.pdf');
+    return {
+      type: isExplicitPdf ? 'pdf' : 'slides',
+      embedUrl: `https://drive.google.com/file/d/${driveId}/preview`,
+      directUrl: `https://drive.google.com/file/d/${driveId}/view?usp=sharing`,
+      label: isExplicitPdf ? 'Sermon PDF Notes' : 'Google Drive Slides / PDF',
+      rawInput: trimmed
+    };
+  }
+
+  // 3. Fallback direct web link or PDF
+  const isPdf = trimmed.toLowerCase().endsWith('.pdf') || trimmed.toLowerCase().includes('.pdf?');
+  return {
+    type: isPdf ? 'pdf' : 'link',
+    embedUrl: isPdf ? trimmed : null,
+    directUrl: trimmed,
+    label: isPdf ? 'Sermon PDF' : 'Presentation Link',
+    rawInput: trimmed
+  };
+}
+

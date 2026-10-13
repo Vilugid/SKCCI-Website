@@ -45,7 +45,6 @@ export default function BibleStreakCard({
   const [isMarking, setIsMarking] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showCelebrationBadge, setShowCelebrationBadge] = useState(false);
-  const [shieldProtectedNotice, setShieldProtectedNotice] = useState<string | null>(null);
 
   const todayStr = getLocalDateString(new Date());
   const isCompletedToday = streakData.lastCompletedDate === todayStr;
@@ -60,24 +59,27 @@ export default function BibleStreakCard({
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          const { reconciledStreak, hasChanges, shieldedDates } = reconcileUserStreak(
+          const { reconciledStreak, hasChanges } = reconcileUserStreak(
             parsed,
             todayStr,
             completedPlanDays,
             planYear
           );
-          setStreakData(reconciledStreak);
+          setStreakData(prev => {
+            if (
+              prev.currentStreak === reconciledStreak.currentStreak &&
+              prev.shieldsAvailable === reconciledStreak.shieldsAvailable &&
+              prev.longestStreak === reconciledStreak.longestStreak &&
+              prev.lastCompletedDate === reconciledStreak.lastCompletedDate
+            ) {
+              return prev;
+            }
+            return reconciledStreak;
+          });
           if (hasChanges) {
             try {
               localStorage.setItem(localKey, JSON.stringify(reconciledStreak));
             } catch (e) {}
-          }
-          if (shieldedDates.length > 0) {
-            const formatted = shieldedDates.map(d => {
-              const [y, m, day] = d.split('-').map(Number);
-              return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-            }).join(', ');
-            setShieldProtectedNotice(`Your Streak Shield automatically protected your ${reconciledStreak.currentStreak}-day streak for ${formatted}! You have ${reconciledStreak.shieldsAvailable} ${reconciledStreak.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
           }
         } catch {
           setStreakData(getDefaultStreak('guest', planId));
@@ -92,15 +94,18 @@ export default function BibleStreakCard({
     const unsubscribe = subscribeToUserStreak(
       user.uid,
       planId,
-      (data, meta) => {
-        setStreakData(data);
-        if (meta?.shieldedDates && meta.shieldedDates.length > 0) {
-          const formatted = meta.shieldedDates.map(d => {
-            const [y, m, day] = d.split('-').map(Number);
-            return new Date(y, m - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          }).join(', ');
-          setShieldProtectedNotice(`Your Streak Shield automatically protected your ${data.currentStreak}-day streak for ${formatted}! You have ${data.shieldsAvailable} ${data.shieldsAvailable === 1 ? 'shield' : 'shields'} remaining.`);
-        }
+      (data) => {
+        setStreakData(prev => {
+          if (
+            prev.currentStreak === data.currentStreak &&
+            prev.shieldsAvailable === data.shieldsAvailable &&
+            prev.longestStreak === data.longestStreak &&
+            prev.lastCompletedDate === data.lastCompletedDate
+          ) {
+            return prev;
+          }
+          return data;
+        });
         setLoading(false);
       },
       completedPlanDays,
@@ -108,7 +113,7 @@ export default function BibleStreakCard({
     );
 
     return () => unsubscribe();
-  }, [user, planId, todayStr, completedPlanDays.length, planYear]);
+  }, [user?.uid, planId, todayStr, completedPlanDays.length, planYear]);
 
   const triggerConfetti = (isMilestone = false) => {
     try {
@@ -319,33 +324,6 @@ export default function BibleStreakCard({
         </div>
       ) : (
         <div className="p-4 sm:p-6 space-y-5">
-          {/* Active Streak Shield Notification Banner */}
-          {shieldProtectedNotice && (
-            <div className="bg-sky-50/90 border border-sky-200/90 rounded-xl p-3 sm:p-3.5 flex items-start gap-3 shadow-xs">
-              <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
-                <ShieldCheck size={18} className="fill-white" />
-              </div>
-              <div className="flex-1 text-xs">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-bold text-[#0F2C59] text-xs sm:text-sm flex items-center gap-1.5">
-                    Streak Shield Automatically Activated!
-                  </span>
-                  <button 
-                    type="button" 
-                    onClick={() => setShieldProtectedNotice(null)}
-                    className="text-gray-400 hover:text-gray-600 text-xs px-1.5 py-0.5 rounded hover:bg-gray-100"
-                    title="Dismiss"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <p className="text-sky-900 mt-0.5 leading-relaxed">
-                  {shieldProtectedNotice}
-                </p>
-              </div>
-            </div>
-          )}
-
           {/* Main Highlights Grid: Active Streak, Shields, Longest Record */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             

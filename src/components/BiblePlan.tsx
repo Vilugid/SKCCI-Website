@@ -132,10 +132,13 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
   useEffect(() => {
     if (explainerVideos[selectedDay] === undefined) {
       fetchBibleExplainerVideo(selectedDay, 'plan_100').then((url) => {
-        setExplainerVideos(prev => ({ ...prev, [selectedDay]: url || '' }));
+        setExplainerVideos(prev => {
+          if (prev[selectedDay] !== undefined) return prev;
+          return { ...prev, [selectedDay]: url || '' };
+        });
       });
     }
-  }, [selectedDay, explainerVideos]);
+  }, [selectedDay]);
 
   // Update answers when selectedDay changes
   useEffect(() => {
@@ -145,14 +148,15 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
 
   // Fetch permanent 100 days reflections for authenticated user
   useEffect(() => {
-    if (!user || !db) {
+    const uid = user?.uid;
+    if (!uid || !db) {
       setReflections({});
       return;
     }
 
     const fetchReflections = async () => {
       try {
-        const colRef = collection(db, `users/${user.uid}/hundred_days_reflections`);
+        const colRef = collection(db, `users/${uid}/hundred_days_reflections`);
         const snapshot = await getDocs(colRef);
         const fetched: Record<number, HundredDaysReflection> = {};
         snapshot.forEach(docSnap => {
@@ -166,7 +170,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
     };
 
     fetchReflections();
-  }, [user]);
+  }, [user?.uid]);
 
   const currentPlanItem = BIBLE_PLAN.find(item => item.day === selectedDay) || BIBLE_PLAN[0];
   const isSelectedDayCompleted = completedDays.has(selectedDay);

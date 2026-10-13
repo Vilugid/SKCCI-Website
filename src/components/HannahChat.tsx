@@ -154,14 +154,16 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
         ]);
       }
     } else if (messages.length === 1 && messages[0].id.includes('welcome')) {
-      setMessages([
-        {
-          id: 'initial-welcome',
-          role: 'model',
-          content: greetingText,
-          timestamp: formatCurrentTime()
-        }
-      ]);
+      if (messages[0].content !== greetingText) {
+        setMessages([
+          {
+            id: 'initial-welcome',
+            role: 'model',
+            content: greetingText,
+            timestamp: formatCurrentTime()
+          }
+        ]);
+      }
     }
   }, [isOpen, selectedLanguage, messages.length]);
 

@@ -98,33 +98,6 @@ export default function CellGroup() {
     return trimmed;
   };
 
-  // Auto-heal legacy broken / ephemeral photo links in Firestore when admin views
-  useEffect(() => {
-    if (!isAdmin || !groupsRaw || groupsRaw.length === 0) return;
-
-    groupsRaw.forEach(async (group: any) => {
-      let needsUpdate = false;
-      const updates: any = {};
-      if (group.photoUrl && group.photoUrl.startsWith('/uploads/cell-groups/')) {
-        updates.photoUrl = 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80';
-        needsUpdate = true;
-      }
-      if (group.proofPhotoUrl && group.proofPhotoUrl.startsWith('/uploads/cell-groups/')) {
-        updates.proofPhotoUrl = 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=800&q=80';
-        needsUpdate = true;
-      }
-      if (needsUpdate) {
-        try {
-          await updateCellGroup(group.id, updates);
-          queryClient.invalidateQueries({ queryKey: ['cell_groups'] });
-          console.log(`[Auto-Repair] Repaired legacy photo paths for cell group: ${group.leaderName}`);
-        } catch (e) {
-          console.warn('[Auto-Repair] Note updating cell group:', e);
-        }
-      }
-    });
-  }, [isAdmin, groupsRaw, queryClient]);
-
   // Mobile-compatible image compressor with auto-HEIC conversion and guaranteed safe payload size (<400KB)
   const compressImageForMobile = async (file: File): Promise<string> => {
     // 1. Primary: Use browser-image-compression with automatic HEIC/HEIF conversion
