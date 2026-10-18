@@ -69,7 +69,10 @@ service cloud.firestore {
       allow create, delete: if isCellLeaderAdmin();
       allow update: if isCellLeaderAdmin() || (request.auth != null && (
         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds']) ||
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds', 'memoryVerse'])
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memorizedUserIds', 'memoryVerse']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slidesUrl']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slidesUrl', 'memorizedUserIds']) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['slidesUrl', 'memoryVerse'])
       ));
     }
 

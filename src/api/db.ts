@@ -47,10 +47,29 @@ export const fetchLeaderTools = async () => {
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 };
 
+// Safe payload sanitation helper to strip undefined values
+export const sanitizeData = (obj: any): any => {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeData);
+  }
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const clean: Record<string, any> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        clean[key] = sanitizeData(value);
+      }
+    }
+    return clean;
+  }
+  return obj;
+};
+
 export const createLeaderTool = async (recordData: any) => {
   if (!db) throw new Error("Database not initialized");
+  const cleanData = sanitizeData(recordData);
   const docRef = await addDoc(collection(db, 'leader_tools'), {
-    ...recordData,
+    ...cleanData,
     createdAt: serverTimestamp()
   });
   return docRef.id;
@@ -59,7 +78,8 @@ export const createLeaderTool = async (recordData: any) => {
 export const updateLeaderTool = async (recordId: string, recordData: any) => {
   if (!db) throw new Error("Database not initialized");
   const docRef = doc(db, 'leader_tools', recordId);
-  await setDoc(docRef, recordData, { merge: true });
+  const cleanData = sanitizeData(recordData);
+  await setDoc(docRef, cleanData, { merge: true });
 };
 
 export const removeLeaderTool = async (recordId: string) => {

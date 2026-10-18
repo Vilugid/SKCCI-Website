@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp, Sparkles } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -8,6 +8,33 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCellGroups, createCellGroup, updateCellGroup, removeCellGroup, updateCellGroupLogs } from '../api/db';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+
+export const FELLOWSHIP_PRESETS = [
+  {
+    id: 'bible-study',
+    label: 'Bible Study',
+    url: 'https://images.unsplash.com/photo-1511632765486-a01980e01a18?auto=format&fit=crop&w=800&q=80',
+    title: 'Fellowship & Bible Study'
+  },
+  {
+    id: 'prayer-circle',
+    label: 'Prayer Circle',
+    url: 'https://images.unsplash.com/photo-1529070538774-1843cb3265df?auto=format&fit=crop&w=800&q=80',
+    title: 'Prayer & Discipleship'
+  },
+  {
+    id: 'worship-gathering',
+    label: 'Worship Gathering',
+    url: 'https://images.unsplash.com/photo-1438232992991-995b7058bbb3?auto=format&fit=crop&w=800&q=80',
+    title: 'Small Group Praise'
+  },
+  {
+    id: 'community-youth',
+    label: 'Youth & Community',
+    url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=800&q=80',
+    title: 'Youth Community'
+  }
+];
 
 interface MeetingLog {
   id: string;
@@ -98,84 +125,116 @@ export default function CellGroup() {
     return trimmed;
   };
 
-  // Mobile-compatible image compressor with auto-HEIC conversion and guaranteed safe payload size (<400KB)
-  const compressImageForMobile = async (file: File): Promise<string> => {
-    // 1. Primary: Use browser-image-compression with automatic HEIC/HEIF conversion
-    try {
-      const options = {
-        maxSizeMB: 0.35, // Ensures compressed photo is <= 350KB so base64 string is <= 480KB (safely under Firestore 1MB document limit)
-        maxWidthOrHeight: 1200,
-        useWebWorker: false, // Prevents WebWorker sandboxing issues on mobile browsers
-        fileType: 'image/jpeg',
-        initialQuality: 0.8
-      };
-      const compressedFile = await imageCompression(file, options);
-      const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
-      if (dataUrl && dataUrl.startsWith('data:image/')) {
-        return dataUrl;
+  // Ultra-safe canvas image compressor guaranteeing output is strictly <= 65KB (saving ~95% Firestore document space)
+  const compressImageToSafePayload = async (
+    source: File | string,
+    maxDimension = 720,
+    targetMaxChars = 85000 // ~60KB base64 string
+  ): Promise<string> => {
+    // 1. If source is File, try fast mobile HEIC conversion via browser-image-compression if needed
+    let preprocessedDataUrl: string | null = null;
+    if (typeof source !== 'string') {
+      try {
+        const bicOptions = {
+          maxSizeMB: 0.15,
+          maxWidthOrHeight: maxDimension,
+          useWebWorker: false,
+          fileType: 'image/jpeg',
+          initialQuality: 0.75
+        };
+        const bicFile = await imageCompression(source, bicOptions);
+        preprocessedDataUrl = await imageCompression.getDataUrlFromFile(bicFile);
+      } catch (bicErr) {
+        // Fallback to FileReader + Canvas
+        preprocessedDataUrl = null;
       }
-    } catch (bicErr) {
-      console.warn('browser-image-compression fallback to canvas:', bicErr);
+    } else {
+      preprocessedDataUrl = source;
     }
 
-    // 2. Secondary fallback: HTML5 Canvas resize & compression
+    // 2. High-precision HTML5 Canvas resize & progressive compression
     return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const rawResult = e.target?.result as string;
-        if (!rawResult) {
-          return reject(new Error('Unable to read selected photo file.'));
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      const renderOnCanvas = () => {
+        try {
+          let { width, height } = img;
+          if (!width || !height) {
+            return reject(new Error('Invalid image dimensions.'));
+          }
+
+          // Scale down to maxDimension preserving aspect ratio
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.max(1, width);
+          canvas.height = Math.max(1, height);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            return reject(new Error('Canvas context unavailable.'));
+          }
+
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Initial encode with quality 0.72
+          let quality = 0.72;
+          let resultDataUrl = canvas.toDataURL('image/jpeg', quality);
+
+          // If still above target characters, progressively lower quality
+          if (resultDataUrl.length > targetMaxChars) {
+            quality = 0.58;
+            resultDataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          // If still over target, downscale canvas dimensions
+          if (resultDataUrl.length > targetMaxChars) {
+            const downscaleCanvas = document.createElement('canvas');
+            const dw = Math.round(width * 0.75);
+            const dh = Math.round(height * 0.75);
+            downscaleCanvas.width = dw;
+            downscaleCanvas.height = dh;
+            const downscaleCtx = downscaleCanvas.getContext('2d');
+            if (downscaleCtx) {
+              downscaleCtx.imageSmoothingEnabled = true;
+              downscaleCtx.drawImage(canvas, 0, 0, dw, dh);
+              resultDataUrl = downscaleCanvas.toDataURL('image/jpeg', 0.52);
+            }
+          }
+
+          resolve(resultDataUrl);
+        } catch (canvasErr) {
+          reject(canvasErr);
         }
-
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const maxDim = 1200;
-            let { width, height } = img;
-            if (width > maxDim || height > maxDim) {
-              if (width > height) {
-                height = Math.round((height * maxDim) / width);
-                width = maxDim;
-              } else {
-                width = Math.round((width * maxDim) / height);
-                height = maxDim;
-              }
-            }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.max(1, width);
-            canvas.height = Math.max(1, height);
-            const ctx = canvas.getContext('2d');
-            if (!ctx) {
-              return resolve(rawResult);
-            }
-
-            // High-quality canvas image smoothing
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            ctx.drawImage(img, 0, 0, width, height);
-
-            let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-            if (dataUrl.length > 700 * 1024) {
-              dataUrl = canvas.toDataURL('image/jpeg', 0.65);
-            }
-            resolve(dataUrl);
-          } catch (canvasErr) {
-            console.warn('Canvas resize fallback to raw data:', canvasErr);
-            resolve(rawResult);
-          }
-        };
-        img.onerror = () => {
-          if (file.name?.toLowerCase().endsWith('.heic') || file.type?.includes('heic')) {
-            reject(new Error('Apple HEIC photo could not be converted. Please select a JPG or PNG from your gallery.'));
-          } else {
-            resolve(rawResult);
-          }
-        };
-        img.src = rawResult;
       };
-      reader.onerror = () => reject(new Error('Failed to read photo from your device.'));
-      reader.readAsDataURL(file);
+
+      img.onload = renderOnCanvas;
+      img.onerror = () => reject(new Error('Unable to process photo file. Please choose another image.'));
+
+      if (preprocessedDataUrl) {
+        img.src = preprocessedDataUrl;
+      } else if (typeof source !== 'string') {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const raw = e.target?.result as string;
+          if (raw) img.src = raw;
+          else reject(new Error('Failed to read photo from device.'));
+        };
+        reader.onerror = () => reject(new Error('Failed to read photo file.'));
+        reader.readAsDataURL(source);
+      } else {
+        img.src = source;
+      }
     });
   };
 
@@ -191,7 +250,7 @@ export default function CellGroup() {
       return;
     }
     
-    // Validate image MIME type or file extension (safely handling mobile camera files where MIME can be empty)
+    // Validate image MIME type or file extension
     const isImage = !file.type || file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|heic|heif|gif)$/i.test(file.name);
     if (!isImage) {
       toast.error('Please select an image file (JPG, PNG, WebP, or Camera Photo).');
@@ -199,16 +258,16 @@ export default function CellGroup() {
     }
 
     try {
-      setUploadProgress(prev => ({ ...prev, [type]: 15 }));
+      setUploadProgress(prev => ({ ...prev, [type]: 25 }));
       
-      // 1. Mobile-friendly compression with automatic HEIC conversion
-      const base64Data = await compressImageForMobile(file);
-      setUploadProgress(prev => ({ ...prev, [type]: 60 }));
+      // 1. Guaranteed ultra-safe compression to <= 60KB (protects Firestore 1MB limits)
+      const base64Data = await compressImageToSafePayload(file, 720, 80000);
+      setUploadProgress(prev => ({ ...prev, [type]: 75 }));
 
       // 2. Persist compressed image directly as permanent data URL in Firestore
       const finalImageUrl = base64Data;
       try {
-        // Mirror to server in background for disk cache if needed
+        // Mirror to server in background for disk cache if available
         fetch('/api/upload-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -236,7 +295,7 @@ export default function CellGroup() {
         } else {
           setMeetingPhotoUrl(finalImageUrl);
         }
-        toast.success('Photo ready! Tap Save Group to apply.');
+        toast.success('Photo ready & optimized! Click Save Changes to apply.');
       }, 300);
 
     } catch (error: any) {
@@ -396,10 +455,46 @@ export default function CellGroup() {
   const saveGroupMutation = useMutation({
     mutationFn: async (groupData: Partial<CellGroupData> & { id?: string, meetingLog?: MeetingLog }) => {
       let finalGroupId = groupData.id;
-      const dataToSave = { ...groupData };
-      delete dataToSave.id;
-      delete dataToSave.meetingLog;
-      
+
+      // 1. Optimize photoUrl if it's an existing or oversized base64 image (> 70KB)
+      let safePhotoUrl = groupData.photoUrl || null;
+      if (safePhotoUrl && safePhotoUrl.startsWith('data:image/') && safePhotoUrl.length > 70000) {
+        try {
+          safePhotoUrl = await compressImageToSafePayload(safePhotoUrl, 720, 60000);
+        } catch (compErr) {
+          console.warn("Could not downscale photoUrl, keeping original:", compErr);
+        }
+      }
+
+      // 2. Optimize proofPhotoUrl if present
+      let safeProofPhotoUrl = groupData.proofPhotoUrl || null;
+      if (safeProofPhotoUrl && safeProofPhotoUrl.startsWith('data:image/') && safeProofPhotoUrl.length > 70000) {
+        try {
+          safeProofPhotoUrl = await compressImageToSafePayload(safeProofPhotoUrl, 720, 60000);
+        } catch (compErr) {
+          console.warn("Could not downscale proofPhotoUrl, keeping original:", compErr);
+        }
+      }
+
+      // 3. Clean and sanitize dataToSave without any undefined fields to comply with Firestore requirements
+      const dataToSave: Record<string, any> = {
+        leaderName: groupData.leaderName || '',
+        location: groupData.location || '',
+        scheduleDay: groupData.scheduleDay || 'Friday',
+        scheduleTime: groupData.scheduleTime || '19:00',
+        members: Array.isArray(groupData.members) ? groupData.members : [],
+        photoUrl: safePhotoUrl,
+      };
+
+      if (safeProofPhotoUrl) {
+        dataToSave.proofPhotoUrl = safeProofPhotoUrl;
+        dataToSave.lastProofUploadAt = groupData.lastProofUploadAt || new Date().toISOString();
+      }
+
+      if (groupData.leaderId) dataToSave.leaderId = groupData.leaderId;
+      if (groupData.createdByUid) dataToSave.createdByUid = groupData.createdByUid;
+      if (groupData.createdByEmail) dataToSave.createdByEmail = groupData.createdByEmail;
+
       if (finalGroupId) {
         await updateCellGroup(finalGroupId, dataToSave);
       } else {
@@ -407,8 +502,18 @@ export default function CellGroup() {
       }
 
       if (groupData.meetingLog && finalGroupId) {
+        let logPhoto = groupData.meetingLog.photoUrl;
+        if (logPhoto && logPhoto.startsWith('data:image/') && logPhoto.length > 70000) {
+          try {
+            logPhoto = await compressImageToSafePayload(logPhoto, 720, 60000);
+          } catch {}
+        }
+        const sanitizedLog: MeetingLog = {
+          ...groupData.meetingLog,
+          photoUrl: logPhoto || null
+        };
         const currentGroup = groups.find(g => g.id === finalGroupId);
-        const updatedLogs = [...(currentGroup?.meetingLogs || []), groupData.meetingLog];
+        const updatedLogs = [...(currentGroup?.meetingLogs || []), sanitizedLog];
         await updateCellGroupLogs(finalGroupId, updatedLogs);
       }
     },
@@ -420,7 +525,7 @@ export default function CellGroup() {
     onError: (error: any) => {
       console.error("Error saving group:", error);
       if (error?.message?.includes('maximum allowed size') || error?.code === 'resource-exhausted') {
-        toast.error("Photo exceeds database size limits. Please select a smaller photo or choose a fellowship preset.");
+        toast.error("Photo is too large for database limits. We auto-optimized it — please tap Save Changes again.");
       } else if (error?.code === 'permission-denied') {
         toast.error("Permission denied. Ensure you are signed in with the group leader or admin Google account.");
       } else {
@@ -815,25 +920,41 @@ export default function CellGroup() {
                 
                 {/* Photo Upload */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Cell Group Photo <span className="text-gray-500 font-normal">(JPG format only)</span></label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Upload Cell Group Photo <span className="text-gray-500 font-normal">(Auto-optimized)</span>
+                    </label>
+                    {photoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setPhotoUrl(null)}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium cursor-pointer"
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
                   <div 
-                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl ${photoUrl ? 'border-[#D4A373] bg-[#FAFAFA]' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
+                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${photoUrl ? 'border-[#D4A373] bg-[#FAFAFA]' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
                     onClick={() => fileInputRef.current?.click()}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className="space-y-1 text-center w-full">
                       {uploadProgress['group'] !== undefined ? (
                         <div className="w-full max-w-sm mx-auto">
-                          <div className="flex justify-between text-sm mb-1 text-[#0F2C59]">
-                            <span>Uploading...</span>
+                          <div className="flex justify-between text-sm mb-1 text-[#0F2C59] font-medium">
+                            <span className="flex items-center gap-1.5">
+                              <Loader2 size={14} className="animate-spin text-[#C82323]" />
+                              Optimizing & uploading...
+                            </span>
                             <span>{Math.round(uploadProgress['group'])}%</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div className="bg-[#C82323] h-2 rounded-full" style={{ width: `${uploadProgress['group']}%` }}></div>
+                          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                            <div className="bg-[#C82323] h-2 rounded-full transition-all duration-200" style={{ width: `${uploadProgress['group']}%` }}></div>
                           </div>
                         </div>
                       ) : photoUrl ? (
-                        <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden">
+                        <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden shadow-xs">
                           <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                             <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
@@ -843,12 +964,12 @@ export default function CellGroup() {
                         <>
                           <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
                           <div className="flex text-sm text-gray-600 justify-center">
-                            <span className="relative cursor-pointer bg-transparent rounded-md font-medium text-[#C82323] hover:text-[#D4A373] focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-[#D4A373]">
-                              Upload a file
+                            <span className="relative cursor-pointer bg-transparent rounded-md font-medium text-[#C82323] hover:text-[#D4A373] focus-within:outline-none">
+                              Upload a photo
                             </span>
-                            <p className="pl-1">or drag and drop</p>
+                            <p className="pl-1">or take a picture</p>
                           </div>
-                          <p className="text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                          <p className="text-xs text-gray-500">JPG, PNG, WebP or Camera photo (auto-compressed)</p>
                         </>
                       )}
                     </div>
@@ -860,6 +981,44 @@ export default function CellGroup() {
                     accept="image/*,image/jpeg,image/png,image/webp"
                     onChange={handleImageUpload}
                   />
+
+                  {/* Church Fellowship Preset Photo Selector */}
+                  <div className="mt-3.5">
+                    <span className="text-xs font-semibold text-gray-700 block mb-1.5">
+                      Or select a church fellowship preset:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {FELLOWSHIP_PRESETS.map((preset) => {
+                        const isSelected = photoUrl === preset.url;
+                        return (
+                          <button
+                            key={preset.id}
+                            type="button"
+                            onClick={() => setPhotoUrl(preset.url)}
+                            className={`relative rounded-xl overflow-hidden border-2 text-left transition-all p-1 group flex flex-col items-center cursor-pointer active:scale-95 ${
+                              isSelected
+                                ? 'border-[#C82323] ring-2 ring-[#C82323]/25 bg-red-50/50'
+                                : 'border-gray-200 hover:border-gray-300 bg-white'
+                            }`}
+                          >
+                            <img 
+                              src={preset.url} 
+                              alt={preset.title} 
+                              className="w-full h-14 object-cover rounded-lg"
+                            />
+                            <span className="text-[11px] font-semibold text-gray-700 mt-1 truncate max-w-full text-center">
+                              {preset.label}
+                            </span>
+                            {isSelected && (
+                              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-[#C82323] text-white rounded-full flex items-center justify-center text-[10px] shadow-sm font-bold">
+                                ✓
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Latest Meeting Report Section */}

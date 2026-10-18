@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchLeaderTools, createLeaderTool, updateLeaderTool, removeLeaderTool, subscribeToLeaderTools, toggleServiceDateMemorized, updateServiceRecordMemoryVerse, subscribeToMemoryVerse, updateMemoryVerse, toggleMemoryVerseMemorized, MemoryVerseData } from '../api/db';
-import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown, BookOpen, Quote, CheckCircle2, BarChart2, BarChart3, Presentation, ExternalLink, Link2, Eye, EyeOff } from 'lucide-react';
+import { FileText, Youtube, Music, Edit, Save, Plus, X, Trash, Calendar as CalendarIcon, ChevronDown, List as ListIcon, Library, Search, Copy, Check, Bookmark, Sparkles, ChevronsUpDown, BookOpen, Quote, CheckCircle2, BarChart2, BarChart3, Presentation, ExternalLink, Link2, Eye, EyeOff, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
 import { WeeklyMemorizedTracker } from './WeeklyMemorizedTracker';
@@ -337,6 +337,7 @@ export default function LeaderTools() {
   const [showQuickSlidesModal, setShowQuickSlidesModal] = useState(false);
   const [quickSlidesInput, setQuickSlidesInput] = useState('');
   const [isQuickSlidesSaving, setIsQuickSlidesSaving] = useState(false);
+  const [isRecordJustSaved, setIsRecordJustSaved] = useState(false);
 
   // Quick Navigator, Collapsible Sections & Song Bank State
   const [activeSection, setActiveSection] = useState<string>('memory-verse');
@@ -359,17 +360,38 @@ export default function LeaderTools() {
       return;
     }
     try {
-      await navigator.clipboard.writeText(outlineText);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(outlineText);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = outlineText;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        textArea.style.top = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+      }
       setCopiedOutline(true);
       setTimeout(() => setCopiedOutline(false), 2500);
       toast.success('Sermon outline copied to clipboard! 📋');
-    } catch {
+    } catch (err) {
+      console.error('Failed to copy outline:', err);
       toast.error('Could not copy automatically. Please select and copy manually.');
     }
   };
 
   const handleSaveQuickSlides = async () => {
-    if (!selectedRecord) return;
+    if (!user) {
+      toast.error("Please sign in with Google to save presentation links.", { icon: '🔐' });
+      return;
+    }
+    if (!selectedRecord) {
+      toast.error("No service record selected.");
+      return;
+    }
     setIsQuickSlidesSaving(true);
     try {
       const trimmed = quickSlidesInput.trim();
@@ -379,7 +401,10 @@ export default function LeaderTools() {
       toast.success(trimmed ? "Google Slides / PDF link saved! 📊" : "Link removed.");
     } catch (err: any) {
       console.error("Error updating slides URL:", err);
-      toast.error(err?.message || "Failed to save link.");
+      const msg = err?.code === 'permission-denied'
+        ? "Permission denied. Only authorized cell leaders can update presentation links."
+        : (err?.message || "Failed to save link.");
+      toast.error(msg);
     } finally {
       setIsQuickSlidesSaving(false);
     }
@@ -630,11 +655,16 @@ export default function LeaderTools() {
       const wasCreating = isCreating;
       setIsCreating(false);
       setIsEditing(false);
-      toast.success(wasCreating ? "New service record created successfully!" : "All updates saved successfully!");
+      setIsRecordJustSaved(true);
+      setTimeout(() => setIsRecordJustSaved(false), 3000);
+      toast.success(wasCreating ? "New service record created successfully! 🎉" : "All updates saved successfully! ✓");
     },
     onError: (error: any) => {
       console.error("Error saving tools data:", error);
-      toast.error(error?.message || "Failed to save changes.");
+      const msg = error?.code === 'permission-denied'
+        ? "Permission denied. Only authorized cell leaders can save service records."
+        : (error?.message || "Failed to save changes. Please try again.");
+      toast.error(msg);
     }
   });
 
@@ -661,7 +691,12 @@ export default function LeaderTools() {
   });
 
   const handleSave = () => {
-    if (!isAdmin) return;
+    if (!isAdmin) {
+      toast.error("Administrator access required to save service records. Please sign in with an authorized leader account.", {
+        icon: '🔒'
+      });
+      return;
+    }
     const targetDocId = editDateValue.trim();
     if (!targetDocId) {
       toast.error("Please enter a valid date (YYYY-MM-DD) for the service record.");
@@ -783,18 +818,36 @@ export default function LeaderTools() {
               <>
                 <button
                   type="button"
+                  disabled={saveMutation.isPending}
                   onClick={handleCancel}
-                  className="px-5 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-[#FAFAFA] focus:outline-none cursor-pointer"
+                  className="px-5 py-2.5 border border-gray-300 shadow-sm text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-[#FAFAFA] focus:outline-none cursor-pointer active:scale-95 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="button"
                   id="save-service-record-btn"
+                  disabled={saveMutation.isPending}
                   onClick={handleSave}
-                  className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors shadow-sm cursor-pointer"
+                  className={`inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-semibold rounded-xl text-white transition-all shadow-sm cursor-pointer active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${
+                    saveMutation.isPending
+                      ? 'bg-green-700 animate-pulse ring-2 ring-green-400'
+                      : isRecordJustSaved
+                      ? 'bg-emerald-600 hover:bg-emerald-700'
+                      : 'bg-green-600 hover:bg-green-700 active:bg-green-800'
+                  }`}
                 >
-                  {isCreating ? (
+                  {saveMutation.isPending ? (
+                    <>
+                      <Loader2 size={18} className="mr-2 animate-spin" />
+                      {isCreating ? "Creating Record..." : "Saving Changes..."}
+                    </>
+                  ) : isRecordJustSaved ? (
+                    <>
+                      <Check size={18} className="mr-2 stroke-[2.5]" />
+                      Saved Successfully!
+                    </>
+                  ) : isCreating ? (
                     <>
                       <Plus size={18} className="mr-2 stroke-[2.5]" />
                       Create Record
@@ -1020,17 +1073,34 @@ export default function LeaderTools() {
                     <div className="flex items-center gap-1.5 pt-3 sm:pt-0 sm:self-end">
                       <button
                         type="button"
+                        disabled={saveMutation.isPending}
                         onClick={handleCancel}
-                        className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
+                        className="px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 cursor-pointer disabled:opacity-50"
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
+                        disabled={saveMutation.isPending}
                         onClick={handleSave}
-                        className="inline-flex items-center px-3.5 py-1.5 text-xs font-bold rounded-lg text-white bg-green-600 hover:bg-green-700 active:bg-green-800 transition-colors shadow-xs cursor-pointer"
+                        className={`inline-flex items-center px-3.5 py-1.5 text-xs font-bold rounded-lg text-white transition-all shadow-xs cursor-pointer active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${
+                          saveMutation.isPending
+                            ? 'bg-green-700 animate-pulse ring-1 ring-green-300'
+                            : isRecordJustSaved
+                            ? 'bg-emerald-600'
+                            : 'bg-green-600 hover:bg-green-700 active:bg-green-800'
+                        }`}
                       >
-                        {isCreating ? (
+                        {saveMutation.isPending ? (
+                          <>
+                            <Loader2 size={14} className="mr-1 animate-spin" />
+                            {isCreating ? "Creating..." : "Saving..."}
+                          </>
+                        ) : isRecordJustSaved ? (
+                          <>
+                            <Check size={14} className="mr-1 stroke-[2.5]" /> Saved!
+                          </>
+                        ) : isCreating ? (
                           <>
                             <Plus size={14} className="mr-1 stroke-[2.5]" /> Create Record
                           </>
@@ -1243,11 +1313,15 @@ export default function LeaderTools() {
                       <button 
                         type="button"
                         onClick={handleCopyOutline}
-                        className="text-white hover:text-amber-200 flex items-center gap-1.5 text-xs sm:text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors cursor-pointer"
+                        className={`flex items-center gap-1.5 text-xs sm:text-sm px-3 py-1.5 rounded-full transition-all cursor-pointer active:scale-95 ${
+                          copiedOutline
+                            ? 'bg-emerald-500 text-white font-bold shadow-sm'
+                            : 'text-white hover:text-amber-200 bg-white/10 hover:bg-white/20'
+                        }`}
                         title="Copy message outline text to clipboard"
                       >
-                        {copiedOutline ? <Check size={14} className="text-emerald-300" /> : <Copy size={14} />}
-                        <span>{copiedOutline ? "Copied Outline!" : "Copy Outline"}</span>
+                        {copiedOutline ? <Check size={14} className="text-white" /> : <Copy size={14} />}
+                        <span>{copiedOutline ? "Outline Copied! ✓" : "Copy Text Outline"}</span>
                       </button>
                       <button 
                         type="button"
@@ -1326,24 +1400,54 @@ export default function LeaderTools() {
                             type="url"
                             value={editSlidesUrl}
                             onChange={(e) => setEditSlidesUrl(e.target.value)}
-                            className="w-full pl-9 pr-10 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-[#C82323] focus:ring-[#C82323] text-sm"
+                            className="w-full pl-9 pr-24 py-2.5 rounded-xl border border-gray-300 shadow-sm focus:border-[#C82323] focus:ring-[#C82323] text-sm"
                             placeholder="Paste Google Drive link (e.g., https://docs.google.com/presentation/d/... or https://drive.google.com/file/d/...)"
                           />
                           <Link2 size={16} className="absolute left-3 top-3 text-gray-400 pointer-events-none" />
-                          {editSlidesUrl && (
+                          <div className="absolute right-2 top-2 flex items-center gap-1">
+                            {editSlidesUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setEditSlidesUrl('')}
+                                className="text-gray-400 hover:text-gray-600 p-1 rounded-md cursor-pointer"
+                                title="Clear URL"
+                              >
+                                <X size={14} />
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => setEditSlidesUrl('')}
-                              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 p-1"
-                              title="Clear URL"
+                              onClick={async () => {
+                                try {
+                                  const text = await navigator.clipboard.readText();
+                                  if (text) {
+                                    setEditSlidesUrl(text.trim());
+                                    toast.success("Pasted link from clipboard!");
+                                  }
+                                } catch {
+                                  toast.error("Could not access clipboard. Please paste manually.");
+                                }
+                              }}
+                              className="px-2 py-1 text-[11px] font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors cursor-pointer"
+                              title="Paste from clipboard"
                             >
-                              <X size={14} />
+                              Paste
                             </button>
+                          </div>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center justify-between gap-1 text-xs text-gray-500">
+                          <span>💡 You can insert any Google Slides or PDF link from your Google Drive for this sermon.</span>
+                          {editSlidesUrl && (
+                            <a
+                              href={editSlidesUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[#0F2C59] font-medium hover:underline"
+                            >
+                              Test Link <ExternalLink size={12} />
+                            </a>
                           )}
                         </div>
-                        <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-                          💡 You can insert any Google Slides or PDF link from your Google Drive for this sermon.
-                        </p>
                       </div>
 
                       <div>
@@ -1941,6 +2045,67 @@ export default function LeaderTools() {
 
       </div>
 
+      {/* Sticky Bottom Action Bar during Edit Mode */}
+      {isAdmin && isEditing && (
+        <aside
+          aria-label="Edit Mode Actions"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 w-[95%] max-w-2xl bg-[#0F2C59]/95 backdrop-blur-md text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-300">
+                {isCreating ? "Creating New Record" : "Unsaved Changes"}
+              </p>
+              <p className="text-xs text-blue-100 truncate">
+                {editDateLabel || editDateValue || "Service Record"}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              type="button"
+              disabled={saveMutation.isPending}
+              onClick={handleCancel}
+              className="px-3.5 py-2 rounded-xl text-xs font-medium text-blue-100 hover:text-white hover:bg-white/10 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={saveMutation.isPending}
+              onClick={handleSave}
+              className={`inline-flex items-center justify-center px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-white transition-all shadow-md cursor-pointer active:scale-95 disabled:opacity-75 disabled:cursor-not-allowed ${
+                saveMutation.isPending
+                  ? 'bg-green-700 animate-pulse ring-2 ring-green-300'
+                  : isRecordJustSaved
+                  ? 'bg-emerald-600'
+                  : 'bg-green-600 hover:bg-green-500'
+              }`}
+            >
+              {saveMutation.isPending ? (
+                <>
+                  <Loader2 size={16} className="mr-1.5 animate-spin" />
+                  {isCreating ? "Creating..." : "Saving..."}
+                </>
+              ) : isRecordJustSaved ? (
+                <>
+                  <Check size={16} className="mr-1.5 stroke-[2.5]" /> Saved!
+                </>
+              ) : isCreating ? (
+                <>
+                  <Plus size={16} className="mr-1.5 stroke-[2.5]" /> Create Record
+                </>
+              ) : (
+                <>
+                  <Save size={16} className="mr-1.5" /> Save Changes
+                </>
+              )}
+            </button>
+          </div>
+        </aside>
+      )}
+
       {/* Delete Service Record Confirmation Modal */}
       {recordToDelete && (
         <div 
@@ -2112,12 +2277,12 @@ export default function LeaderTools() {
                 type="button"
                 disabled={isQuickSlidesSaving}
                 onClick={handleSaveQuickSlides}
-                className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#0F2C59] hover:bg-[#1A365D] active:scale-95 transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                className="inline-flex items-center justify-center px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#0F2C59] hover:bg-[#1A365D] active:scale-95 transition-all shadow-sm disabled:opacity-75 disabled:cursor-not-allowed cursor-pointer"
               >
                 {isQuickSlidesSaving ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                    Saving...
+                    <Loader2 size={16} className="mr-2 animate-spin text-white" />
+                    Saving Presentation Link...
                   </>
                 ) : (
                   <>
