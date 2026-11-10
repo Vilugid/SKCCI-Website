@@ -41,6 +41,8 @@ import {
   Check,
   CalendarCheck,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Share2,
   ExternalLink,
   Video,
@@ -378,6 +380,7 @@ export default function Events() {
   const [sharingEvent, setSharingEvent] = useState<ChurchEvent | null>(null);
   const [recapEvent, setRecapEvent] = useState<ChurchEvent | null>(null);
   const [highlightedEventId, setHighlightedEventId] = useState<string | null>(null);
+  const [showAllPastEvents, setShowAllPastEvents] = useState(false);
 
   const handleShareClick = async (e: React.MouseEvent, event: ChurchEvent) => {
     e.stopPropagation();
@@ -818,6 +821,12 @@ export default function Events() {
     if (matched) {
       setHighlightedEventId(matched.id);
 
+      // If the deep-linked event is in the hidden portion of past events, expand it automatically
+      const pastIndex = pastEvents.findIndex(pe => pe.id === matched.id);
+      if (pastIndex >= 3) {
+        setShowAllPastEvents(true);
+      }
+
       // Smooth scroll after layout renders
       const scrollTimer = setTimeout(() => {
         const elem = document.getElementById(`event-card-${matched.id}`);
@@ -1204,37 +1213,93 @@ export default function Events() {
             )}
 
             {/* SECTION 2: PAST GATHERINGS / ARCHIVE */}
-            {(feedFilter === 'all' || feedFilter === 'past') && (
-              <div className="space-y-6 pt-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
-                      <Archive className="text-slate-600" size={24} />
-                      Past Gatherings / Archive
-                    </h2>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      Explore summaries, sermon memories, and fellowship highlights from our past events.
-                    </p>
-                  </div>
-                  <span className="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full self-start sm:self-auto flex items-center gap-1.5">
-                    <History size={13} />
-                    {pastEvents.length} Archived
-                  </span>
-                </div>
+            {(feedFilter === 'all' || feedFilter === 'past') && (() => {
+              const INITIAL_PAST_LIMIT = 3;
+              const visiblePastEvents = showAllPastEvents
+                ? pastEvents
+                : pastEvents.slice(0, INITIAL_PAST_LIMIT);
+              const hiddenPastCount = Math.max(0, pastEvents.length - INITIAL_PAST_LIMIT);
 
-                {pastEvents.length === 0 ? (
-                  <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
-                    <Archive className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <h3 className="text-lg font-bold text-gray-900">No Past Events Archived Yet</h3>
-                    <p className="mt-1 text-gray-500">Past events will automatically appear here once their scheduled date has concluded.</p>
+              return (
+                <div id="past-gatherings-section" className="space-y-6 pt-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-gray-200/80 pb-3">
+                    <div>
+                      <h2 className="text-2xl font-bold text-gray-800 font-serif flex items-center gap-2">
+                        <Archive className="text-slate-600" size={24} />
+                        Past Gatherings / Archive
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        Explore summaries, sermon memories, and fellowship highlights from our past events.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <span className="text-xs font-bold text-gray-600 bg-gray-100 border border-gray-200 px-3 py-1 rounded-full flex items-center gap-1.5">
+                        <History size={13} />
+                        {pastEvents.length > INITIAL_PAST_LIMIT && !showAllPastEvents
+                          ? `Showing ${INITIAL_PAST_LIMIT} of ${pastEvents.length} Archived`
+                          : `${pastEvents.length} Archived`}
+                      </span>
+                      {pastEvents.length > INITIAL_PAST_LIMIT && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllPastEvents(prev => !prev)}
+                          className="text-xs font-bold text-[#0F2C59] hover:text-[#1a3d75] bg-blue-50/80 hover:bg-blue-100/80 border border-blue-200/80 px-3 py-1 rounded-full transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                        >
+                          <span>{showAllPastEvents ? 'Show Recent 3' : `View All (${pastEvents.length})`}</span>
+                          {showAllPastEvents ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        </button>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {pastEvents.map(event => renderEventCard(event, true))}
-                  </div>
-                )}
-              </div>
-            )}
+
+                  {pastEvents.length === 0 ? (
+                    <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm">
+                      <Archive className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                      <h3 className="text-lg font-bold text-gray-900">No Past Events Archived Yet</h3>
+                      <p className="mt-1 text-gray-500">Past events will automatically appear here once their scheduled date has concluded.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {visiblePastEvents.map(event => renderEventCard(event, true))}
+                      </div>
+
+                      {pastEvents.length > INITIAL_PAST_LIMIT && (
+                        <div className="pt-2 flex flex-col items-center justify-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (showAllPastEvents) {
+                                setShowAllPastEvents(false);
+                                const sectionEl = document.getElementById('past-gatherings-section');
+                                if (sectionEl) {
+                                  sectionEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }
+                              } else {
+                                setShowAllPastEvents(true);
+                              }
+                            }}
+                            className="group inline-flex items-center gap-2.5 px-6 py-3 rounded-2xl text-sm font-bold text-[#0F2C59] bg-white hover:bg-[#0F2C59] hover:text-white border border-gray-200 hover:border-[#0F2C59] shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
+                          >
+                            <History size={16} className="text-[#C82323] group-hover:text-amber-300 transition-colors" />
+                            <span>
+                              {showAllPastEvents
+                                ? 'Show Only 3 Most Recent Past Activities'
+                                : `View Other Past Activities (${hiddenPastCount} More)`}
+                            </span>
+                            {showAllPastEvents ? (
+                              <ChevronUp size={16} className="transition-transform group-hover:-translate-y-0.5" />
+                            ) : (
+                              <ChevronDown size={16} className="transition-transform group-hover:translate-y-0.5" />
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
 
