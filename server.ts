@@ -730,6 +730,286 @@ STRICT FORMATTING RULES:
     }
   });
 
+  // Helper: deterministic parser for Cell Group assistant (supports Tagalog, Taglish, and English)
+  function parseCellGroupIntentHeuristic(
+    message: string,
+    existingGroups: any[] = [],
+    currentDraft: any = {},
+    isTagalog: boolean = true
+  ) {
+    const text = message.trim();
+    const lower = text.toLowerCase();
+    const draft: any = {
+      mode: currentDraft?.mode || 'register',
+      groupId: currentDraft?.groupId || '',
+      leaderName: currentDraft?.leaderName || '',
+      location: currentDraft?.location || '',
+      scheduleDay: currentDraft?.scheduleDay || 'Friday',
+      scheduleTime: currentDraft?.scheduleTime || '18:00',
+      members: Array.isArray(currentDraft?.members) ? [...currentDraft.members] : [],
+      meetingDate: currentDraft?.meetingDate || new Date().toISOString().split('T')[0],
+      attendedMembers: Array.isArray(currentDraft?.attendedMembers) ? [...currentDraft.attendedMembers] : [],
+    };
+
+    // 1. Detect mode if explicitly mentioned
+    if (
+      lower.includes('attendance') ||
+      lower.includes('dumalo') ||
+      lower.includes('present') ||
+      lower.includes('log meeting') ||
+      lower.includes('meeting report') ||
+      lower.includes('nag-meeting') ||
+      lower.includes('nagmeeting')
+    ) {
+      draft.mode = 'log_meeting';
+    } else if (
+      lower.includes('update') ||
+      lower.includes('i-update') ||
+      lower.includes('baguhin') ||
+      lower.includes('edit') ||
+      lower.includes('idagdag sa group') ||
+      lower.includes('palitan')
+    ) {
+      draft.mode = 'update';
+    } else if (
+      lower.includes('register') ||
+      lower.includes('bagong cell') ||
+      lower.includes('new cell') ||
+      lower.includes('new group') ||
+      lower.includes('gumawa ng cell') ||
+      lower.includes('mag-register')
+    ) {
+      draft.mode = 'register';
+    }
+
+    // 2. Match existing group if mentioned by leader name
+    if (Array.isArray(existingGroups) && existingGroups.length > 0) {
+      for (const g of existingGroups) {
+        if (g.leaderName && lower.includes(g.leaderName.toLowerCase())) {
+          draft.groupId = g.id;
+          if (draft.mode !== 'register') {
+            draft.leaderName = g.leaderName;
+            draft.location = draft.location || g.location || '';
+            draft.scheduleDay = g.scheduleDay || draft.scheduleDay;
+            draft.scheduleTime = g.scheduleTime || draft.scheduleTime;
+            if (!draft.members || draft.members.length === 0) {
+              draft.members = Array.isArray(g.members) ? [...g.members] : [];
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // 3. Extract Day of Week (Tagalog & English)
+    const dayMap: { [key: string]: string } = {
+      monday: 'Monday', lunes: 'Monday',
+      tuesday: 'Tuesday', martes: 'Tuesday',
+      wednesday: 'Wednesday', miyerkules: 'Wednesday', myerkules: 'Wednesday',
+      thursday: 'Thursday', huwebes: 'Thursday', webes: 'Thursday',
+      friday: 'Friday', biyernes: 'Friday', byernes: 'Friday',
+      saturday: 'Saturday', sabado: 'Saturday',
+      sunday: 'Sunday', linggo: 'Sunday',
+    };
+    for (const [key, val] of Object.entries(dayMap)) {
+      const regex = new RegExp(`\\b${key}s?\\b`, 'i');
+      if (regex.test(lower)) {
+        draft.scheduleDay = val;
+        break;
+      }
+    }
+
+    // 4. Extract Time (e.g. "6pm", "6:30 pm", "10:00 am", "18:00")
+    const timeMatch = text.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm|ng umaga|ng hapon|ng gabi)\b/i) || text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1], 10);
+      const mins = timeMatch[2] || '00';
+      const meridiem = (timeMatch[3] || '').toLowerCase();
+      if ((meridiem === 'pm' || meridiem.includes('hapon') || meridiem.includes('gabi')) && hours < 12) {
+        hours += 12;
+      } else if ((meridiem === 'am' || meridiem.includes('umaga')) && hours === 12) {
+        hours = 0;
+      }
+      draft.scheduleTime = `${String(hours).padStart(2, '0')}:${mins}`;
+    }
+
+    // 5. Extract Leader Name
+    const leaderPatterns = [
+      /(?:leader\s*(?:name|ay\s*si|is|po\s*ay\s*si|po\s*si|:)?\s*)([A-Za-zÀ-ÿ\s.]+?)(?=[,.;]|\s+(?:sa|in|at|location|tuwing|every|members|miyembro|sunday|monday|tuesday|wednesday|thursday|friday|saturday|linggo|lunes|martes|miyerkules|huwebes|biyernes|sabado)|$)/i,
+      /(?:pinamumunuan\s*ni|led\s*by)\s+([A-Za-zÀ-ÿ\s.]+?)(?=[,.;]|\s+(?:sa|in|at|location|tuwing|every|members|miyembro)|$)/i,
+    ];
+    for (const pat of leaderPatterns) {
+      const m = text.match(pat);
+      if (m && m[1] && m[1].trim().length >= 2) {
+        draft.leaderName = m[1].trim();
+        break;
+      }
+    }
+
+    // 6. Extract Location
+    const locPatterns = [
+      /(?:location|lokasyon|lugar|address|venue)\s*(?:ay\s*sa|is|:)?\s*([^,.;]+?)(?=[,.;]|\s+(?:tuwing|every|schedule|araw|oras|members|miyembro|sina)|$)/i,
+      /\b(?:sa|in|at)\s+([A-Z0-9][A-Za-z0-9\s#-]+?(?:Taguig|Tanyag|Bicutan|BGC|Signal|Makati|Pasig|Pateros|Parañaque|Muntinlupa|Alabang|House|Bahay|Sanctuary|Church|Street|St|Ave|Village|Subd)[A-Za-z0-9\s]*)(?=[,.;]|\s+(?:tuwing|every|members|miyembro|sina)|$)/i,
+    ];
+    for (const pat of locPatterns) {
+      const m = text.match(pat);
+      if (m && m[1] && m[1].trim().length >= 2) {
+        draft.location = m[1].trim();
+        break;
+      }
+    }
+
+    // 7. Extract Members or Attended Members
+    const matchedGroup = existingGroups.find((g: any) => g.id === draft.groupId);
+    if (draft.mode === 'log_meeting' && matchedGroup) {
+      const allGroupMembers = [matchedGroup.leaderName, ...(matchedGroup.members || [])].filter(Boolean);
+      if (lower.includes('lahat') || lower.includes('all present') || lower.includes('kumpleto')) {
+        draft.attendedMembers = [...allGroupMembers];
+      } else {
+        const newlyMatched = allGroupMembers.filter((mem: string) =>
+          lower.includes(mem.toLowerCase()) ||
+          mem.split(' ').some((part: string) => part.length >= 3 && lower.includes(part.toLowerCase()))
+        );
+        if (newlyMatched.length > 0) {
+          draft.attendedMembers = Array.from(new Set([...(draft.attendedMembers || []), ...newlyMatched]));
+        }
+      }
+    } else {
+      const memMatch = text.match(/(?:members|miyembro|mga\s*kasama|sina|kasama\s*sina)\s*(?:ay\s*sina|are|:)?\s*([^.;]+)$/i);
+      if (memMatch && memMatch[1]) {
+        const rawList = memMatch[1]
+          .replace(/\b(?:at\s+si|at|and)\b/gi, ',')
+          .split(',')
+          .map(s => s.replace(/^(?:si|sina)\s+/i, '').trim())
+          .filter(s => s.length >= 2);
+        if (rawList.length > 0) {
+          draft.members = Array.from(new Set([...(draft.members || []), ...rawList]));
+        }
+      }
+    }
+
+    // 8. Date keywords for meeting report
+    if (lower.includes('kahapon') || lower.includes('yesterday')) {
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      draft.meetingDate = y.toISOString().split('T')[0];
+    } else if (lower.includes('ngayon') || lower.includes('today')) {
+      draft.meetingDate = new Date().toISOString().split('T')[0];
+    }
+
+    let reply = '';
+    if (draft.mode === 'log_meeting') {
+      reply = isTagalog
+        ? `Opo! Inihanda ko na po ang **Log Meeting Report** card sa ibaba. Pakisuri po ang petsa, i-check ang mga dumalo, at pindutin ang **"I-save ang Report"**!`
+        : `I've prepared your **Meeting Report** card below! You can review the date, tap the members who attended, upload a photo, and click **"Save Report"**.`;
+    } else if (draft.mode === 'update') {
+      reply = isTagalog
+        ? `Opo! Narito na po ang detalye ng inyong Cell Group sa ibaba. Maaari niyo pong baguhin o dagdagan ang miyembro at pindutin ang **"I-save ang Pagbabago"**!`
+        : `Here are your Cell Group details below! Feel free to review or edit any field and tap **"Save Changes"**.`;
+    } else {
+      reply = isTagalog
+        ? `Salamat po! Inilagay ko na po ang mga detalye sa ating **Cell Group Form** sa ibaba. Maaari niyo pong dagdagan o baguhin bago pindutin ang **"I-save ang Cell Group"**!`
+        : `Thank you! I've filled in the **Cell Group Form** below for you. You can review or add more details and tap **"Save Cell Group"**!`;
+    }
+
+    return { reply, draft };
+  }
+
+  // Senior-Friendly Cell Group Assistant AI Endpoint
+  app.post("/api/cell-assistant", async (req, res) => {
+    const { message = "", language = "tl", existingGroups = [], currentDraft = {} } = req.body || {};
+    const isTagalog = language !== 'en';
+    const heuristicResult = parseCellGroupIntentHeuristic(message, existingGroups, currentDraft, isTagalog);
+
+    const genAI = getGenAI();
+    if (!genAI) {
+      return res.json(heuristicResult);
+    }
+
+    try {
+      const groupsSummary = (Array.isArray(existingGroups) ? existingGroups : []).map((g: any) => ({
+        id: g.id,
+        leaderName: g.leaderName,
+        location: g.location,
+        scheduleDay: g.scheduleDay,
+        scheduleTime: g.scheduleTime,
+        members: g.members || []
+      }));
+
+      const systemInstruction = `You are Hannah, the warm, respectful, senior-friendly AI assistant for SAVIOR-KING Commission Church International (SKCCI).
+You are helping mothers and older church members easily register a new cell group, update an existing cell group, or log a cell group meeting attendance report.
+
+Current Draft State: ${JSON.stringify(currentDraft)}
+Existing Cell Groups in Database: ${JSON.stringify(groupsSummary)}
+Today's Date: ${new Date().toISOString().split('T')[0]}
+
+Extract any cell group information from the user's message and merge it with Current Draft State.
+Return ONLY a valid JSON object matching this exact structure:
+{
+  "reply": "Warm, encouraging 1-2 sentence response in ${isTagalog ? 'polite Tagalog (using po and opo)' : 'warm English'} explaining what you filled in or what they can tap next on the card below.",
+  "draft": {
+    "mode": "register" | "update" | "log_meeting",
+    "groupId": "string (matching id from Existing Cell Groups if updating or logging meeting)",
+    "leaderName": "string",
+    "location": "string",
+    "scheduleDay": "Monday" | "Tuesday" | "Wednesday" | "Thursday" | "Friday" | "Saturday" | "Sunday",
+    "scheduleTime": "HH:mm in 24-hour format (e.g. 18:00)",
+    "members": ["array of member names excluding leader"],
+    "meetingDate": "YYYY-MM-DD",
+    "attendedMembers": ["array of member/leader names who attended"]
+  }
+}`;
+
+      // Model resilience chain per Production Directives (Primary: gemini-3.1-flash-lite, Fallback: gemini-3.5-flash-lite / gemini-flash-latest)
+      const modelsToTry = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
+      for (const model of modelsToTry) {
+        try {
+          const response = await Promise.race([
+            genAI.models.generateContent({
+              model,
+              contents: [{ role: 'user', parts: [{ text: message }] }],
+              config: {
+                systemInstruction,
+                temperature: 0.2,
+                responseMimeType: "application/json",
+                maxOutputTokens: 700,
+              }
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Timeout on ${model}`)), 6000)
+            )
+          ]);
+
+          if (response && response.text) {
+            const parsed = JSON.parse(response.text.trim());
+            if (parsed && parsed.draft) {
+              return res.json({
+                reply: parsed.reply || heuristicResult.reply,
+                draft: {
+                  ...heuristicResult.draft,
+                  ...parsed.draft,
+                  members: Array.isArray(parsed.draft.members) && parsed.draft.members.length > 0
+                    ? parsed.draft.members
+                    : heuristicResult.draft.members,
+                  attendedMembers: Array.isArray(parsed.draft.attendedMembers) && parsed.draft.attendedMembers.length > 0
+                    ? parsed.draft.attendedMembers
+                    : heuristicResult.draft.attendedMembers,
+                }
+              });
+            }
+          }
+        } catch (err) {
+          // Try next fallback model
+        }
+      }
+
+      return res.json(heuristicResult);
+    } catch (err) {
+      console.warn("[Cell Assistant AI] Falling back to heuristic parser:", err);
+      return res.json(heuristicResult);
+    }
+  });
+
   // Explicit SEO routes to guarantee correct MIME types and prevent SPA HTML fallback
   app.get("/robots.txt", (req, res) => {
     res.type("text/plain");

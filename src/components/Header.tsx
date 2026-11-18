@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, User, Lock, ChevronDown, LogOut, Sparkles } from 'lucide-react';
+import { Menu, X, User, Lock, ChevronDown, LogOut, Sparkles, HelpCircle } from 'lucide-react';
 import { TabItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -10,9 +10,10 @@ interface HeaderProps {
   activeTab: TabItem;
   handleTabClick: (tab: TabItem) => void;
   is100DayComplete: boolean;
+  onStartTour?: () => void;
 }
 
-export default function Header({ activeTab, handleTabClick, is100DayComplete }: HeaderProps) {
+export default function Header({ activeTab, handleTabClick, is100DayComplete, onStartTour }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isWhatsNewOpen, setIsWhatsNewOpen] = useState(false);
   const [hasUnreadUpdates, setHasUnreadUpdates] = useState(false);
@@ -75,6 +76,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
           
           {/* Logo */}
           <div 
+            id="header-logo"
             className="flex-shrink-0 flex items-center cursor-pointer"
             onClick={() => handleTabClick('Home')}
           >
@@ -92,7 +94,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             </button>
             
             {/* Welcome Kit Dropdown */}
-            <div className="relative group flex items-center">
+            <div id="desktop-nav-welcome" className="relative group flex items-center">
               <button 
                 onClick={() => handleTabClick('Welcome Kit')} 
                 className={getTabClass('Welcome Kit')}
@@ -120,7 +122,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
             </div>
 
             {/* Grow Dropdown */}
-            <div className="relative group flex items-center">
+            <div id="desktop-nav-grow" className="relative group flex items-center">
               <button 
                 className={`text-sm lg:text-base xl:text-[17px] font-medium transition-colors duration-200 flex items-center gap-1 whitespace-nowrap cursor-pointer ${(activeTab === 'Manuals' || activeTab === '365 Bible Reading Guide' || activeTab === 'Cell Group' || activeTab === 'Leader Tools' || activeTab === 'Formal Education') ? 'text-[#C82323] font-semibold border-b-2 border-[#C82323] pb-1' : 'text-[#0F2C59] hover:text-[#C82323] pb-1'}`}
               >
@@ -168,11 +170,11 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
               </div>
             </div>
             
-            <button onClick={() => handleTabClick('Events')} className={getTabClass('Events')}>
+            <button id="desktop-nav-events" onClick={() => handleTabClick('Events')} className={getTabClass('Events')}>
               {dict.nav.events}
             </button>
             
-            <button onClick={() => handleTabClick('Prayer Hub')} className={getTabClass('Prayer Hub')}>
+            <button id="desktop-nav-prayer" onClick={() => handleTabClick('Prayer Hub')} className={getTabClass('Prayer Hub')}>
               {dict.nav.prayerHub}
             </button>
             
@@ -201,6 +203,21 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
                 <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 w-2 h-2 rounded-full bg-[#C82323] ring-2 ring-white animate-pulse" />
               )}
             </button>
+
+            {/* Take Tour (?) Trigger Button */}
+            {onStartTour && (
+              <button
+                type="button"
+                id="header-take-tour-btn"
+                onClick={onStartTour}
+                className="inline-flex items-center justify-center gap-1 px-2 py-1.5 sm:px-2.5 text-xs font-semibold text-[#0F2C59] hover:text-[#C82323] hover:bg-gray-100 border border-gray-200/90 rounded-full transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
+                title={isTagalog ? "Simulan ang Gabay na Tour" : "Take Tour"}
+                aria-label={isTagalog ? "Simulan ang Gabay na Tour" : "Take Tour"}
+              >
+                <HelpCircle size={16} className="text-[#0F2C59] shrink-0" />
+                <span className="hidden xl:inline">{isTagalog ? "Tour" : "Take Tour"}</span>
+              </button>
+            )}
 
             <LanguageToggle theme="light" id="header-lang-toggle" />
 
@@ -271,21 +288,36 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete }: 
       {isMobileMenuOpen && (
         <div className="lg:hidden bg-white border-t border-gray-100 max-h-[calc(100vh-5rem)] overflow-y-auto">
           <div className="px-4 pt-4 pb-6 space-y-1">
-            <div className="pb-3 border-b border-gray-100 mb-2 flex items-center justify-between px-1">
-              <button
-                type="button"
-                onClick={() => {
-                  handleOpenWhatsNew();
-                  setIsMobileMenuOpen(false);
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#0F2C59] bg-amber-50 border border-amber-200/80 hover:bg-amber-100/80 transition-colors"
-              >
-                <Sparkles size={14} className="text-amber-500" />
-                <span>{isTagalog ? 'Mga Update' : "What's New"}</span>
-                {hasUnreadUpdates && (
-                  <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse" />
+            <div className="pb-3 border-b border-gray-100 mb-2 flex items-center justify-between gap-2 px-1 flex-wrap">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleOpenWhatsNew();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#0F2C59] bg-amber-50 border border-amber-200/80 hover:bg-amber-100/80 transition-colors cursor-pointer"
+                >
+                  <Sparkles size={14} className="text-amber-500" />
+                  <span>{isTagalog ? 'Mga Update' : "What's New"}</span>
+                  {hasUnreadUpdates && (
+                    <span className="w-2 h-2 rounded-full bg-[#C82323] animate-pulse" />
+                  )}
+                </button>
+                {onStartTour && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      onStartTour();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-[#0F2C59] bg-gray-50 border border-gray-200 hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <HelpCircle size={14} className="text-[#C82323]" />
+                    <span>{isTagalog ? 'Tour' : 'Take Tour'}</span>
+                  </button>
                 )}
-              </button>
+              </div>
               <LanguageToggle theme="light" id="mobile-drawer-lang-toggle" />
             </div>
 

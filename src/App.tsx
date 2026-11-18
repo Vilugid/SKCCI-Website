@@ -21,6 +21,7 @@ import Events from './components/Events';
 import PrayerHub from './components/PrayerHub';
 import FormalEducation from './components/FormalEducation';
 import HannahChat from './components/HannahChat';
+import { useOnboardingTour } from './components/OnboardingTour';
 import { TabItem } from './types';
 import { useSyncedState } from './hooks/useSyncedState';
 import { useAuth } from './contexts/AuthContext';
@@ -179,6 +180,12 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [activeTab]);
 
+  const { startTour } = useOnboardingTour({
+    activeTab,
+    isLoading: loading,
+    onNavigateTab: handleTabClick,
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA]">
@@ -193,7 +200,8 @@ export default function App() {
       <Header 
         activeTab={activeTab} 
         handleTabClick={handleTabClick} 
-        is100DayComplete={is100DayComplete} 
+        is100DayComplete={is100DayComplete}
+        onStartTour={startTour}
       />
       {/* Spacer so page content flows immediately below the frozen top header without jump or overlap */}
       <div className="h-16 sm:h-20 lg:h-24 w-full flex-shrink-0" aria-hidden="true" />

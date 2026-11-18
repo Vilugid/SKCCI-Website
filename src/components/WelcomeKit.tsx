@@ -25,7 +25,7 @@ export default function WelcomeKit({ handleTabClick }: WelcomeKitProps) {
         </div>
 
         {/* Feature Tiles */}
-        <div className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
+        <div id="welcome-kit-tiles" className="mt-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:gap-12">
           {/* Tile 1: The Gospel */}
           <div className="bg-amber-50 rounded-3xl p-8 sm:p-10 border border-amber-100 flex flex-col items-start shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-center h-14 w-14 rounded-2xl bg-amber-100 text-amber-600 mb-6">

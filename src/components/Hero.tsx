@@ -55,7 +55,7 @@ export default function Hero({ handleTabClick }: HeroProps) {
                   {dict.hero.sundayService}
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                <div id="hero-actions" className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                   <button 
                     onClick={() => handleTabClick('Contact')}
                     className="inline-flex items-center justify-center px-8 py-3.5 border border-transparent text-base font-semibold rounded-full shadow-md text-white bg-[#C82323] hover:bg-[#a11b1b] transition-all hover:scale-[1.02] active:scale-[0.98] whitespace-nowrap cursor-pointer"

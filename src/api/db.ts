@@ -11,8 +11,9 @@ export const fetchCellGroups = async () => {
 
 export const createCellGroup = async (groupData: any) => {
   if (!db) throw new Error("Database not initialized");
+  const cleanData = sanitizeData(groupData);
   const docRef = await addDoc(collection(db, 'cell_groups'), {
-    ...groupData,
+    ...cleanData,
     createdAt: serverTimestamp()
   });
   return docRef.id;
@@ -21,7 +22,8 @@ export const createCellGroup = async (groupData: any) => {
 export const updateCellGroup = async (groupId: string, groupData: any) => {
   if (!db) throw new Error("Database not initialized");
   const groupRef = doc(db, 'cell_groups', groupId);
-  await setDoc(groupRef, groupData, { merge: true });
+  const cleanData = sanitizeData(groupData);
+  await setDoc(groupRef, cleanData, { merge: true });
 };
 
 export const removeCellGroup = async (groupId: string) => {
@@ -32,10 +34,10 @@ export const removeCellGroup = async (groupId: string) => {
 export const updateCellGroupLogs = async (groupId: string, meetingLogs: any, proofPhotoUrl?: string | null, lastProofUploadAt?: string) => {
   if (!db) throw new Error("Database not initialized");
   const groupRef = doc(db, 'cell_groups', groupId);
-  const data: any = { meetingLogs };
+  const data: any = { meetingLogs: sanitizeData(meetingLogs) };
   if (proofPhotoUrl !== undefined) data.proofPhotoUrl = proofPhotoUrl;
   if (lastProofUploadAt !== undefined) data.lastProofUploadAt = lastProofUploadAt;
-  await setDoc(groupRef, data, { merge: true });
+  await setDoc(groupRef, sanitizeData(data), { merge: true });
 };
 
 // LEADER TOOLS

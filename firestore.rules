@@ -60,8 +60,8 @@ service cloud.firestore {
 
     match /cell_groups/{groupId} {
       allow read: if true;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (isCellLeaderAdmin() || request.auth.uid == resource.data.leaderId || request.auth.uid == resource.data.createdByUid);
+      allow create, update: if request.auth != null;
+      allow delete: if request.auth != null && (isCellLeaderAdmin() || request.auth.uid == resource.data.leaderId || request.auth.uid == resource.data.createdByUid);
     }
     
     match /leader_tools/{recordId} {

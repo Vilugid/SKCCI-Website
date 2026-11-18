@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp, Sparkles, Loader2 } from 'lucide-react';
+import { Users, MapPin, Calendar, Clock, Plus, X, Upload, Image as ImageIcon, Edit, CheckCircle, FileText, History, CheckSquare, Square, Percent, Trash2, Activity, TrendingUp, Sparkles, Loader2, MessageCircle } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { db } from '../firebase';
 import { useAuth } from '../contexts/AuthContext';
@@ -100,6 +100,14 @@ export default function CellGroup() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const meetingPhotoInputRef = useRef<HTMLInputElement>(null);
+
+  const openHannahCellHelper = (mode: 'register' | 'update' | 'log_meeting', group?: CellGroupData | null) => {
+    window.dispatchEvent(
+      new CustomEvent('open-hannah-cell-helper', {
+        detail: { mode, group: group || undefined }
+      })
+    );
+  };
 
   const handleRemoveMember = (index: number) => {
     setMembers(members.filter((_, i) => i !== index));
@@ -644,24 +652,82 @@ export default function CellGroup() {
     <div className="bg-[#FAFAFA] min-h-screen py-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-6 gap-4">
           <div>
             <img src="/logos/churchlogo4.png" alt="Savior-King Commission Church" onError={(e) => { e.currentTarget.style.display = 'none'; }} className="h-8 w-auto mb-4" />
             <h1 className="text-3xl font-extrabold text-[#0F2C59] font-serif mb-2">Cell Groups</h1>
             <p className="text-gray-600 text-lg">Grow together in faith, community, and purpose.</p>
           </div>
-          {user && (
+          <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => {
-                resetForm();
-                setIsModalOpen(true);
-              }}
-              className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] transition-colors shadow-sm"
+              type="button"
+              onClick={() => openHannahCellHelper('register')}
+              className="inline-flex items-center justify-center px-5 py-2.5 border-2 border-[#0F2C59] text-sm font-bold rounded-xl text-[#0F2C59] bg-amber-50 hover:bg-[#0F2C59] hover:text-white transition-all shadow-sm cursor-pointer"
             >
-              <Plus size={18} className="mr-2" />
-              Register New Group
+              <Sparkles size={18} className="mr-2 text-[#C82323]" />
+              Chat with Hannah (Easy Setup)
             </button>
-          )}
+            {user && (
+              <button
+                onClick={() => {
+                  resetForm();
+                  setIsModalOpen(true);
+                }}
+                className="inline-flex items-center justify-center px-5 py-2.5 border border-transparent text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus size={18} className="mr-2" />
+                Register New Group
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Senior & Mother Friendly Guided Assistant Banner */}
+        <div className="bg-gradient-to-r from-[#0F2C59] to-[#1E3E62] text-white rounded-2xl p-5 sm:p-6 mb-8 shadow-md border border-[#0F2C59]/20 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-400/20 border border-amber-300/40 flex items-center justify-center shrink-0 text-amber-300 mt-0.5">
+              <MessageCircle size={26} />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-200 text-xs font-bold px-2.5 py-0.5 rounded-full mb-1.5">
+                <Sparkles size={12} />
+                <span>Easy Step-by-Step Assistant • Para sa mga Nanay at Nakatatanda</span>
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold font-serif text-white">
+                Need an easier way to register or update your Cell Group? Chat with Hannah!
+              </h2>
+              <p className="text-sm text-gray-200 mt-1">
+                Nahihirapan po ba sa form? Pindutin lamang ang button sa kanan at tutulungan kayo ni <strong>Hannah</strong> mag-register ng grupo, magdagdag ng miyembro, o mag-log ng attendance!
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => openHannahCellHelper('register')}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#C82323] hover:bg-[#a11b1b] text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <Plus size={16} />
+              <span>Register Group</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => openHannahCellHelper('update')}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-3 bg-white text-[#0F2C59] hover:bg-amber-50 text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <Edit size={16} className="text-[#C82323]" />
+              <span>Update Group</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => openHannahCellHelper('log_meeting')}
+              className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <FileText size={16} />
+              <span>Log Attendance</span>
+            </button>
+          </div>
         </div>
 
         {/* Dashboard Analytics */}
@@ -772,7 +838,7 @@ export default function CellGroup() {
         {/* Directory Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {groups.map((group) => {
-            const canEdit = isAdmin || group.leaderId === user?.uid || group.createdByUid === user?.uid || (!!group.createdByEmail && !!user?.email && group.createdByEmail.toLowerCase() === user.email.toLowerCase());
+            const canEdit = !!user || isAdmin || group.leaderId === user?.uid || group.createdByUid === user?.uid || (!!group.createdByEmail && !!user?.email && group.createdByEmail.toLowerCase() === user.email.toLowerCase());
             const canDelete = isAdmin || group.createdByUid === user?.uid || (!!group.createdByEmail && !!user?.email && group.createdByEmail.toLowerCase() === user.email.toLowerCase());
 
             return (
@@ -870,22 +936,32 @@ export default function CellGroup() {
                   </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 mt-4 flex gap-2">
-                  {canEdit && (
+                <div className="border-t border-gray-100 pt-4 mt-4 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    {canEdit && (
+                      <button 
+                        onClick={() => openLogMeetingModal(group)} 
+                        className="flex-1 bg-[#0F2C59] text-white text-sm font-medium py-2 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <FileText size={16} />
+                        Log Meeting
+                      </button>
+                    )}
                     <button 
-                      onClick={() => openLogMeetingModal(group)} 
-                      className="flex-1 bg-[#0F2C59] text-white text-sm font-medium py-2 rounded-xl hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                      onClick={() => { setSelectedGroup(group); setIsHistoryModalOpen(true); }} 
+                      className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
-                      <FileText size={16} />
-                      Log Meeting
+                      <History size={16} />
+                      History
                     </button>
-                  )}
-                  <button 
-                    onClick={() => { setSelectedGroup(group); setIsHistoryModalOpen(true); }} 
-                    className="flex-1 border border-gray-300 text-gray-700 text-sm font-medium py-2 rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2"
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openHannahCellHelper('log_meeting', group)}
+                    className="w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-[#0F2C59] border border-amber-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    <History size={16} />
-                    History
+                    <Sparkles size={14} className="text-[#C82323]" />
+                    <span>Easy Update / Log Attendance with Hannah</span>
                   </button>
                 </div>
               </div>
@@ -915,6 +991,28 @@ export default function CellGroup() {
             </div>
             
             <form onSubmit={handleSubmit} className="p-6">
+              {/* Easy Hannah Chat Shortcut Banner inside Modal */}
+              <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs sm:text-sm text-amber-950">
+                  <span className="font-bold block text-[#0F2C59]">
+                    💬 Nahihirapan po ba sa form na ito? / Prefer an easier step-by-step guide?
+                  </span>
+                  <span>Let Hannah help you register or update your Cell Group in chat!</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const currentGroup = editingGroupId ? groups.find(g => g.id === editingGroupId) : null;
+                    const mode = editingGroupId ? 'update' : 'register';
+                    resetForm();
+                    openHannahCellHelper(mode, currentGroup);
+                  }}
+                  className="px-4 py-2.5 bg-[#0F2C59] hover:bg-[#1E3E62] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Sparkles size={14} className="text-amber-300" />
+                  <span>Magpatulong kay Hannah</span>
+                </button>
+              </div>
               
               <div className="space-y-6">
                 
@@ -1264,6 +1362,28 @@ export default function CellGroup() {
             </div>
             
             <form onSubmit={submitMeetingLog} className="p-6">
+              {/* Easy Hannah Chat Shortcut inside Log Meeting Report Modal */}
+              <div className="mb-5 p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="text-xs text-amber-950">
+                  <span className="font-bold block text-[#0F2C59]">
+                    💬 Gusto po ba ng mas madaling paraan? / Want an easier way?
+                  </span>
+                  <span>Tap here and Hannah will log your meeting report & attendance for you!</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const grp = selectedGroup;
+                    setIsLogMeetingModalOpen(false);
+                    openHannahCellHelper('log_meeting', grp);
+                  }}
+                  className="px-3.5 py-2 bg-[#0F2C59] hover:bg-[#1E3E62] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                >
+                  <Sparkles size={14} className="text-amber-300" />
+                  <span>Chat with Hannah</span>
+                </button>
+              </div>
+
               <div className="space-y-6">
                 
                 <div>
