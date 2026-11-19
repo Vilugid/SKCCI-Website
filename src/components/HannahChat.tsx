@@ -37,7 +37,7 @@ import ReactMarkdown from 'react-markdown';
 import { TabItem } from '../types';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchCellGroups, createCellGroup, updateCellGroup, updateCellGroupLogs } from '../api/db';
-import imageCompression from 'browser-image-compression';
+import { compressMobileImageToSafePayload, optimizeMeetingLogsForFirestore } from '../utils/imageUpload';
 import toast from 'react-hot-toast';
 
 export type ChatLanguage = 'tl' | 'en';
@@ -180,62 +180,6 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Compress uploaded photo safely to <=60KB base64 for Firestore
-  const compressPhotoForFirestore = async (file: File): Promise<string> => {
-    let sourceDataUrl: string | null = null;
-    try {
-      const compressed = await imageCompression(file, {
-        maxSizeMB: 0.14,
-        maxWidthOrHeight: 720,
-        useWebWorker: false,
-        fileType: 'image/jpeg',
-        initialQuality: 0.72,
-      });
-      sourceDataUrl = await imageCompression.getDataUrlFromFile(compressed);
-    } catch {
-      sourceDataUrl = null;
-    }
-
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => {
-        let { width, height } = img;
-        const maxDim = 680;
-        if (width > maxDim || height > maxDim) {
-          if (width > height) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.max(1, width);
-        canvas.height = Math.max(1, height);
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Canvas unavailable'));
-        ctx.drawImage(img, 0, 0, width, height);
-        let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-        if (dataUrl.length > 75000) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.55);
-        }
-        resolve(dataUrl);
-      };
-      img.onerror = () => reject(new Error('Failed to load photo'));
-      if (sourceDataUrl) {
-        img.src = sourceDataUrl;
-      } else {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          img.src = e.target?.result as string;
-        };
-        reader.onerror = () => reject(new Error('Failed to read file'));
-        reader.readAsDataURL(file);
-      }
-    });
-  };
-
   const handleChatPhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -243,7 +187,10 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
 
     setIsUploadingPhoto(true);
     try {
-      const compressedBase64 = await compressPhotoForFirestore(file);
+      const compressedBase64 = await compressMobileImageToSafePayload(file, {
+        maxDimension: 640,
+        targetMaxChars: 50000,
+      });
       if (cellDraft.mode === 'log_meeting') {
         setCellDraft(prev => ({ ...prev, meetingPhotoUrl: compressedBase64 }));
       } else {
@@ -428,10 +375,11 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
           createdAt: new Date().toISOString(),
         };
 
-        const updatedLogs = [...(targetGroup.meetingLogs || []), newLog];
+        const rawUpdatedLogs = [...(targetGroup.meetingLogs || []), newLog];
+        const safeUpdatedLogs = await optimizeMeetingLogsForFirestore(rawUpdatedLogs, 550000);
         await updateCellGroupLogs(
           targetGroup.id,
-          updatedLogs,
+          safeUpdatedLogs,
           cellDraft.meetingPhotoUrl || targetGroup.proofPhotoUrl || null,
           new Date().toISOString()
         );
@@ -1500,21 +1448,29 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                               {isTagalog ? 'Litrato ng Grupo (Pumili o Mag-upload)' : 'Group Photo (Upload or Tap Preset)'}
                             </label>
                             <div className="flex items-center gap-3 mb-2.5">
-                              <button
-                                type="button"
-                                onClick={() => chatPhotoInputRef.current?.click()}
-                                disabled={isUploadingPhoto}
-                                className="flex-1 py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer"
-                              >
+                              <label className="flex-1 py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer">
                                 {isUploadingPhoto ? (
                                   <Loader2 size={16} className="animate-spin text-[#C82323]" />
                                 ) : (
                                   <Camera size={17} className="text-[#C82323]" />
                                 )}
                                 <span>
-                                  {isTagalog ? 'Mag-upload ng Litrato' : 'Upload / Take Photo'}
+                                  {isUploadingPhoto
+                                    ? isTagalog
+                                      ? 'Inaayos ang Litrato...'
+                                      : 'Optimizing Photo...'
+                                    : isTagalog
+                                    ? 'Mag-upload ng Litrato'
+                                    : 'Upload / Take Photo'}
                                 </span>
-                              </button>
+                                <input
+                                  type="file"
+                                  className="sr-only"
+                                  accept="image/*"
+                                  disabled={isUploadingPhoto}
+                                  onChange={handleChatPhotoChange}
+                                />
+                              </label>
                             </div>
                             <div className="grid grid-cols-4 gap-1.5">
                               {HANNAH_FELLOWSHIP_PRESETS.map((p) => {
@@ -1593,19 +1549,18 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                             <label className="block text-xs font-bold text-gray-700 uppercase mb-1.5">
                               {isTagalog ? '3. Litrato ng Meeting (Opsyonal):' : '3. Upload Meeting Photo (Optional):'}
                             </label>
-                            <button
-                              type="button"
-                              onClick={() => chatPhotoInputRef.current?.click()}
-                              disabled={isUploadingPhoto}
-                              className="w-full py-3 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer"
-                            >
+                            <label className="w-full py-3 px-4 bg-amber-50 hover:bg-amber-100 text-amber-900 border-2 border-dashed border-amber-400 rounded-xl font-bold text-sm flex items-center justify-center gap-2 cursor-pointer">
                               {isUploadingPhoto ? (
                                 <Loader2 size={18} className="animate-spin text-[#C82323]" />
                               ) : (
                                 <Upload size={18} className="text-[#C82323]" />
                               )}
                               <span>
-                                {cellDraft.meetingPhotoUrl
+                                {isUploadingPhoto
+                                  ? isTagalog
+                                    ? 'Inaayos ang Litrato...'
+                                    : 'Optimizing Photo...'
+                                  : cellDraft.meetingPhotoUrl
                                   ? isTagalog
                                     ? 'Palitan ang Litrato ng Meeting'
                                     : 'Change Meeting Photo'
@@ -1613,7 +1568,14 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                                   ? 'Pindutin para Mag-upload ng Litrato'
                                   : 'Tap to Upload Meeting Photo'}
                               </span>
-                            </button>
+                              <input
+                                type="file"
+                                className="sr-only"
+                                accept="image/*"
+                                disabled={isUploadingPhoto}
+                                onChange={handleChatPhotoChange}
+                              />
+                            </label>
                             {cellDraft.meetingPhotoUrl && (
                               <div className="mt-2 relative rounded-xl overflow-hidden h-32 border border-amber-300">
                                 <img
@@ -1691,15 +1653,6 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                         </>
                       )}
 
-                      {/* Hidden File Input for Chat Photo Upload */}
-                      <input
-                        type="file"
-                        ref={chatPhotoInputRef}
-                        className="hidden"
-                        accept="image/*,image/jpeg,image/png,image/webp"
-                        onChange={handleChatPhotoChange}
-                      />
-
                       {/* Big Save or Sign-In Button */}
                       <div className="pt-2">
                         {!user ? (
@@ -1719,13 +1672,21 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
                           <button
                             type="button"
                             onClick={handleSaveCellAssistant}
-                            disabled={isSavingCell}
+                            disabled={isSavingCell || isUploadingPhoto}
                             className="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold text-base rounded-2xl shadow-md flex items-center justify-center gap-2.5 transition-all active:scale-98 cursor-pointer"
                           >
-                            {isSavingCell ? (
+                            {isSavingCell || isUploadingPhoto ? (
                               <>
                                 <Loader2 size={20} className="animate-spin" />
-                                <span>{isTagalog ? 'Sini-save na po...' : 'Saving...'}</span>
+                                <span>
+                                  {isUploadingPhoto
+                                    ? isTagalog
+                                      ? 'Inaayos pa ang litrato...'
+                                      : 'Optimizing photo...'
+                                    : isTagalog
+                                    ? 'Sini-save na po...'
+                                    : 'Saving...'}
+                                </span>
                               </>
                             ) : (
                               <>

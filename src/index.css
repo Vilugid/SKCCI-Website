@@ -2,6 +2,8 @@
 
 @theme {
   --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-serif: 'Montserrat', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+  --font-mono: 'Montserrat', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 html {
@@ -11,6 +13,7 @@ html {
 html, body {
   overflow-x: clip;
   max-width: 100vw;
+  font-family: var(--font-sans);
 }
 
 /* Custom polished thin scrollbar for cards and dialogs */
@@ -47,7 +50,7 @@ html, body {
 }
 
 .driver-popover.skcci-tour-popover .driver-popover-title {
-  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  font-family: var(--font-sans);
   font-size: 1.1rem;
   font-weight: 700;
   color: #0F2C59;

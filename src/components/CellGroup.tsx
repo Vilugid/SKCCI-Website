@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isCellLeaderAdmin } from '../utils/roles';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchCellGroups, createCellGroup, updateCellGroup, removeCellGroup, updateCellGroupLogs } from '../api/db';
+import { compressMobileImageToSafePayload, optimizeMeetingLogsForFirestore } from '../utils/imageUpload';
 import toast from 'react-hot-toast';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 
@@ -133,116 +134,15 @@ export default function CellGroup() {
     return trimmed;
   };
 
-  // Ultra-safe canvas image compressor guaranteeing output is strictly <= 65KB (saving ~95% Firestore document space)
+  // Mobile-first high-res & iPhone HEIC safe compressor (strictly <= 38KB per image)
   const compressImageToSafePayload = async (
     source: File | string,
-    maxDimension = 720,
-    targetMaxChars = 85000 // ~60KB base64 string
+    maxDimension = 640,
+    targetMaxChars = 52000
   ): Promise<string> => {
-    // 1. If source is File, try fast mobile HEIC conversion via browser-image-compression if needed
-    let preprocessedDataUrl: string | null = null;
-    if (typeof source !== 'string') {
-      try {
-        const bicOptions = {
-          maxSizeMB: 0.15,
-          maxWidthOrHeight: maxDimension,
-          useWebWorker: false,
-          fileType: 'image/jpeg',
-          initialQuality: 0.75
-        };
-        const bicFile = await imageCompression(source, bicOptions);
-        preprocessedDataUrl = await imageCompression.getDataUrlFromFile(bicFile);
-      } catch (bicErr) {
-        // Fallback to FileReader + Canvas
-        preprocessedDataUrl = null;
-      }
-    } else {
-      preprocessedDataUrl = source;
-    }
-
-    // 2. High-precision HTML5 Canvas resize & progressive compression
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-
-      const renderOnCanvas = () => {
-        try {
-          let { width, height } = img;
-          if (!width || !height) {
-            return reject(new Error('Invalid image dimensions.'));
-          }
-
-          // Scale down to maxDimension preserving aspect ratio
-          if (width > maxDimension || height > maxDimension) {
-            if (width > height) {
-              height = Math.round((height * maxDimension) / width);
-              width = maxDimension;
-            } else {
-              width = Math.round((width * maxDimension) / height);
-              height = maxDimension;
-            }
-          }
-
-          const canvas = document.createElement('canvas');
-          canvas.width = Math.max(1, width);
-          canvas.height = Math.max(1, height);
-          const ctx = canvas.getContext('2d');
-          if (!ctx) {
-            return reject(new Error('Canvas context unavailable.'));
-          }
-
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-
-          // Initial encode with quality 0.72
-          let quality = 0.72;
-          let resultDataUrl = canvas.toDataURL('image/jpeg', quality);
-
-          // If still above target characters, progressively lower quality
-          if (resultDataUrl.length > targetMaxChars) {
-            quality = 0.58;
-            resultDataUrl = canvas.toDataURL('image/jpeg', quality);
-          }
-
-          // If still over target, downscale canvas dimensions
-          if (resultDataUrl.length > targetMaxChars) {
-            const downscaleCanvas = document.createElement('canvas');
-            const dw = Math.round(width * 0.75);
-            const dh = Math.round(height * 0.75);
-            downscaleCanvas.width = dw;
-            downscaleCanvas.height = dh;
-            const downscaleCtx = downscaleCanvas.getContext('2d');
-            if (downscaleCtx) {
-              downscaleCtx.imageSmoothingEnabled = true;
-              downscaleCtx.drawImage(canvas, 0, 0, dw, dh);
-              resultDataUrl = downscaleCanvas.toDataURL('image/jpeg', 0.52);
-            }
-          }
-
-          resolve(resultDataUrl);
-        } catch (canvasErr) {
-          reject(canvasErr);
-        }
-      };
-
-      img.onload = renderOnCanvas;
-      img.onerror = () => reject(new Error('Unable to process photo file. Please choose another image.'));
-
-      if (preprocessedDataUrl) {
-        img.src = preprocessedDataUrl;
-      } else if (typeof source !== 'string') {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const raw = e.target?.result as string;
-          if (raw) img.src = raw;
-          else reject(new Error('Failed to read photo from device.'));
-        };
-        reader.onerror = () => reject(new Error('Failed to read photo file.'));
-        reader.readAsDataURL(source);
-      } else {
-        img.src = source;
-      }
+    return compressMobileImageToSafePayload(source, {
+      maxDimension,
+      targetMaxChars,
     });
   };
 
@@ -251,64 +151,64 @@ export default function CellGroup() {
       toast.error('Please sign in with Google first to upload photos.');
       return;
     }
-    
-    // Support modern mobile phone camera shots up to 25MB
-    if (file.size > 25 * 1024 * 1024) {
-      toast.error('Photo exceeds 25MB limit. Please choose a smaller photo.');
+
+    // Allow high-resolution mobile camera photos up to 100MB (we compress them on-device to ~38KB)
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error('Photo exceeds 100MB limit. Please choose a smaller photo.');
       return;
     }
-    
-    // Validate image MIME type or file extension
-    const isImage = !file.type || file.type.startsWith('image/') || /\.(jpg|jpeg|png|webp|heic|heif|gif)$/i.test(file.name);
-    if (!isImage) {
-      toast.error('Please select an image file (JPG, PNG, WebP, or Camera Photo).');
+
+    // Reject only obvious non-image files (e.g. video/pdf/audio)
+    const lowerType = (file.type || '').toLowerCase();
+    if (lowerType.startsWith('video/') || lowerType.startsWith('audio/') || lowerType === 'application/pdf') {
+      toast.error('Please select a photo (JPG, PNG, WebP, HEIC, or Camera Photo).');
       return;
     }
 
     try {
-      setUploadProgress(prev => ({ ...prev, [type]: 25 }));
-      
-      // 1. Guaranteed ultra-safe compression to <= 60KB (protects Firestore 1MB limits)
-      const base64Data = await compressImageToSafePayload(file, 720, 80000);
-      setUploadProgress(prev => ({ ...prev, [type]: 75 }));
+      setUploadProgress(prev => ({ ...prev, [type]: 15 }));
 
-      // 2. Persist compressed image directly as permanent data URL in Firestore
-      const finalImageUrl = base64Data;
-      try {
-        // Mirror to server in background for disk cache if available
-        fetch('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageBase64: base64Data,
-            filename: file.name || (type === 'group' ? 'cell-group' : 'meeting-proof'),
-            folder: 'cell-groups'
-          })
-        }).catch(() => {});
-      } catch (uploadErr) {
-        console.warn('Server background cache note:', uploadErr);
+      // 1. Mobile-safe downscale & HEIC-compatible compression to <= 38KB
+      const base64Data = await compressMobileImageToSafePayload(file, {
+        maxDimension: 640,
+        targetMaxChars: 50000,
+        onProgress: (pct) => {
+          setUploadProgress(prev => ({ ...prev, [type]: pct }));
+        },
+      });
+
+      // 2. Set state immediately so mobile users never lose the photo if they tap Save right away
+      if (type === 'group') {
+        setPhotoUrl(base64Data);
+      } else {
+        setMeetingPhotoUrl(base64Data);
       }
-      
+
       setUploadProgress(prev => ({ ...prev, [type]: 100 }));
-      
+
+      // Mirror to server in background for disk cache if available
+      fetch('/api/upload-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: base64Data,
+          filename: file.name || (type === 'group' ? 'cell-group' : 'meeting-proof'),
+          folder: 'cell-groups'
+        })
+      }).catch(() => {});
+
       setTimeout(() => {
         setUploadProgress(prev => {
           const next = { ...prev };
           delete next[type];
           return next;
         });
-        
-        if (type === 'group') {
-          setPhotoUrl(finalImageUrl);
-        } else {
-          setMeetingPhotoUrl(finalImageUrl);
-        }
-        toast.success('Photo ready & optimized! Click Save Changes to apply.');
-      }, 300);
+        toast.success('Photo attached & optimized! Tap Save below to finish.');
+      }, 200);
 
     } catch (error: any) {
-      console.error('Error uploading image', error);
-      toast.error(error?.message || 'Failed to process photo. Please try another image.');
+      console.error('Error uploading mobile image:', error);
+      toast.error(error?.message || 'Could not process this photo. Please try taking a screenshot of the photo or choosing another image.');
       setUploadProgress(prev => {
         const next = { ...prev };
         delete next[type];
@@ -415,23 +315,43 @@ export default function CellGroup() {
 
   const submitLogMutation = useMutation({
     mutationFn: async ({ groupId, updatedLogs, proofPhotoUrl, lastProofUploadAt }: { groupId: string, updatedLogs: any[], proofPhotoUrl?: string | null, lastProofUploadAt?: string }) => {
-      await updateCellGroupLogs(groupId, updatedLogs, proofPhotoUrl, lastProofUploadAt);
+      // 1. Ensure proofPhotoUrl is compact
+      let safeProof = proofPhotoUrl;
+      if (safeProof && typeof safeProof === 'string' && safeProof.startsWith('data:image/') && safeProof.length > 55000) {
+        try {
+          safeProof = await compressMobileImageToSafePayload(safeProof, { maxDimension: 560, targetMaxChars: 45000 });
+        } catch {}
+      }
+      // 2. Compact meetingLogs array so total document size never exceeds Firestore's 1MB limit
+      const safeLogs = await optimizeMeetingLogsForFirestore(updatedLogs, 550000);
+      await updateCellGroupLogs(groupId, safeLogs, safeProof, lastProofUploadAt);
+      return safeLogs;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (safeLogs) => {
       queryClient.invalidateQueries({ queryKey: ['cell_groups'] });
-      toast.success(editingLogId ? 'Meeting updated!' : 'Meeting logged successfully!');
-      setSelectedGroup(prev => prev ? { ...prev, meetingLogs: variables.updatedLogs } : null);
+      toast.success(editingLogId ? 'Meeting report updated!' : 'Meeting report logged successfully!');
+      setSelectedGroup(prev => prev ? { ...prev, meetingLogs: safeLogs } : null);
       setIsLogMeetingModalOpen(false);
     },
-    onError: (error) => {
-      console.error('Error logging meeting', error);
-      toast.error('Failed to save meeting');
+    onError: (error: any) => {
+      console.error('Error logging meeting:', error);
+      if (error?.message?.includes('maximum allowed size') || error?.code === 'resource-exhausted') {
+        toast.error('Database storage limit reached for this group. Please tap Save Report once more.');
+      } else if (error?.code === 'permission-denied') {
+        toast.error('Permission denied. Please sign in with your Google account first.');
+      } else {
+        toast.error(error?.message || 'Failed to save meeting report. Please check your connection and try again.');
+      }
     }
   });
 
   const submitMeetingLog = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedGroup || !user) return;
+    if (uploadProgress['meeting'] !== undefined) {
+      toast('Please wait a moment for your photo to finish optimizing...', { icon: '⏳' });
+      return;
+    }
 
     let updatedLogs = [...(selectedGroup.meetingLogs || [])];
     
@@ -511,9 +431,9 @@ export default function CellGroup() {
 
       if (groupData.meetingLog && finalGroupId) {
         let logPhoto = groupData.meetingLog.photoUrl;
-        if (logPhoto && logPhoto.startsWith('data:image/') && logPhoto.length > 70000) {
+        if (logPhoto && logPhoto.startsWith('data:image/') && logPhoto.length > 55000) {
           try {
-            logPhoto = await compressImageToSafePayload(logPhoto, 720, 60000);
+            logPhoto = await compressImageToSafePayload(logPhoto, 560, 45000);
           } catch {}
         }
         const sanitizedLog: MeetingLog = {
@@ -521,7 +441,10 @@ export default function CellGroup() {
           photoUrl: logPhoto || null
         };
         const currentGroup = groups.find(g => g.id === finalGroupId);
-        const updatedLogs = [...(currentGroup?.meetingLogs || []), sanitizedLog];
+        const updatedLogs = await optimizeMeetingLogsForFirestore(
+          [...(currentGroup?.meetingLogs || []), sanitizedLog],
+          550000
+        );
         await updateCellGroupLogs(finalGroupId, updatedLogs);
       }
     },
@@ -1032,18 +955,23 @@ export default function CellGroup() {
                       </button>
                     )}
                   </div>
-                  <div 
-                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${photoUrl ? 'border-[#D4A373] bg-[#FAFAFA]' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
-                    onClick={() => fileInputRef.current?.click()}
-                    style={{ cursor: 'pointer' }}
+                  <label 
+                    className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors cursor-pointer ${photoUrl ? 'border-[#D4A373] bg-[#FAFAFA]' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
                   >
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="sr-only" 
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
                     <div className="space-y-1 text-center w-full">
                       {uploadProgress['group'] !== undefined ? (
                         <div className="w-full max-w-sm mx-auto">
                           <div className="flex justify-between text-sm mb-1 text-[#0F2C59] font-medium">
                             <span className="flex items-center gap-1.5">
                               <Loader2 size={14} className="animate-spin text-[#C82323]" />
-                              Optimizing & uploading...
+                              Optimizing mobile photo...
                             </span>
                             <span>{Math.round(uploadProgress['group'])}%</span>
                           </div>
@@ -1052,33 +980,29 @@ export default function CellGroup() {
                           </div>
                         </div>
                       ) : photoUrl ? (
-                        <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden shadow-xs">
-                          <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                            <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
+                        <div className="space-y-2">
+                          <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden shadow-xs">
+                            <img src={photoUrl} alt="Preview" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
+                            </div>
                           </div>
+                          <p className="text-xs font-semibold text-green-700">✓ Photo optimized & ready to save</p>
                         </div>
                       ) : (
                         <>
                           <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
                           <div className="flex text-sm text-gray-600 justify-center">
-                            <span className="relative cursor-pointer bg-transparent rounded-md font-medium text-[#C82323] hover:text-[#D4A373] focus-within:outline-none">
-                              Upload a photo
+                            <span className="relative bg-transparent rounded-md font-medium text-[#C82323] hover:text-[#D4A373]">
+                              Tap to upload a photo
                             </span>
                             <p className="pl-1">or take a picture</p>
                           </div>
-                          <p className="text-xs text-gray-500">JPG, PNG, WebP or Camera photo (auto-compressed)</p>
+                          <p className="text-xs text-gray-500">Supports iPhone (HEIC), Android, JPG, PNG & high-res camera photos</p>
                         </>
                       )}
                     </div>
-                  </div>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef} 
-                    className="hidden" 
-                    accept="image/*,image/jpeg,image/png,image/webp"
-                    onChange={handleImageUpload}
-                  />
+                  </label>
 
                   {/* Church Fellowship Preset Photo Selector */}
                   <div className="mt-3.5">
@@ -1140,45 +1064,48 @@ export default function CellGroup() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-amber-900 mb-1">Upload Meeting Photo <span className="text-amber-700 font-normal">(JPG, PNG, WebP)</span></label>
-                      <div 
-                        className={`flex justify-center px-6 py-4 border-2 border-dashed rounded-xl ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-amber-300 hover:border-amber-400 bg-white'}`}
-                        onClick={() => meetingPhotoInputRef.current?.click()}
-                        style={{ cursor: 'pointer' }}
+                      <label className="block text-sm font-medium text-amber-900 mb-1">Upload Meeting Photo <span className="text-amber-700 font-normal">(iPhone, Android, JPG, PNG)</span></label>
+                      <label 
+                        className={`flex justify-center px-6 py-4 border-2 border-dashed rounded-xl cursor-pointer ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-amber-300 hover:border-amber-400 bg-white'}`}
                       >
+                        <input 
+                          type="file" 
+                          className="sr-only" 
+                          accept="image/*"
+                          onChange={handleMeetingPhotoUpload}
+                        />
                         <div className="space-y-1 text-center w-full">
                           {uploadProgress['meeting'] !== undefined ? (
                             <div className="w-full max-w-sm mx-auto">
-                              <div className="flex justify-between text-sm mb-1 text-amber-900">
-                                <span>Uploading...</span>
+                              <div className="flex justify-between text-sm mb-1 text-amber-900 font-medium">
+                                <span className="flex items-center gap-1.5">
+                                  <Loader2 size={14} className="animate-spin text-amber-700" />
+                                  Optimizing mobile photo...
+                                </span>
                                 <span>{Math.round(uploadProgress['meeting'])}%</span>
                               </div>
                               <div className="w-full bg-amber-200 rounded-full h-2">
-                                <div className="bg-amber-600 h-2 rounded-full" style={{ width: `${uploadProgress['meeting']}%` }}></div>
+                                <div className="bg-amber-600 h-2 rounded-full transition-all duration-200" style={{ width: `${uploadProgress['meeting']}%` }}></div>
                               </div>
                             </div>
                           ) : meetingPhotoUrl ? (
-                            <div className="relative w-full max-w-sm mx-auto h-32 rounded-lg overflow-hidden">
-                              <img src={meetingPhotoUrl} alt="Meeting Proof" className="w-full h-full object-cover" />
-                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
+                            <div className="space-y-1.5">
+                              <div className="relative w-full max-w-sm mx-auto h-32 rounded-lg overflow-hidden">
+                                <img src={meetingPhotoUrl} alt="Meeting Proof" className="w-full h-full object-cover" />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                  <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
+                                </div>
                               </div>
+                              <p className="text-xs font-semibold text-green-700">✓ Photo optimized & ready</p>
                             </div>
                           ) : (
                             <div className="flex flex-col items-center">
                               <Upload className="h-8 w-8 text-amber-600 mb-2" />
-                              <span className="text-sm font-medium text-amber-800">Upload Meeting Photo</span>
+                              <span className="text-sm font-medium text-amber-800">Tap to Upload Meeting Photo</span>
                             </div>
                           )}
                         </div>
-                      </div>
-                      <input 
-                        type="file" 
-                        ref={meetingPhotoInputRef} 
-                        className="hidden" 
-                        accept="image/*,image/jpeg,image/png,image/webp"
-                        onChange={handleMeetingPhotoUpload}
-                      />
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -1331,10 +1258,22 @@ export default function CellGroup() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!leaderName || !location || members.length === 0}
-                  className="px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!leaderName || !location || members.length === 0 || uploadProgress['group'] !== undefined || uploadProgress['meeting'] !== undefined || saveGroupMutation.isPending}
+                  className="px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
-                  {editingGroupId ? "Save Changes" : "Create Group"}
+                  {(uploadProgress['group'] !== undefined || uploadProgress['meeting'] !== undefined) ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Optimizing Photo...</span>
+                    </>
+                  ) : saveGroupMutation.isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Saving...</span>
+                    </>
+                  ) : (
+                    <span>{editingGroupId ? "Save Changes" : "Create Group"}</span>
+                  )}
                 </button>
               </div>
 
@@ -1399,45 +1338,63 @@ export default function CellGroup() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Upload Meeting Photo <span className="text-gray-500 font-normal">(JPG, PNG, WebP)</span></label>
-                  <div 
-                    className={`flex justify-center px-6 py-4 border-2 border-dashed rounded-xl ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
-                    onClick={() => meetingPhotoInputRef.current?.click()}
-                    style={{ cursor: 'pointer' }}
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Upload Meeting Photo <span className="text-gray-500 font-normal">(iPhone, Android, JPG, PNG)</span>
+                    </label>
+                    {meetingPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setMeetingPhotoUrl(null)}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium cursor-pointer"
+                      >
+                        Remove Photo
+                      </button>
+                    )}
+                  </div>
+                  <label 
+                    className={`flex justify-center px-6 py-5 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${meetingPhotoUrl ? 'border-amber-400 bg-white' : 'border-gray-300 hover:border-gray-400 bg-[#FAFAFA]'}`}
                   >
+                    <input 
+                      type="file" 
+                      ref={meetingPhotoInputRef} 
+                      className="sr-only" 
+                      accept="image/*"
+                      onChange={handleMeetingPhotoUpload}
+                    />
                     <div className="space-y-1 text-center w-full">
                       {uploadProgress['meeting'] !== undefined ? (
-                        <div className="w-full max-w-sm mx-auto">
-                          <div className="flex justify-between text-sm mb-1 text-amber-900">
-                            <span>Uploading...</span>
+                        <div className="w-full max-w-sm mx-auto py-2">
+                          <div className="flex justify-between text-sm mb-1.5 text-amber-900 font-medium">
+                            <span className="flex items-center gap-1.5">
+                              <Loader2 size={15} className="animate-spin text-[#C82323]" />
+                              Optimizing high-res mobile photo...
+                            </span>
                             <span>{Math.round(uploadProgress['meeting'])}%</span>
                           </div>
-                          <div className="w-full bg-amber-200 rounded-full h-2">
-                            <div className="bg-amber-600 h-2 rounded-full" style={{ width: `${uploadProgress['meeting']}%` }}></div>
+                          <div className="w-full bg-amber-200 rounded-full h-2.5 overflow-hidden">
+                            <div className="bg-[#C82323] h-2.5 rounded-full transition-all duration-200" style={{ width: `${uploadProgress['meeting']}%` }}></div>
                           </div>
                         </div>
                       ) : meetingPhotoUrl ? (
-                        <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden">
-                          <img src={meetingPhotoUrl} alt="Meeting Proof" className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                            <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Change Photo</span>
+                        <div className="space-y-2">
+                          <div className="relative w-full max-w-sm mx-auto h-40 rounded-lg overflow-hidden shadow-xs">
+                            <img src={meetingPhotoUrl} alt="Meeting Proof" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                              <span className="text-white text-sm font-medium flex items-center"><Upload size={16} className="mr-2"/> Tap to Change Photo</span>
+                            </div>
                           </div>
+                          <p className="text-xs font-semibold text-green-700">✓ Photo optimized & ready to save</p>
                         </div>
                       ) : (
                         <div className="flex flex-col items-center">
                           <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                          <span className="text-sm font-medium text-[#C82323]">Upload a photo from the meeting</span>
+                          <span className="text-sm font-semibold text-[#C82323]">Tap to upload a photo from the meeting</span>
+                          <span className="text-xs text-gray-500 mt-1">Auto-compresses iPhone & Android high-resolution photos</span>
                         </div>
                       )}
                     </div>
-                  </div>
-                  <input 
-                    type="file" 
-                    ref={meetingPhotoInputRef} 
-                    className="hidden" 
-                    accept="image/*,image/jpeg,image/png,image/webp"
-                    onChange={handleMeetingPhotoUpload}
-                  />
+                  </label>
                 </div>
 
                 <div>
@@ -1493,10 +1450,22 @@ export default function CellGroup() {
                 </button>
                 <button
                   type="submit"
-                  disabled={!meetingDate}
-                  className="px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!meetingDate || uploadProgress['meeting'] !== undefined || submitLogMutation.isPending}
+                  className="px-6 py-2.5 border border-transparent shadow-sm text-sm font-medium rounded-xl text-white bg-[#C82323] hover:bg-[#a11b1b] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
                 >
-                  {editingLogId ? "Update Report" : "Save Report"}
+                  {uploadProgress['meeting'] !== undefined ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Optimizing Photo...</span>
+                    </>
+                  ) : submitLogMutation.isPending ? (
+                    <>
+                      <Loader2 size={16} className="animate-spin" />
+                      <span>Saving Report...</span>
+                    </>
+                  ) : (
+                    <span>{editingLogId ? "Update Report" : "Save Report"}</span>
+                  )}
                 </button>
               </div>
             </form>
