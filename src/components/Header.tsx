@@ -33,7 +33,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete, on
   useEffect(() => {
     try {
       const lastSeen = localStorage.getItem('skcci_last_seen_update');
-      if (lastSeen !== 'v1.4.0-sep-2026') {
+      if (lastSeen !== 'v1.5.0-manuals-pdf') {
         setHasUnreadUpdates(true);
       }
     } catch {
@@ -45,7 +45,7 @@ export default function Header({ activeTab, handleTabClick, is100DayComplete, on
     setIsWhatsNewOpen(true);
     setHasUnreadUpdates(false);
     try {
-      localStorage.setItem('skcci_last_seen_update', 'v1.4.0-sep-2026');
+      localStorage.setItem('skcci_last_seen_update', 'v1.5.0-manuals-pdf');
     } catch {
       // ignore
     }

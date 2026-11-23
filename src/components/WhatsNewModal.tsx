@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, X, ArrowRight, CheckCircle2, Shield, Film, BookOpen, Music, Trash2, Globe, GraduationCap } from 'lucide-react';
+import { Sparkles, X, ArrowRight, CheckCircle2, Shield, Film, BookOpen, Music, Trash2, Globe, GraduationCap, Printer } from 'lucide-react';
 import { TabItem } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -27,6 +27,30 @@ interface UpdateItem {
 }
 
 const UPDATES: UpdateItem[] = [
+  {
+    id: 'manuals-print-pdf-tagalog',
+    version: 'v1.5.0',
+    date: 'November 2026',
+    tag: 'NEW',
+    titleEn: 'Printable & Downloadable PDF Manuals + Full Tagalog Support',
+    titleTl: 'Napi-print at Nada-download na PDF Manuals + Salin sa Tagalog',
+    descriptionEn: 'Our Evangelism, Consolidation, and Envisioning manuals can now be printed or downloaded as clean PDF files—available in both English and Tagalog, with senior-friendly Large Print options.',
+    descriptionTl: 'Maaari nang i-print o i-download bilang malinaw na PDF file ang ating mga manwal sa Ebanghelismo, Konsolidasyon, at Pagbibigay-Paningin—available sa Ingles at Tagalog, at may malalaking letra para sa mga nakatatanda.',
+    highlightsEn: [
+      'Flexible Export: Print or download per lesson, per section, or the complete manual',
+      'Senior-Friendly Reading: Includes Large Print text size and optional writing lines for Reflection Questions',
+      'Full Tagalog Translation: Switch seamlessly between English and Tagalog across all 29 lessons'
+    ],
+    highlightsTl: [
+      'Piliin ang Kailangan: I-print o i-download bawat aralin, bawat seksyon, o ang buong manwal',
+      'Madaling Basahin: May opsyon para sa Malaking Letra (Large Print) at guhit na sulatan sa mga Tanong sa Pagninilay',
+      'Kumpletong Salin sa Tagalog: Mabilis na makakalipat sa Ingles at Tagalog para sa lahat ng 29 aralin'
+    ],
+    icon: <Printer size={18} className="text-[#0F2C59]" />,
+    actionTab: 'Manuals',
+    actionLabelEn: 'Open Manuals',
+    actionLabelTl: 'Buksan ang Manuals'
+  },
   {
     id: 'formal-education-directory',
     version: 'v1.4.1',
@@ -221,7 +245,7 @@ export default function WhatsNewModal({ isOpen, onClose, onNavigate }: WhatsNewM
                   {isTagalog ? 'Mga Bagong Update' : "What's New in SKCCI"}
                 </h2>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                  Latest v1.4.0
+                  Latest v1.5.0
                 </span>
               </div>
               <p className="text-xs text-blue-100/80 mt-0.5">
