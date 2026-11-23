@@ -337,17 +337,6 @@ export default function ManualsReader() {
 
         {/* Main Content */}
         <div className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-12 py-8 sm:py-12">
-          <div className="mb-8 flex justify-center md:justify-start">
-            <img
-              src="/churchlogo2.png"
-              alt="Savior-King Commission Church"
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-              }}
-              className="h-10 w-auto object-contain"
-            />
-          </div>
-
           {/* Mobile Lesson Selector */}
           <div className="md:hidden mb-6">
             <label className={`block text-sm font-bold font-serif mb-2 ${headingClass}`}>
@@ -380,17 +369,21 @@ export default function ManualsReader() {
 
           {/* Controls Toolbar */}
           <div
-            className={`flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl mb-6 border ${borderClass} ${cardBgClass} shadow-sm`}
+            className={`flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5 sm:gap-3 px-4 py-3 rounded-2xl mb-6 border ${borderClass} ${cardBgClass} shadow-sm`}
           >
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#D4A373]/20 text-[#0F2C59]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[#D4A373]/20 text-[#0F2C59] whitespace-nowrap shrink-0">
                 {getCategoryLabel(lesson.category, activeLang)}
               </span>
-              <span className="text-sm text-gray-500 font-medium">{lesson.readingTime}</span>
+              <span className="text-sm text-gray-500 font-medium whitespace-nowrap truncate">
+                {isTagalog
+                  ? lesson.readingTime.replace(/\s*(na\s+)?minutong\s+pagbasa/i, ' min. pagbasa')
+                  : lesson.readingTime}
+              </span>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+              <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 shrink-0">
                 <button
                   onClick={() => setFontSize('sm')}
                   className={`p-1.5 rounded-md cursor-pointer ${
@@ -428,7 +421,7 @@ export default function ManualsReader() {
 
               <button
                 onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-                className={`p-2 rounded-lg border ${borderClass} hover:bg-[#FAFAFA] dark:hover:bg-gray-700 transition-colors cursor-pointer`}
+                className={`p-2 rounded-lg border ${borderClass} hover:bg-[#FAFAFA] dark:hover:bg-gray-700 transition-colors cursor-pointer shrink-0`}
                 title={ui.toggleTheme}
               >
                 {theme === 'light' ? (
@@ -440,7 +433,7 @@ export default function ManualsReader() {
 
               <button
                 onClick={() => setIsPrintModalOpen(true)}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold rounded-lg border transition-colors cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-lg border transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   theme === 'light'
                     ? 'border-[#0F2C59]/25 text-[#0F2C59] bg-slate-50 hover:bg-[#0F2C59] hover:text-white'
                     : 'border-amber-400/40 text-amber-300 bg-gray-800 hover:bg-amber-400/20'
@@ -454,7 +447,7 @@ export default function ManualsReader() {
               <button
                 onClick={() => markLessonComplete(sourceLesson.id)}
                 disabled={isCompleted}
-                className={`inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                className={`inline-flex items-center px-3.5 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 ${
                   isCompleted
                     ? 'bg-green-100 text-green-800 cursor-default'
                     : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-[#C82323] dark:hover:bg-[#a11b1b] cursor-pointer'
@@ -462,7 +455,7 @@ export default function ManualsReader() {
               >
                 {isCompleted ? (
                   <>
-                    <CheckCircle2 size={16} className="mr-2" /> {ui.completed}
+                    <CheckCircle2 size={16} className="mr-1.5" /> {ui.completed}
                   </>
                 ) : (
                   ui.markComplete

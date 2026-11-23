@@ -106,7 +106,7 @@ export const MANUAL_UI_TEXT = {
     prayerAndApplication: 'Panalangin at Pagsasabuhay',
     weeklyChallenge: 'Hamon sa Linggong Ito',
     selectLesson: 'Pumili ng Aralin',
-    markComplete: 'Markahan bilang Tapos',
+    markComplete: 'Markahang Tapos',
     completed: 'Natapos na',
     commitmentMade: 'Nangako Na',
     amenICommit: 'Amen, Nangangako Ako!',
