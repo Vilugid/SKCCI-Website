@@ -25,8 +25,11 @@ import { useOnboardingTour } from './components/OnboardingTour';
 import { TabItem } from './types';
 import { useSyncedState } from './hooks/useSyncedState';
 import { useAuth } from './contexts/AuthContext';
-import { Toaster } from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 import { MapPin } from 'lucide-react';
+import { isCellLeaderAdmin } from './utils/roles';
+import { clearLegacyManualBrowserCache } from './utils/manualTranslation';
+import { purgeAllFirestoreTagalogLessons } from './api/manualTranslations';
 
 export const tabToParam: Record<TabItem, string> = {
   'Home': 'home',
@@ -101,7 +104,45 @@ export const getTabFromUrl = (): TabItem => {
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabItem>(getTabFromUrl);
   const [showLockModal, setShowLockModal] = useState(false);
-  const { loading } = useAuth();
+  const { user, loading } = useAuth();
+  const firestorePurgeAttemptedRef = useRef(false);
+
+  // Clear any stale browser localStorage cache for Tagalog manuals
+  useEffect(() => {
+    clearLegacyManualBrowserCache();
+  }, []);
+
+  // One-time cleanup: delete legacy manual_translations_fil records from Firestore when an admin opens the app
+  useEffect(() => {
+    if (loading || !user || !isCellLeaderAdmin(user.email) || firestorePurgeAttemptedRef.current) {
+      return;
+    }
+    try {
+      if (window.localStorage.getItem('skcci_manual_fil_firestore_purged_v1') === 'done') {
+        return;
+      }
+    } catch {
+      // continue if localStorage is unavailable
+    }
+
+    firestorePurgeAttemptedRef.current = true;
+    purgeAllFirestoreTagalogLessons()
+      .then((deletedIds) => {
+        try {
+          window.localStorage.setItem('skcci_manual_fil_firestore_purged_v1', 'done');
+        } catch {
+          // ignore storage errors
+        }
+        if (deletedIds.length > 0) {
+          toast.success(
+            `Removed ${deletedIds.length} legacy Tagalog manual record${deletedIds.length === 1 ? '' : 's'} from Firestore.`
+          );
+        }
+      })
+      .catch((err) => {
+        console.warn('[App] Could not purge legacy manual_translations_fil records:', err);
+      });
+  }, [loading, user]);
   
   // Use synced state for progress
   const [progressArray, setProgressArray] = useSyncedState<number[]>('sk_100_day_progress', []);
@@ -195,8 +236,10 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-white overflow-x-clip w-full">
-      <Toaster position="bottom-right" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff' } }} />
+    <div className="min-h-screen flex flex-col bg-white overflow-x-clip w-full print:min-h-0 print:block print:overflow-visible">
+      <div className="print:hidden">
+        <Toaster position="bottom-right" toastOptions={{ duration: 4000, style: { background: '#333', color: '#fff' } }} />
+      </div>
       <Header 
         activeTab={activeTab} 
         handleTabClick={handleTabClick} 
@@ -204,9 +247,9 @@ export default function App() {
         onStartTour={startTour}
       />
       {/* Spacer so page content flows immediately below the frozen top header without jump or overlap */}
-      <div className="h-16 sm:h-20 lg:h-24 w-full flex-shrink-0" aria-hidden="true" />
+      <div className="h-16 sm:h-20 lg:h-24 w-full flex-shrink-0 print:hidden" aria-hidden="true" />
       
-      <main className="flex-grow w-full overflow-x-clip">
+      <main className="flex-grow w-full overflow-x-clip print:overflow-visible">
         {activeTab === 'Home' && (
           <>
             <Hero handleTabClick={handleTabClick} />
@@ -324,7 +367,9 @@ export default function App() {
       <Footer handleTabClick={handleTabClick} />
 
       {/* Floating Docked Virtual Church Usher */}
-      <HannahChat handleTabClick={handleTabClick} />
+      <div className="print:hidden">
+        <HannahChat handleTabClick={handleTabClick} />
+      </div>
 
       <LockModal 
         isOpen={showLockModal} 

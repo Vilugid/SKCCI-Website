@@ -2,19 +2,57 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function isSuperAdmin() {
-      return request.auth != null && request.auth.token.email == 'captainmarkvil@gmail.com';
+      return request.auth != null && request.auth.token.email == 'captainmarkvil@gmail.com' && request.auth.token.email_verified == true;
     }
     
     function isCellLeaderAdmin() {
-      return isSuperAdmin() || (request.auth != null && request.auth.token.email == 'isalynmaravilla13@gmail.com');
+      return isSuperAdmin() || (request.auth != null && request.auth.token.email == 'isalynmaravilla13@gmail.com' && request.auth.token.email_verified == true);
     }
 
     function isEventAdmin() {
-      return isSuperAdmin() || (request.auth != null && (request.auth.token.email == 'beaangelnicole.mendoza@gmail.com' || request.auth.token.email == 'beaangelnicole.mendoza@gmail.con' || request.auth.token.email == 'lzvmndmendoza@gmail.com' || request.auth.token.email == 'martin.loves17@gmail.com' || request.auth.token.email == 'mendoza.biancangela@gmail.com'));
+      return isSuperAdmin() || (request.auth != null && request.auth.token.email_verified == true && (request.auth.token.email == 'beaangelnicole.mendoza@gmail.com' || request.auth.token.email == 'beaangelnicole.mendoza@gmail.con' || request.auth.token.email == 'lzvmndmendoza@gmail.com' || request.auth.token.email == 'martin.loves17@gmail.com' || request.auth.token.email == 'mendoza.biancangela@gmail.com'));
     }
 
     function isPrayerAdmin() {
-      return isSuperAdmin() || (request.auth != null && request.auth.token.email == 'lzvmndmendoza@gmail.com');
+      return isSuperAdmin() || (request.auth != null && request.auth.token.email == 'lzvmndmendoza@gmail.com' && request.auth.token.email_verified == true);
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidManualTranslation(data, lessonId) {
+      return data.keys().hasAll([
+        'id', 'title', 'category', 'readingTime', 'scriptureFocus',
+        'objectives', 'teachingSections', 'reflectionQuestions',
+        'prayer', 'challenge', 'source', 'updatedBy', 'updatedByUid', 'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'id', 'title', 'category', 'readingTime', 'scriptureFocus',
+        'objectives', 'teachingSections', 'reflectionQuestions',
+        'prayer', 'challenge', 'source', 'updatedBy', 'updatedByUid', 'updatedAt'
+      ])
+      && data.id is string && data.id == lessonId && data.id.size() <= 100
+      && data.title is string && data.title.size() >= 1 && data.title.size() <= 300
+      && data.category in ['Evangelism', 'Consolidation', 'Envisioning']
+      && data.readingTime is string && data.readingTime.size() <= 60
+      && data.scriptureFocus is map
+      && data.scriptureFocus.keys().hasAll(['reference', 'text'])
+      && data.scriptureFocus.keys().hasOnly(['reference', 'text'])
+      && data.scriptureFocus.reference is string && data.scriptureFocus.reference.size() <= 200
+      && data.scriptureFocus.text is string && data.scriptureFocus.text.size() <= 3000
+      && data.objectives is list && data.objectives.size() <= 20
+      && (data.objectives.size() == 0 || data.objectives[0] is string)
+      && data.teachingSections is list && data.teachingSections.size() >= 1 && data.teachingSections.size() <= 30
+      && data.teachingSections[0] is map
+      && data.reflectionQuestions is list && data.reflectionQuestions.size() <= 20
+      && (data.reflectionQuestions.size() == 0 || data.reflectionQuestions[0] is string)
+      && data.prayer is string && data.prayer.size() <= 4000
+      && data.challenge is string && data.challenge.size() <= 4000
+      && data.source in ['official', 'ai']
+      && data.updatedBy is string && data.updatedBy.size() <= 200
+      && data.updatedByUid is string && data.updatedByUid == request.auth.uid
+      && data.updatedAt == request.time;
     }
 
     // Allow super admin to access everything
@@ -129,6 +167,13 @@ service cloud.firestore {
     
     match /fasting_commitments/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /manual_translations_fil/{lessonId} {
+      allow get: if isValidId(lessonId);
+      allow list: if true;
+      allow create, update: if isCellLeaderAdmin() && isValidId(lessonId) && isValidManualTranslation(request.resource.data, lessonId);
+      allow delete: if isCellLeaderAdmin() && isValidId(lessonId);
     }
   }
 }

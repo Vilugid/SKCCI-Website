@@ -10,8 +10,8 @@ export default function Ministries({ handleTabClick }: { handleTabClick?: (tab: 
     {
       name: isTagalog ? 'Ministri ng mga Bata' : 'Kids Ministry',
       description: isTagalog
-        ? 'Pangangalaga at pagtuturo sa susunod na henerasyon sa pag-ibig at katotohanan ng Diyos sa masaya at ligtas na kapaligiran.'
-        : 'Nurturing the next generation with the love and truth of God in a fun, safe environment.',
+        ? 'Pangangalaga at pagtuturo sa susunod na henerasyon sa pag-ibig at katotohanan ng DIYOS sa masaya at ligtas na kapaligiran.'
+        : 'Nurturing the next generation with the love and truth of GOD in a fun, safe environment.',
       icon: Baby,
       color: 'bg-pink-100 text-pink-600',
       isCell: false,
@@ -19,8 +19,8 @@ export default function Ministries({ handleTabClick }: { handleTabClick?: (tab: 
     {
       name: isTagalog ? 'Ministri ng Kabataan' : 'Youth Ministry',
       description: isTagalog
-        ? 'Pinalalakas ang kabataan upang mamuhay nang may katapangan para kay Kristo at bumuo ng matibay na samahang nakaugat sa pananampalataya.'
-        : 'Empowering young people to live boldly for Christ and build strong, faith-based friendships.',
+        ? 'Pinalalakas ang kabataan upang mamuhay nang may katapangan para kay KRISTO at bumuo ng matibay na samahang nakaugat sa pananampalataya.'
+        : 'Empowering young people to live boldly for CHRIST and build strong, faith-based friendships.',
       icon: GraduationCap,
       color: 'bg-purple-100 text-purple-600',
       isCell: false,
@@ -28,7 +28,7 @@ export default function Ministries({ handleTabClick }: { handleTabClick?: (tab: 
     {
       name: isTagalog ? 'Mga Batang Propesyonal' : 'Young Professionals',
       description: isTagalog
-        ? 'Pagtutulungan sa karera, buhay, at pananampalataya bilang mga manggagawa at propesyonal na naglilingkod sa Diyos.'
+        ? 'Pagtutulungan sa karera, buhay, at pananampalataya bilang mga manggagawa at propesyonal na naglilingkod sa DIYOS.'
         : 'Navigating career, life, and faith together as young adults in the workplace.',
       icon: Users,
       color: 'bg-blue-100 text-blue-600',

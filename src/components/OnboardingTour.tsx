@@ -48,7 +48,7 @@ export function useOnboardingTour({ activeTab, isLoading, onNavigateTab }: UseOn
         popover: {
           title: isTagalog
             ? 'Maligayang Pagdating sa SKCCI!'
-            : 'Welcome to Savior-King Commission Church',
+            : 'Welcome to SAVIOR-KING Commission Church',
           description: isTagalog
             ? 'Ang Iyong Simbahan, Ang Iyong Pamilya. Samahan kami sa isang mabilis na gabay upang matuklasan ang mga tampok ng ating portal.'
             : 'Your Church, Your Family. Take a quick walkthrough of our digital home to explore services, Bible plans, events, and prayer resources.',

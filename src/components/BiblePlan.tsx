@@ -247,8 +247,8 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: lang === 'tl'
-            ? 'Panalangin para sa Karunungan at Pang-unawa sa Pagbabasa ng Salita ng Diyos'
-            : 'Prayer for Wisdom and Understanding in Reading the Word of God',
+            ? 'Panalangin para sa Karunungan at Pang-unawa sa Pagbabasa ng Salita ng DIYOS'
+            : 'Prayer for Wisdom and Understanding in Reading the Word of GOD',
           day: `Day ${selectedDay} of 100 (${reading.book} ${reading.chapter})`,
           language: lang,
           variation: varCount
@@ -265,9 +265,9 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
     } catch (err) {
       console.error('Prayer fetch error:', err);
       if (lang === 'tl') {
-        setSamplePrayer('Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong Banal na Espiritu upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.');
+        setSamplePrayer('Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong BANAL NA ESPIRITU upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.');
       } else {
-        setSamplePrayer('Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your Holy Spirit so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS\' Name, Amen.');
+        setSamplePrayer('Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your HOLY SPIRIT so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS\' Name, Amen.');
       }
     } finally {
       setIsPrayerLoading(false);
@@ -645,7 +645,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
 
                               <div className="mt-3 pt-2.5 flex items-center justify-between border-t border-amber-200">
                                 <span className="text-[10px] text-amber-950 font-medium">
-                                  {isTagalog ? 'Ipanalangin bago buksan ang Salita ng Diyos' : 'Pray sincerely before opening the Word of God'}
+                                  {isTagalog ? 'Ipanalangin bago buksan ang Salita ng DIYOS' : 'Pray sincerely before opening the Word of GOD'}
                                 </span>
 
                                 {!isWisdomPrayed ? (
@@ -924,7 +924,7 @@ export default function BiblePlan({ progressArray, setProgressArray, is100DayCom
                 onClick={() => setShowCelebration(false)}
                 className="w-full py-3.5 px-6 rounded-xl bg-[#C82323] hover:bg-[#a11b1b] text-white font-medium text-lg transition-colors shadow-sm"
               >
-                Praise the Lord
+                Praise the LORD
               </button>
             </div>
           </div>

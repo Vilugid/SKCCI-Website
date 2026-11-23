@@ -390,8 +390,8 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: lang === 'tl'
-            ? 'Panalangin para sa Karunungan at Pang-unawa sa Pagbabasa ng Salita ng Diyos'
-            : 'Prayer for Wisdom and Understanding in Reading the Word of God',
+            ? 'Panalangin para sa Karunungan at Pang-unawa sa Pagbabasa ng Salita ng DIYOS'
+            : 'Prayer for Wisdom and Understanding in Reading the Word of GOD',
           day: `Day ${viewedDay} of 365 (${reading?.ot || ''} & ${reading?.nt || ''})`,
           language: lang,
           variation: varCount
@@ -408,9 +408,9 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
     } catch (err) {
       console.error('Prayer fetch error:', err);
       if (lang === 'tl') {
-        setSamplePrayer('Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong Banal na Espiritu upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.');
+        setSamplePrayer('Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong BANAL NA ESPIRITU upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.');
       } else {
-        setSamplePrayer('Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your Holy Spirit so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS\' Name, Amen.');
+        setSamplePrayer('Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your HOLY SPIRIT so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS\' Name, Amen.');
       }
     } finally {
       setIsPrayerLoading(false);
@@ -765,7 +765,7 @@ export default function BiblePlan365({ is100DayComplete: propIs100DayComplete }:
                                 <span className={`text-[10px] font-medium ${
                                   theme === 'light' ? 'text-amber-950' : 'text-amber-300'
                                 }`}>
-                                  {isTagalog ? 'Ipanalangin bago buksan ang Salita ng Diyos' : 'Pray sincerely before opening the Word of God'}
+                                  {isTagalog ? 'Ipanalangin bago buksan ang Salita ng DIYOS' : 'Pray sincerely before opening the Word of GOD'}
                                 </span>
 
                                 {!isWisdomPrayed ? (

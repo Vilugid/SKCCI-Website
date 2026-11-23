@@ -231,6 +231,60 @@
         "createdAt": { "type": "string" }
       },
       "required": ["title", "dateTime", "location", "capacity"]
+    },
+    "ManualTranslation": {
+      "title": "Tagalog Discipleship Manual Translation",
+      "description": "Permanent Tagalog translation of a discipleship manual lesson stored in Firestore for instant access across all devices",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 100, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "title": { "type": "string", "maxLength": 300 },
+        "category": { "type": "string", "enum": ["Evangelism", "Consolidation", "Envisioning"] },
+        "readingTime": { "type": "string", "maxLength": 60 },
+        "scriptureFocus": {
+          "type": "object",
+          "properties": {
+            "reference": { "type": "string", "maxLength": 200 },
+            "text": { "type": "string", "maxLength": 3000 }
+          }
+        },
+        "objectives": { "type": "array", "items": { "type": "string" } },
+        "teachingSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "maxLength": 100 },
+              "number": { "type": "number" },
+              "title": { "type": "string", "maxLength": 300 },
+              "paragraphs": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "reflectionQuestions": { "type": "array", "items": { "type": "string" } },
+        "prayer": { "type": "string", "maxLength": 4000 },
+        "challenge": { "type": "string", "maxLength": 4000 },
+        "source": { "type": "string", "enum": ["official", "ai"] },
+        "updatedBy": { "type": "string", "maxLength": 200 },
+        "updatedByUid": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "id",
+        "title",
+        "category",
+        "readingTime",
+        "scriptureFocus",
+        "objectives",
+        "teachingSections",
+        "reflectionQuestions",
+        "prayer",
+        "challenge",
+        "source",
+        "updatedBy",
+        "updatedByUid",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -292,6 +346,10 @@
     },
     "/bible_plan_videos/{dayNumber}": {
       "description": "Daily Google Drive explainer videos for the 365-day Bible reading plan"
+    },
+    "/manual_translations_fil/{lessonId}": {
+      "schema": "#/entities/ManualTranslation",
+      "description": "Permanent Tagalog translations of discipleship manual lessons (official church-uploaded or saved AI translations)"
     }
   }
 }

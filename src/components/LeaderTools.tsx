@@ -199,7 +199,7 @@ export default function LeaderTools() {
   // Global Fallback Memory Verse State (Real-time sync with cell_leader_tools/weekly_memory_verse)
   const [globalFallbackVerse, setGlobalFallbackVerse] = useState<MemoryVerseData>({
     reference: 'Philippians 4:6-7',
-    text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+    text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.',
     translation: 'NIV',
     memorizedUserIds: [],
   });
@@ -258,14 +258,14 @@ export default function LeaderTools() {
     // 4. Default for records without an assigned memory verse yet
     return {
       reference: 'Philippians 4:6-7',
-      text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+      text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.',
       translation: 'NIV',
       memorizedUserIds: [],
     };
   }, [selectedRecord, globalFallbackVerse, records]);
 
   const [editVerseRef, setEditVerseRef] = useState('Philippians 4:6-7');
-  const [editVerseText, setEditVerseText] = useState('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.');
+  const [editVerseText, setEditVerseText] = useState('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.');
   const [editVerseTranslation, setEditVerseTranslation] = useState('NIV');
   const [isTogglingVerse, setIsTogglingVerse] = useState(false);
 
@@ -600,7 +600,7 @@ export default function LeaderTools() {
     
     // Fresh memory verse defaults for the new service date
     setEditVerseRef('Philippians 4:6-7');
-    setEditVerseText('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.');
+    setEditVerseText('Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.');
     setEditVerseTranslation('NIV');
 
     setCollapsedSections({

@@ -150,7 +150,7 @@ export const subscribeToMemoryVerse = (callback: (data: MemoryVerseData) => void
       const data = docSnap.data();
       callback({
         reference: data.reference || 'Philippians 4:6-7',
-        text: data.text || 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+        text: data.text || 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.',
         translation: data.translation || 'NIV',
         memorizedUserIds: Array.isArray(data.memorizedUserIds) ? data.memorizedUserIds : [],
         updatedBy: data.updatedBy,
@@ -159,7 +159,7 @@ export const subscribeToMemoryVerse = (callback: (data: MemoryVerseData) => void
     } else {
       callback({
         reference: 'Philippians 4:6-7',
-        text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to God. And the peace of God, which transcends all understanding, will guard your hearts and your minds in Christ Jesus.',
+        text: 'Do not be anxious about anything, but in every situation, by prayer and petition, with thanksgiving, present your requests to GOD. And the peace of GOD, which transcends all understanding, will guard your hearts and your minds in CHRIST JESUS.',
         translation: 'NIV',
         memorizedUserIds: []
       });

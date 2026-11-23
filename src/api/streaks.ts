@@ -509,7 +509,7 @@ export const recordReadingCompletion = async (
       } else {
         history.push({ date: effectiveDate, status: 'completed', dayNumber });
       }
-      alertMessage = `📖 Past reading recorded! Keep up the faithful walk with God!`;
+      alertMessage = `📖 Past reading recorded! Keep up the faithful walk with GOD!`;
     } else {
       // Gap with no shields left
       isStreakReset = true;
@@ -519,7 +519,7 @@ export const recordReadingCompletion = async (
       } else {
         history.push({ date: effectiveDate, status: 'completed', dayNumber });
       }
-      alertMessage = "Streak reset to 1 day. Welcome back to God's Word! 📖";
+      alertMessage = "Streak reset to 1 day. Welcome back to GOD'S Word! 📖";
     }
   }
 

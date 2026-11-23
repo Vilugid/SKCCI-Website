@@ -7,10 +7,10 @@ export const GOSPEL_CARDS: GospelCard[] = [
   { id: 'but', word: 'BUT', explanation: 'There is Hope' },
   { id: 'gift', word: 'Gift', explanation: 'Opposite of wages. Given freely out of love' },
   { id: 'god', word: 'GOD', explanation: 'The only One who can give this Gift' },
-  { id: 'eternal_life', word: 'Eternal Life', explanation: 'To be with God in heaven forever' },
-  { id: 'jesus_christ', word: 'JESUS CHRIST', explanation: 'The Son of God and the only One who can and is willing to pay for our sins' },
-  { id: 'lord_confession', word: 'Lord by Confession', explanation: 'Proclaiming that we are sinners, we cannot save ourselves, and only JESUS can save us' },
-  { id: 'lord_surrender', word: 'Lord by Surrender', explanation: 'Accepting JESUS as the primary authority in our lives' },
+  { id: 'eternal_life', word: 'Eternal Life', explanation: 'To be with GOD in heaven forever' },
+  { id: 'jesus_christ', word: 'JESUS CHRIST', explanation: 'The Son of GOD and the only One who can and is willing to pay for our sins' },
+  { id: 'lord_confession', word: 'LORD by Confession', explanation: 'Proclaiming that we are sinners, we cannot save ourselves, and only JESUS can save us' },
+  { id: 'lord_surrender', word: 'LORD by Surrender', explanation: 'Accepting JESUS as the primary authority in our lives' },
 ];
 
 const generatePlan = (): BiblePlanDay[] => {

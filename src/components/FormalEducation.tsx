@@ -46,7 +46,7 @@ const SLIDES = [
     title: 'Collaborative Study & Ministry Fellowship',
     titleTl: 'Sama-samang Pag-aaral at Samahan sa Ministeryo',
     desc: 'Pastors, church planters, and leaders growing together in rigorous biblical discussions.',
-    descTl: 'Mga pastor at cell leaders na sama-samang humuhubog sa Salita ng Diyos.',
+    descTl: 'Mga pastor at cell leaders na sama-samang humuhubog sa Salita ng DIYOS.',
     url: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1200&q=80'
   }
 ];
@@ -139,7 +139,7 @@ export default function FormalEducation({ handleTabClick }: FormalEducationProps
                 <p className="text-sm sm:text-base text-gray-600 mt-3 leading-relaxed">
                   {isTagalog
                     ? 'Ang pormal na teolohikong pag-aaral ay nagbibigay ng matibay na pundasyon sa hermeneutics, mga orihinal na wika ng Bibliya, sistematikong teolohiya, at praktikal na pamumuno upang makapaglingkod nang may kahusayan sa iglesya.'
-                    : 'Formal theological education provides rigorous training in biblical hermeneutics, systematic theology, church history, and pastoral ministry, equipping leaders to handle the Word of God with excellence.'}
+                    : 'Formal theological education provides rigorous training in biblical hermeneutics, systematic theology, church history, and pastoral ministry, equipping leaders to handle the Word of GOD with excellence.'}
                 </p>
               </div>
 
@@ -147,8 +147,8 @@ export default function FormalEducation({ handleTabClick }: FormalEducationProps
               <div className="mt-6 p-4 sm:p-5 rounded-2xl bg-[#FAFAFA] border border-gray-200/90">
                 <p className="text-xs sm:text-sm font-serif italic text-gray-700 leading-relaxed">
                   {isTagalog 
-                    ? '“Pagsikapan mong humarap sa Diyos bilang kalugud-lugod na manggagawa, walang dapat ikahiya, at tapat na nagtuturo ng salita ng katotohanan.”' 
-                    : '“Do your best to present yourself to God as one approved, a worker who does not need to be ashamed and who correctly handles the word of truth.”'}
+                    ? '“Pagsikapan mong humarap sa DIYOS bilang kalugud-lugod na manggagawa, walang dapat ikahiya, at tapat na nagtuturo ng salita ng katotohanan.”' 
+                    : '“Do your best to present yourself to GOD as one approved, a worker who does not need to be ashamed and who correctly handles the word of truth.”'}
                 </p>
                 <p className="text-xs font-bold text-[#C82323] mt-2 tracking-wider uppercase">
                   — 2 Timothy 2:15

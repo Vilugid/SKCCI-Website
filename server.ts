@@ -3,7 +3,8 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, ThinkingLevel, Type } from "@google/genai";
+import crypto from "crypto";
 
 dotenv.config();
 
@@ -80,14 +81,14 @@ Ang mga opisyal na balangkas ng sermon ng SKCCI ay matatagpuan sa **Leader Tools
 - **Worship Sets & Lyrics:** Listahan ng mga awit sa papuri at pagsamba.
 - **Cell Leader Teaching Aids:** Gabay para sa mga Cell Leaders sa kanilang weekly small group discussions.
 
-Napakainam po nito para sa mga lider, manggagawa, at sinumang nagnanais mag-aral nang mas malalim sa Salita ng Diyos!`;
+Napakainam po nito para sa mga lider, manggagawa, at sinumang nagnanais mag-aral nang mas malalim sa Salita ng DIYOS!`;
     }
 
     // 4. Consolidation Manuals (Grow > Manuals)
     if (lower.includes('manual') || lower.includes('consolidation') || lower.includes('discipleship') || lower.includes('konsolidasyon') || lower.includes('aralin') || lower.includes('alaga')) {
       return `**Consolidation Manuals (Grow > Manuals):**
 
-Ang **Consolidation Manuals** ay nakalaan para sa pag-aalaga, paggabay, at pagpapatatag sa pananampalataya ng mga bagong mananampalataya kay Kristo:
+Ang **Consolidation Manuals** ay nakalaan para sa pag-aalaga, paggabay, at pagpapatatag sa pananampalataya ng mga bagong mananampalataya kay KRISTO:
 
 📍 **Paano Pumunta sa Manuals Page:**
 1. I-click ang **"Grow"** dropdown menu sa navigation bar sa itaas.
@@ -104,7 +105,7 @@ Ang **Consolidation Manuals** ay nakalaan para sa pag-aalaga, paggabay, at pagpa
     if (lower.includes('cell') || lower.includes('group') || lower.includes('small group') || lower.includes('ugnayan')) {
       return `**Cell Groups at Small Groups sa SKCCI:** 
 
-Naniniwala po kami sa *"Your Church, Your Family"*. Sa pamamagitan ng Cell Groups, nagkakaroon tayo ng mas malapit na samahan, pag-aaral ng Salita ng Diyos, at suporta sa panalangin:
+Naniniwala po kami sa *"Your Church, Your Family"*. Sa pamamagitan ng Cell Groups, nagkakaroon tayo ng mas malapit na samahan, pag-aaral ng Salita ng DIYOS, at suporta sa panalangin:
 
 - 👨 **Men's Fellowship / Cell:** Para sa mga kalalakihan at mga ama.
 - 👩 **Women's Ministry / Cell:** Para sa mga kababaihan at mga ina.
@@ -119,10 +120,10 @@ Maaari po kayong pumunta sa **Grow > Cell Group** tab ng ating website o sabihin
       return `**Ang Mabuting Balita (Ang Ebanghelyo) at Gabay sa Debosyon:**
 
 ✨ **Ang 4 na Espiritwal na Katotohanan:**
-1. **Mahal ka ng Diyos:** May magandang layunin ang Diyos sa iyong buhay (Juan 3:16).
+1. **Mahal ka ng DIYOS:** May magandang layunin ang DIYOS sa iyong buhay (Juan 3:16).
 2. **Nahiwalay Tayo sa Kasalanan:** Hindi natin kayang iligtas ang ating sarili (Roma 3:23).
-3. **Si Hesu-Kristo ang Tulay:** Namatay Siya sa krus at muling nabuhay para tubusin tayo (Roma 5:8).
-4. **Tanggapin si Hesus:** Sa pananampalataya at pagtitiwala sa Kanya bilang Panginoon (Juan 1:12).
+3. **Si HESU-KRISTO ang Tulay:** Namatay Siya sa krus at muling nabuhay para tubusin tayo (Roma 5:8).
+4. **Tanggapin si HESUS:** Sa pananampalataya at pagtitiwala sa Kanya bilang PANGINOON (Juan 1:12).
 
 📖 **Mga Gabay sa Araw-araw na Pagbabasa ng Bibliya sa Website:**
 - **"My First 100 Days with JESUS":** May gabay na pagninilay para sa Bagong Tipan.
@@ -184,7 +185,7 @@ I'm **Hannah**, your virtual church usher. Here is everything you need to know t
 - 🗓️ **Service Day:** Every Sunday
 - ⏰ **Service Time:** 9:30 AM PST
 - 📍 **Sanctuary Location:** 2nd Floor, 158 Mañalac Avenue, Bagong Tanyag, Taguig City
-- 👶 **Children's Church / Kids Ministry:** Safe, engaging, and Christ-centered lessons for children while parents attend the main service!
+- 👶 **Children's Church / Kids Ministry:** Safe, engaging, and CHRIST-centered lessons for children while parents attend the main service!
 - 🚗 **Parking & Greeting:** On-site parking available with our warm ushering team ready to welcome you.
 - 👕 **Attire:** Casual or smart casual—come as you are!
 
@@ -224,21 +225,21 @@ Official SKCCI sermon outlines and ministry resources are housed directly on the
 - **Worship Sets & Lyrics:** Curated praise & worship song playlists, chords, and YouTube resources.
 - **Cell Group Discussion Aids:** Practical discussion starters for Cell Leaders.
 
-This is an invaluable resource for leaders, teachers, and anyone desiring deeper study of God's Word!`;
+This is an invaluable resource for leaders, teachers, and anyone desiring deeper study of GOD'S Word!`;
     }
 
     // 4. Consolidation Manuals (Grow > Manuals)
     if (lower.includes('manual') || lower.includes('consolidation') || lower.includes('discipleship') || lower.includes('lesson') || lower.includes('nurture')) {
       return `**Consolidation Manuals (under Grow > Manuals):**
 
-The **Consolidation Manuals** are discipleship guides designed to nurture, establish, and disciple new believers in their relationship with Christ:
+The **Consolidation Manuals** are discipleship guides designed to nurture, establish, and disciple new believers in their relationship with CHRIST:
 
 📍 **How to Access the Manuals:**
 1. Click on the **"Grow"** dropdown in the top navigation bar.
 2. Select **"Manuals"** (Manuals Reader).
 
 📚 **Manuals Curriculum Highlights:**
-- **Consolidation Series:** Systematic lessons on follow-up, Christian fellowship, regular prayer, abiding in God's Word, and overcoming challenges as a new believer.
+- **Consolidation Series:** Systematic lessons on follow-up, Christian fellowship, regular prayer, abiding in GOD'S Word, and overcoming challenges as a new believer.
 - **Evangelism Modules:** Practical training on sharing the Gospel with confidence.
 - **Envisioning Modules:** Equipping believers for kingdom leadership and cell multiplication.
 - **Interactive Checklist:** Track your completed lessons and devotional reflections as you grow!`;
@@ -248,7 +249,7 @@ The **Consolidation Manuals** are discipleship guides designed to nurture, estab
     if (lower.includes('cell') || lower.includes('group') || lower.includes('small group') || lower.includes('fellowship') || lower.includes('ministry')) {
       return `**Cell Groups & Ministries at SKCCI:**
 
-At SKCCI, we believe in *"Your Church, Your Family"*. Small groups provide a warm environment to grow in God's Word, build authentic friendships, and pray together:
+At SKCCI, we believe in *"Your Church, Your Family"*. Small groups provide a warm environment to grow in GOD'S Word, build authentic friendships, and pray together:
 
 - 👨 **Men of Honor / Men's Cell:** Discipleship for men and fathers.
 - 👩 **Women of Grace / Women's Cell:** Encouragement and Bible study for women and mothers.
@@ -263,10 +264,10 @@ You can explore the **Grow > Cell Group** tab on our website or let me know your
       return `**The Gospel of Grace & Devotional Resources:**
 
 ✨ **The 4 Spiritual Truths:**
-1. **God Loves You:** He has a wonderful, purpose-filled plan for your life (John 3:16).
+1. **GOD Loves You:** He has a wonderful, purpose-filled plan for your life (John 3:16).
 2. **Sin Separates Us:** We cannot attain righteousness on our own (Romans 3:23).
-3. **Jesus is the Bridge:** Christ died for our sins and rose victoriously (Romans 5:8).
-4. **Receive Him by Faith:** By accepting Jesus as your personal Lord and Savior (John 1:12).
+3. **JESUS is the Bridge:** CHRIST died for our sins and rose victoriously (Romans 5:8).
+4. **Receive Him by Faith:** By accepting JESUS as your personal LORD and SAVIOR (John 1:12).
 
 📖 **Daily Reading Guides on our Platform:**
 - **"My First 100 Days with JESUS":** Guided daily readings in the New Testament.
@@ -326,10 +327,10 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
   
   if (isTagalog) {
     if (lower.includes('thanksgiving') || lower.includes('pasasalamat') || lower.includes('action') || lower.includes('gawa') || lower.includes('devotional') || lower.includes('head knowledge') || lower.includes('pagsasabuhay')) {
-      return `Aming AMANG nasa langit, lubos kaming nagpapasalamat sa Iyo sa matagumpay at mapagpalang oras ng pananalangin at pagbubulay sa Iyong Banal na Salita. Puspusin Mo kami ng Iyong Banal na Espiritu upang ang aming mga natutunan ay maisagawa at maisabuhay namin sa bawat araw, at hindi manatili bilang kaalaman lamang sa isip, sa pangalan ni HESUS, Amen.`;
+      return `Aming AMANG nasa langit, lubos kaming nagpapasalamat sa Iyo sa matagumpay at mapagpalang oras ng pananalangin at pagbubulay sa Iyong Banal na Salita. Puspusin Mo kami ng Iyong BANAL NA ESPIRITU upang ang aming mga natutunan ay maisagawa at maisabuhay namin sa bawat araw, at hindi manatili bilang kaalaman lamang sa isip, sa pangalan ni HESUS, Amen.`;
     }
     if (lower.includes('wisdom') || lower.includes('karunungan') || lower.includes('understanding') || lower.includes('pang-unawa') || lower.includes('reading') || lower.includes('pagbabasa') || lower.includes('word') || lower.includes('salita') || lower.includes('scripture')) {
-      return `Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong Banal na Espiritu upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.`;
+      return `Aming AMANG nasa langit, buksan Mo po ang aming mga mata, isipan, at puso sa aming pagbabasa ng Iyong Banal na Salita ngayon. Ipagkaloob Mo ang liwanag ng Iyong BANAL NA ESPIRITU upang kami ay puspusin ng banal na karunungan, malalim na pang-unawa, at pusong masunurin sa Iyong katotohanan, sa pangalan ni HESUS, Amen.`;
     }
     if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
       return `Aming AMANG nasa langit, buong puso naming ipinapanalangin ang aming mga pastor at pinuno ng iglesya, na puspusin Mo sila ng Iyong banal na karunungan, kalakasan, at proteksyon sa bawat hakbang. Gabayan Mo ang kanilang mga puso upang patuloy silang manguna nang may katapatan at pag-ibig sa Iyong kawan, sa pangalan ni HESUS, Amen.`;
@@ -347,7 +348,7 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
       return `Aming AMANG nasa langit, itinataas namin ang bawat pangangailangan sa hanapbuhay, pananalapi, at karunungan sa mabuting pamamahala ng Iyong mga pagpapala. Buksan Mo ang mga bintana ng langit para sa masaganang paglalaan upang kami ay maging pagpapala sa marami, sa pangalan ni HESUS, Amen.`;
     }
     if (lower.includes('outreach') || lower.includes('evangelism') || lower.includes('community')) {
-      return `Aming AMANG nasa langit, buksan Mo po ang mga puso ng aming komunidad upang marinig at tanggapin ang dakilang pagliligtas ng Ebanghelyo ni Cristo. Gamitin Mo ang bawat mananampalataya bilang tapat na liwanag at tagapaghatid ng Iyong biyaya sa aming kapwa, sa pangalan ni HESUS, Amen.`;
+      return `Aming AMANG nasa langit, buksan Mo po ang mga puso ng aming komunidad upang marinig at tanggapin ang dakilang pagliligtas ng Ebanghelyo ni CRISTO. Gamitin Mo ang bawat mananampalataya bilang tapat na liwanag at tagapaghatid ng Iyong biyaya sa aming kapwa, sa pangalan ni HESUS, Amen.`;
     }
     if (lower.includes('sunday') || lower.includes('worship') || lower.includes('preaching')) {
       return `Aming AMANG nasa langit, basbasan at pahiran Mo po ang aming pagtitipon sa pagsamba, ang pagpapahayag ng Iyong Salita, at ang bawat pusong lalapit sa Iyo. Mapuspos nawa ang aming santuwaryo ng Iyong presensya at mabago ang aming buhay, sa pangalan ni HESUS, Amen.`;
@@ -355,16 +356,16 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
     return `Aming AMANG nasa langit, buong pagpapakumbaba naming itinataas sa Iyong harapan ang panalanging ito para sa ${topic}. Puspusin Mo kami ng Iyong biyaya, karunungan, at banal na kapayapaan habang nagtitiwala kami sa Iyong dakilang kapangyarihan, sa pangalan ni HESUS, Amen.`;
   } else {
     if (lower.includes('thanksgiving') || lower.includes('action') || lower.includes('devotional') || lower.includes('head knowledge') || lower.includes('transform')) {
-      return `Our FATHER in Heaven, thank You with all our hearts for this fruitful devotional time and for speaking directly to our spirits through Your Word. Empower us by Your Holy Spirit to transform all that we have read into active obedience and daily love, ensuring it never remains as mere head knowledge, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, thank You with all our hearts for this fruitful devotional time and for speaking directly to our spirits through Your Word. Empower us by Your HOLY SPIRIT to transform all that we have read into active obedience and daily love, ensuring it never remains as mere head knowledge, in JESUS' Name, Amen.`;
     }
     if (lower.includes('wisdom') || lower.includes('understanding') || lower.includes('reading') || lower.includes('word') || lower.includes('scripture') || lower.includes('bible')) {
-      return `Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your Holy Spirit so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, open our spiritual eyes, minds, and hearts as we open Your Holy Scriptures today. Grant us the divine guidance of Your HOLY SPIRIT so that we may receive heavenly wisdom, clear understanding, and the faith to live out Your Word, in JESUS' Name, Amen.`;
     }
     if (lower.includes('leadership') || lower.includes('pastor') || lower.includes('pastoral')) {
-      return `Our FATHER in Heaven, we lift up our church leaders and pastors, asking that You endow them with divine wisdom, spiritual protection, and renewed strength each day. May Your Holy Spirit guide their steps as they shepherd Your flock with steadfast love and godly integrity, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, we lift up our church leaders and pastors, asking that You endow them with divine wisdom, spiritual protection, and renewed strength each day. May Your HOLY SPIRIT guide their steps as they shepherd Your flock with steadfast love and godly integrity, in JESUS' Name, Amen.`;
     }
     if (lower.includes('unity') || lower.includes('doctrine') || lower.includes('integrity')) {
-      return `Our FATHER in Heaven, knit our hearts together in genuine love, pure doctrine, and unwavering unity across the entire body of Christ. Guard our fellowship against division and anchor us deeply in the truth of Your eternal Word, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, knit our hearts together in genuine love, pure doctrine, and unwavering unity across the entire body of CHRIST. Guard our fellowship against division and anchor us deeply in the truth of Your eternal Word, in JESUS' Name, Amen.`;
     }
     if (lower.includes('marriage') || lower.includes('family') || lower.includes('youth')) {
       return `Our FATHER in Heaven, we place our marriages, homes, and next-generation youth into Your loving hands for restoration, peace, and spiritual growth. Protect our families from worldly traps and raise our young people to walk boldly in Your truth, in JESUS' Name, Amen.`;
@@ -373,13 +374,13 @@ function getFallbackPrayer(topic: string, day: string, isTagalog: boolean): stri
       return `Our FATHER in Heaven, we pray for Your supernatural healing touch upon every sick and hurting brother and sister today. Release Your comfort, restore strength to every weakened body, and let Your miraculous peace reign in their hearts, in JESUS' Name, Amen.`;
     }
     if (lower.includes('financial') || lower.includes('job') || lower.includes('provision')) {
-      return `Our FATHER in Heaven, You are our faithful Jehovah Jireh who supplies all our needs according to Your riches in glory. Open doors of fruitful employment, break cycles of lack, and grant us wise stewardship to bless Your kingdom abundantly, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, You are our faithful JEHOVAH JIREH who supplies all our needs according to Your riches in glory. Open doors of fruitful employment, break cycles of lack, and grant us wise stewardship to bless Your kingdom abundantly, in JESUS' Name, Amen.`;
     }
     if (lower.includes('outreach') || lower.includes('evangelism') || lower.includes('community')) {
-      return `Our FATHER in Heaven, ignite our hearts with compassionate boldness to share the good news of the Gospel with our neighbors and local communities. Prepare receptive hearts to receive Christ and empower our church to be a radiant beacon of hope, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, ignite our hearts with compassionate boldness to share the good news of the Gospel with our neighbors and local communities. Prepare receptive hearts to receive CHRIST and empower our church to be a radiant beacon of hope, in JESUS' Name, Amen.`;
     }
     if (lower.includes('sunday') || lower.includes('worship') || lower.includes('preaching')) {
-      return `Our FATHER in Heaven, we ask for a mighty outpouring of Your Holy Spirit upon our Sunday worship services, ministry teams, and the preaching of Your Word. Draw every attendee into heartfelt repentance and life-changing encounter with Your grace, in JESUS' Name, Amen.`;
+      return `Our FATHER in Heaven, we ask for a mighty outpouring of Your HOLY SPIRIT upon our Sunday worship services, ministry teams, and the preaching of Your Word. Draw every attendee into heartfelt repentance and life-changing encounter with Your grace, in JESUS' Name, Amen.`;
     }
     return `Our FATHER in Heaven, we humbly bring this prayer before Your throne regarding ${topic}. Pour out Your grace, strengthen our faith, and let Your sovereign will be accomplished in our lives, in JESUS' Name, Amen.`;
   }
@@ -654,8 +655,9 @@ MGA MAHIGPIT NA PANUNTUNAN SA FORMATTING:
 1. DAPAT MAGSIMULA NANG EKSAPTO SA: "Aming AMANG nasa langit,"
 2. DAPAT MAGTAPOS NANG EKSAPTO SA: "...sa pangalan ni HESUS, Amen." (o "sa pangalan ni HESUS, Amen.")
 3. Ang haba ay dapat 2 hanggang 3 pangungusap lamang (kasama ang simula at pagtatapos).
-4. Tono: Mapitagan, nakabatay sa Salita ng Diyos, nakapagpapatibay, at diretso sa puso.
-5. Huwag maglagay ng markdown formatting tulad ng bold (**), quotation marks sa paligid, bullet points, o paliwanag. Ibigay LAMANG ang mismong panalangin.`
+4. Tono: Mapitagan, nakabatay sa Salita ng DIYOS, nakapagpapatibay, at diretso sa puso.
+5. Laging isulat sa MALALAKING TITIK ang mga banal na pangalan: DIYOS, BANAL NA ESPIRITU, PANGINOON, PANGINOONG, HESUS, JESUS, HESUKRISTO, KRISTO, CRISTO, TAGAPAGLIGTAS.
+6. Huwag maglagay ng markdown formatting tulad ng bold (**), quotation marks sa paligid, bullet points, o paliwanag. Ibigay LAMANG ang mismong panalangin.`
         : `You are a prayerful pastoral leader and prayer director at SAVIOR-KING Commission Church International (SKCCI).
 Write a warm, heartfelt, faith-filled sample prayer guide consisting of 2 to 3 concise, powerful sentences on the specified prayer focus topic.
 
@@ -664,7 +666,8 @@ STRICT FORMATTING RULES:
 2. MUST STRICTLY CONCLUDE WITH EXACTLY: "...in JESUS' Name, Amen." (or "...in JESUS' Name, Amen.")
 3. Length: Exactly 2 to 3 sentences total.
 4. Tone: Reverent, scripture-aligned, uplifting, faith-affirming, and direct.
-5. Do NOT include markdown bold markers (**), quotation marks surrounding the text, bullet points, or commentary. Output ONLY the raw prayer text itself.`;
+5. Always write divine names in ALL UPPERCASE: GOD, HOLY SPIRIT, LORD, JESUS, JESUS CHRIST, CHRIST, SAVIOR.
+6. Do NOT include markdown bold markers (**), quotation marks surrounding the text, bullet points, or commentary. Output ONLY the raw prayer text itself.`;
 
       const prompt = isTagalog
         ? `Paksa sa Panalangin para sa ${safeDay}: "${safeTopic}". Lumikha ng panibagong gabay sa panalangin (variation #${variation}).`
@@ -1007,6 +1010,379 @@ Return ONLY a valid JSON object matching this exact structure:
     } catch (err) {
       console.warn("[Cell Assistant AI] Falling back to heuristic parser:", err);
       return res.json(heuristicResult);
+    }
+  });
+
+  // In-memory + disk-backed cache for Tagalog manual translations
+  const manualTranslationCache = new Map<string, { hash: string; translated: any }>();
+  const manualCacheFile = path.join(process.cwd(), "data", "manual-translations-fil.json");
+
+  try {
+    if (fs.existsSync(manualCacheFile)) {
+      const raw = fs.readFileSync(manualCacheFile, "utf8");
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        for (const [key, value] of Object.entries(parsed)) {
+          if (value && typeof value === "object" && (value as any).hash && (value as any).translated) {
+            manualTranslationCache.set(key, value as { hash: string; translated: any });
+          }
+        }
+      }
+    }
+  } catch (cacheLoadErr) {
+    console.warn("[Manual Translate] Could not load disk cache:", cacheLoadErr);
+  }
+
+  const persistManualTranslationCache = async () => {
+    try {
+      await fs.promises.mkdir(path.dirname(manualCacheFile), { recursive: true });
+      const obj: Record<string, { hash: string; translated: any }> = {};
+      for (const [k, v] of manualTranslationCache.entries()) {
+        obj[k] = v;
+      }
+      await fs.promises.writeFile(manualCacheFile, JSON.stringify(obj, null, 2), "utf8");
+    } catch {
+      // Non-fatal in read-only environments; in-memory cache remains active
+    }
+  };
+
+  // Server-side Discipleship Manual Tagalog Translation Endpoint
+  app.post("/api/translate-manual-lesson", async (req, res) => {
+    try {
+      const { lesson } = req.body || {};
+      if (
+        !lesson ||
+        typeof lesson !== "object" ||
+        typeof lesson.id !== "string" ||
+        typeof lesson.title !== "string" ||
+        !lesson.scriptureFocus ||
+        !Array.isArray(lesson.objectives) ||
+        !Array.isArray(lesson.teachingSections) ||
+        !Array.isArray(lesson.reflectionQuestions)
+      ) {
+        return res.status(400).json({ error: "Invalid lesson payload provided." });
+      }
+
+      const serialized = JSON.stringify(lesson);
+      if (serialized.length > 60000) {
+        return res.status(413).json({ error: "Lesson payload exceeds maximum allowed size." });
+      }
+
+      const contentHash = crypto.createHash("sha256").update(serialized).digest("hex").slice(0, 16);
+      const cached = manualTranslationCache.get(lesson.id);
+      if (cached && cached.hash === contentHash) {
+        return res.json({ lesson: cached.translated, cached: true });
+      }
+
+      const genAI = getGenAI();
+      if (!genAI) {
+        return res.status(503).json({
+          error: "Translation service is not configured. Please ensure GEMINI_API_KEY is set in Settings > Secrets."
+        });
+      }
+
+      const systemInstruction = `You are a seasoned Filipino evangelical pastor and theological translator for SAVIOR-KING Commission Church International (SKCCI).
+Translate the provided Christian discipleship manual lesson from English into natural, warm, clear, and reverent Tagalog/Filipino that is easy for Filipino church members and elderly readers to understand.
+
+STRICT RULES:
+1. Preserve theological accuracy and biblical warmth. For Scripture quotes and book references, use natural, widely recognized Filipino Bible phrasing (Magandang Balita Biblia / Ang Bagong Ang Biblia style, e.g., "Juan 3:16", "Roma 6:23", "Mateo 4:17", "Filipos 2:12-13").
+2. Keep the EXACT structural metadata unchanged:
+   - Keep "id" identical to the input.
+   - Keep "category" identical to the input (exact English key: "Evangelism", "Consolidation", or "Envisioning").
+   - For every item in "teachingSections", keep "id" and "number" identical to the input, and preserve the exact same number of teachingSections and paragraphs per section.
+3. Translate "title" (e.g., "Aralin 1: ..."), "readingTime" (e.g., "7 min na babasahin"), "scriptureFocus.reference", "scriptureFocus.text", every item in "objectives", every "teachingSections[i].title" and "paragraphs", every item in "reflectionQuestions", "prayer", and "challenge".
+4. Preserve newline characters (\\n) where present in scriptureFocus.text.
+5. Always write divine names in ALL UPPERCASE: DIYOS, BANAL NA ESPIRITU, ESPIRITU SANTO, ESPIRITU, PANGINOON, PANGINOONG, HESUS, JESUS, HESUKRISTO, KRISTO, CRISTO, TAGAPAGLIGTAS.
+6. Output ONLY valid JSON matching the required schema.`;
+
+      const lessonSchema = {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          title: { type: Type.STRING },
+          category: { type: Type.STRING },
+          readingTime: { type: Type.STRING },
+          scriptureFocus: {
+            type: Type.OBJECT,
+            properties: {
+              reference: { type: Type.STRING },
+              text: { type: Type.STRING },
+            },
+            required: ["reference", "text"],
+          },
+          objectives: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+          },
+          teachingSections: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                number: { type: Type.INTEGER },
+                title: { type: Type.STRING },
+                paragraphs: {
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING },
+                },
+              },
+              required: ["id", "number", "title", "paragraphs"],
+            },
+          },
+          reflectionQuestions: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+          },
+          prayer: { type: Type.STRING },
+          challenge: { type: Type.STRING },
+        },
+        required: [
+          "id",
+          "title",
+          "category",
+          "readingTime",
+          "scriptureFocus",
+          "objectives",
+          "teachingSections",
+          "reflectionQuestions",
+          "prayer",
+          "challenge",
+        ],
+      };
+
+      const modelsToTry = ["gemini-4-hydrogen", "gemini-3.1-flash-lite"];
+      let lastError: any = null;
+
+      for (const model of modelsToTry) {
+        try {
+          const isGemini4 = model.startsWith("gemini-4-");
+          const config: any = {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: lessonSchema,
+          };
+          if (isGemini4) {
+            config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+          }
+
+          const response = await Promise.race([
+            genAI.models.generateContent({
+              model,
+              contents: `Translate this discipleship manual lesson into Tagalog:\n${serialized}`,
+              config,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Translation timed out on ${model}`)), 35000)
+            ),
+          ]);
+
+          const rawText = (response?.text || "").trim();
+          if (rawText) {
+            const translated = JSON.parse(rawText);
+            if (
+              translated &&
+              typeof translated.title === "string" &&
+              translated.scriptureFocus &&
+              Array.isArray(translated.teachingSections)
+            ) {
+              // Guarantee immutable structural identifiers match source lesson
+              const normalized = {
+                ...translated,
+                id: lesson.id,
+                category: lesson.category,
+                teachingSections: lesson.teachingSections.map((origSec: any, idx: number) => {
+                  const tSec = translated.teachingSections[idx];
+                  return {
+                    id: origSec.id,
+                    number: origSec.number,
+                    title: typeof tSec?.title === "string" ? tSec.title : origSec.title,
+                    paragraphs: Array.isArray(tSec?.paragraphs) && tSec.paragraphs.length > 0
+                      ? tSec.paragraphs.map((p: any) => String(p))
+                      : origSec.paragraphs,
+                  };
+                }),
+              };
+
+              manualTranslationCache.set(lesson.id, { hash: contentHash, translated: normalized });
+              void persistManualTranslationCache();
+              return res.json({ lesson: normalized, cached: false });
+            }
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[Manual Translate] Model ${model} failed for ${lesson.id}:`, err?.message || err);
+        }
+      }
+
+      const status = lastError?.status === 429 ? 429 : 502;
+      return res.status(status).json({
+        error: lastError?.message || "Unable to translate lesson right now. Please try again shortly."
+      });
+    } catch (err: any) {
+      console.error("[Manual Translate] Unexpected error:", err);
+      return res.status(500).json({ error: "Failed to translate lesson." });
+    }
+  });
+
+  // Server-side Structured Parser for Uploaded Human-Translated Tagalog Manuals
+  app.post("/api/parse-uploaded-manual", async (req, res) => {
+    try {
+      const { rawText, sourceLesson } = req.body || {};
+      if (
+        typeof rawText !== "string" ||
+        rawText.trim().length < 20 ||
+        !sourceLesson ||
+        typeof sourceLesson.id !== "string"
+      ) {
+        return res.status(400).json({ error: "Please provide the translated Tagalog text and target lesson." });
+      }
+
+      if (rawText.length > 80000) {
+        return res.status(413).json({ error: "Uploaded text is too large (max 80,000 characters)." });
+      }
+
+      const genAI = getGenAI();
+      if (!genAI) {
+        return res.status(503).json({
+          error: "Smart parser is not configured. You can still paste directly into the structured fields."
+        });
+      }
+
+      const systemInstruction = `You are a meticulous church document formatter for SAVIOR-KING Commission Church International (SKCCI).
+The user has uploaded or pasted a HUMAN-TRANSLATED Tagalog discipleship lesson.
+Your ONLY job is to map the user's exact Tagalog text into the structured JSON fields matching the lesson outline.
+
+CRITICAL RULES:
+1. DO NOT rewrite, paraphrase, or alter the user's Tagalog wording, Bible quotes, or theological phrasing. Keep their exact words intact!
+2. Keep "id" and "category" IDENTICAL to the reference English lesson metadata.
+3. Map the uploaded Tagalog text cleanly into:
+   - title
+   - readingTime (if not explicitly in the uploaded text, translate the reference readingTime cleanly like "7 min na babasahin")
+   - scriptureFocus: { reference, text }
+   - objectives: string[]
+   - teachingSections: [{ id, number, title, paragraphs }] — align with the reference lesson's section IDs/numbers when possible, or number sequentially starting from 1 if the translator reorganized headings.
+   - reflectionQuestions: string[]
+   - prayer: string
+   - challenge: string
+4. Output ONLY valid JSON matching the schema.`;
+
+      const lessonSchema = {
+        type: Type.OBJECT,
+        properties: {
+          id: { type: Type.STRING },
+          title: { type: Type.STRING },
+          category: { type: Type.STRING },
+          readingTime: { type: Type.STRING },
+          scriptureFocus: {
+            type: Type.OBJECT,
+            properties: {
+              reference: { type: Type.STRING },
+              text: { type: Type.STRING },
+            },
+            required: ["reference", "text"],
+          },
+          objectives: { type: Type.ARRAY, items: { type: Type.STRING } },
+          teachingSections: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                id: { type: Type.STRING },
+                number: { type: Type.INTEGER },
+                title: { type: Type.STRING },
+                paragraphs: { type: Type.ARRAY, items: { type: Type.STRING } },
+              },
+              required: ["id", "number", "title", "paragraphs"],
+            },
+          },
+          reflectionQuestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+          prayer: { type: Type.STRING },
+          challenge: { type: Type.STRING },
+        },
+        required: [
+          "id",
+          "title",
+          "category",
+          "readingTime",
+          "scriptureFocus",
+          "objectives",
+          "teachingSections",
+          "reflectionQuestions",
+          "prayer",
+          "challenge",
+        ],
+      };
+
+      const referenceOutline = {
+        id: sourceLesson.id,
+        category: sourceLesson.category,
+        readingTime: sourceLesson.readingTime,
+        sectionIds: (sourceLesson.teachingSections || []).map((s: any) => ({
+          id: s.id,
+          number: s.number,
+          englishTitle: s.title,
+        })),
+      };
+
+      const modelsToTry = ["gemini-4-hydrogen", "gemini-3.1-flash-lite"];
+      let lastError: any = null;
+
+      for (const model of modelsToTry) {
+        try {
+          const isGemini4 = model.startsWith("gemini-4-");
+          const config: any = {
+            systemInstruction,
+            responseMimeType: "application/json",
+            responseSchema: lessonSchema,
+          };
+          if (isGemini4) {
+            config.thinkingConfig = { thinkingLevel: ThinkingLevel.LOW };
+          }
+
+          const response = await Promise.race([
+            genAI.models.generateContent({
+              model,
+              contents: `Reference lesson structure:\n${JSON.stringify(referenceOutline)}\n\nUploaded Tagalog translation text to map faithfully:\n${rawText}`,
+              config,
+            }),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error(`Parser timed out on ${model}`)), 35000)
+            ),
+          ]);
+
+          const parsedText = (response?.text || "").trim();
+          if (parsedText) {
+            const parsed = JSON.parse(parsedText);
+            if (parsed && typeof parsed.title === "string" && Array.isArray(parsed.teachingSections)) {
+              const normalized = {
+                ...parsed,
+                id: sourceLesson.id,
+                category: sourceLesson.category,
+                teachingSections: parsed.teachingSections.map((sec: any, idx: number) => ({
+                  id: sourceLesson.teachingSections?.[idx]?.id || sec.id || `${sourceLesson.id}-sec-${idx + 1}`,
+                  number: typeof sec.number === "number" ? sec.number : idx + 1,
+                  title: String(sec.title || `Seksyon ${idx + 1}`),
+                  paragraphs: Array.isArray(sec.paragraphs)
+                    ? sec.paragraphs.map((p: any) => String(p)).filter(Boolean)
+                    : [],
+                })),
+              };
+              return res.json({ lesson: normalized });
+            }
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`[Manual Parse] Model ${model} failed:`, err?.message || err);
+        }
+      }
+
+      return res.status(502).json({
+        error: lastError?.message || "Could not parse uploaded text automatically. You can edit the fields directly below."
+      });
+    } catch (err: any) {
+      console.error("[Manual Parse] Unexpected error:", err);
+      return res.status(500).json({ error: "Failed to parse uploaded manual." });
     }
   });
 

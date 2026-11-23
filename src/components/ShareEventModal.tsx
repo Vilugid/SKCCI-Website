@@ -34,7 +34,7 @@ export const canUseNativeShare = (): boolean => {
 export const triggerNativeShare = async (event: ChurchEvent): Promise<boolean> => {
   if (typeof navigator !== 'undefined' && navigator.share) {
     const url = getEventShareUrl(event);
-    const text = `Join us for "${event.title}" at Savior-King Commission Church!${event.location ? `\n📍 Location: ${event.location}` : ''}`;
+    const text = `Join us for "${event.title}" at SAVIOR-KING Commission Church!${event.location ? `\n📍 Location: ${event.location}` : ''}`;
     try {
       await navigator.share({
         title: event.title,
@@ -87,7 +87,7 @@ export default function ShareEventModal({ event, isOpen, onClose }: ShareEventMo
   if (!isOpen || !event) return null;
 
   const shareUrl = getEventShareUrl(event);
-  const shareText = `Join us for "${event.title}" at Savior-King Commission Church! ${event.location ? `\n📍 ${event.location}` : ''}\n${shareUrl}`;
+  const shareText = `Join us for "${event.title}" at SAVIOR-KING Commission Church! ${event.location ? `\n📍 ${event.location}` : ''}\n${shareUrl}`;
 
   const handleCopyLink = async () => {
     try {
@@ -110,7 +110,7 @@ export default function ShareEventModal({ event, isOpen, onClose }: ShareEventMo
   };
 
   const handleShareFacebook = () => {
-    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(`Join us for ${event.title} at Savior King Commission Church!`)}`;
+    const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(`Join us for ${event.title} at SAVIOR-KING Commission Church!`)}`;
     window.open(fbUrl, '_blank', 'noopener,noreferrer,width=600,height=500');
   };
 

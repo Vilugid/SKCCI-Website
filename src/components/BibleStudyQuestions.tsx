@@ -67,13 +67,13 @@ const QUESTIONS: QuestionConfig[] = [
     bgClassDark: 'bg-amber-500/10 border-amber-500/30',
     en: {
       title: 'Who is GOD?',
-      sub: "What does this passage reveal about God's character, holy nature, sovereignty, or works?",
-      placeholder: 'Describe who God is, His names, His heart, or attributes revealed in today’s reading...'
+      sub: "What does this passage reveal about GOD'S character, holy nature, sovereignty, or works?",
+      placeholder: 'Describe who GOD is, His names, His heart, or attributes revealed in today’s reading...'
     },
     fil: {
-      title: 'Sino ang Diyos?',
-      sub: 'Ano ang ipinapakita ng talata tungkol sa katangian, kalikasan, kadakilaan, o mga gawa ng Diyos?',
-      placeholder: 'Ilarawan kung sino ang Diyos, Kanyang katangian, o Kanyang puso sa pagbasa ngayon...'
+      title: 'Sino ang DIYOS?',
+      sub: 'Ano ang ipinapakita ng talata tungkol sa katangian, kalikasan, kadakilaan, o mga gawa ng DIYOS?',
+      placeholder: 'Ilarawan kung sino ang DIYOS, Kanyang katangian, o Kanyang puso sa pagbasa ngayon...'
     }
   },
   {
@@ -85,12 +85,12 @@ const QUESTIONS: QuestionConfig[] = [
     en: {
       title: 'Are there promises to Claim?',
       sub: 'What divine promises, covenants, or assurances can you hold on to in faith today?',
-      placeholder: 'List the promises God makes to His people that you can personally claim and stand on...'
+      placeholder: 'List the promises GOD makes to His people that you can personally claim and stand on...'
     },
     fil: {
       title: 'May mga pangako bang dapat panghawakan?',
       sub: 'Anong mga banal na pangako o katiyakan ang maaari mong panghawakan nang may pananampalataya ngayon?',
-      placeholder: 'Isulat ang mga pangako ng Diyos na maaari mong asahan at panghawakan...'
+      placeholder: 'Isulat ang mga pangako ng DIYOS na maaari mong asahan at panghawakan...'
     }
   },
   {
@@ -101,13 +101,13 @@ const QUESTIONS: QuestionConfig[] = [
     bgClassDark: 'bg-blue-500/10 border-blue-500/30',
     en: {
       title: 'Are there Commands to Obey?',
-      sub: 'What specific instructions, divine directives, or call to obedience does God give?',
-      placeholder: 'Write down the clear commands or steps of obedience God is speaking to your heart...'
+      sub: 'What specific instructions, divine directives, or call to obedience does GOD give?',
+      placeholder: 'Write down the clear commands or steps of obedience GOD is speaking to your heart...'
     },
     fil: {
       title: 'May mga utos bang dapat sundin?',
-      sub: 'Anong partikular na tagubilin, utos, o hakbang ng pagsunod ang sinasabi ng Diyos?',
-      placeholder: 'Isulat ang mga utos o tagubilin ng Diyos na dapat mong isabuhay at sundin...'
+      sub: 'Anong partikular na tagubilin, utos, o hakbang ng pagsunod ang sinasabi ng DIYOS?',
+      placeholder: 'Isulat ang mga utos o tagubilin ng DIYOS na dapat mong isabuhay at sundin...'
     }
   },
   {
@@ -119,7 +119,7 @@ const QUESTIONS: QuestionConfig[] = [
     en: {
       title: 'Are there Examples to follow?',
       sub: 'What godly examples of faith, love, courage, prayer, or humility can you imitate?',
-      placeholder: 'Identify people, choices, or Christ-like actions worthy of emulation...'
+      placeholder: 'Identify people, choices, or CHRIST-like actions worthy of emulation...'
     },
     fil: {
       title: 'May mga halimbawa bang dapat tularan?',
@@ -135,12 +135,12 @@ const QUESTIONS: QuestionConfig[] = [
     bgClassDark: 'bg-orange-500/10 border-orange-500/30',
     en: {
       title: 'Are the Warnings to Heed?',
-      sub: 'What spiritual pitfalls, deceptions, dangers, or consequences does God warn against?',
+      sub: 'What spiritual pitfalls, deceptions, dangers, or consequences does GOD warn against?',
       placeholder: 'Reflect on cautionary lessons, judgment, or consequences to take seriously...'
     },
     fil: {
       title: 'May mga babala bang dapat pakinggan?',
-      sub: 'Anong mga espirituwal na kapahamakan, panlilinlang, o babala ang sinasabi ng Panginoon?',
+      sub: 'Anong mga espirituwal na kapahamakan, panlilinlang, o babala ang sinasabi ng PANGINOON?',
       placeholder: 'Isulat ang mga babala o aral na dapat bantayan at pakinggan...'
     }
   },
@@ -153,12 +153,12 @@ const QUESTIONS: QuestionConfig[] = [
     en: {
       title: 'Are There Sins to Avoid or Confess?',
       sub: 'What habits, selfish desires, doubts, or unconfessed sins need to be brought to the light?',
-      placeholder: 'Name any sin to avoid, repent from, or surrender to Jesus Christ today...'
+      placeholder: 'Name any sin to avoid, repent from, or surrender to JESUS CHRIST today...'
     },
     fil: {
       title: 'May mga kasalanan bang dapat iwasan o ipagtapat?',
       sub: 'Anong mga maling gawi, pagdududa, o kasalanan ang dapat ihingi ng tawad o iwasan?',
-      placeholder: 'Isulat ang mga kasalanang dapat iwasan o ipagtapat at isuko sa Panginoong Hesus...'
+      placeholder: 'Isulat ang mga kasalanang dapat iwasan o ipagtapat at isuko sa PANGINOONG HESUS...'
     }
   },
   {

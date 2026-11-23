@@ -43,8 +43,8 @@ export default function ThanksgivingPrayerItem({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: lang === 'tl'
-            ? 'Panalangin ng Pasasalamat at Pagsasabuhay sa Salita ng Diyos: Pagpapasalamat sa matagumpay na oras ng pananalangin at pagbubulay, at humihiling sa Diyos na maisagawa at maisabuhay ang Salita upang hindi ito manatiling kaalaman lamang sa isip'
-            : 'Prayer of Thanksgiving for Devotional Time and Life Transformation: Thanking God for a successful devotional time and asking for the Holy Spirit’s power to transform what we read into action so it does not stay as head knowledge only',
+            ? 'Panalangin ng Pasasalamat at Pagsasabuhay sa Salita ng DIYOS: Pagpapasalamat sa matagumpay na oras ng pananalangin at pagbubulay, at humihiling sa DIYOS na maisagawa at maisabuhay ang Salita upang hindi ito manatiling kaalaman lamang sa isip'
+            : 'Prayer of Thanksgiving for Devotional Time and Life Transformation: Thanking GOD for a successful devotional time and asking for the HOLY SPIRIT’S power to transform what we read into action so it does not stay as head knowledge only',
           day: `${dayLabel}${passagesSummary ? ` (${passagesSummary})` : ''}`,
           language: lang,
           variation: varCount
@@ -63,11 +63,11 @@ export default function ThanksgivingPrayerItem({
       console.error('Thanksgiving prayer fetch error:', err);
       if (lang === 'tl') {
         setSamplePrayer(
-          'Aming AMANG nasa langit, lubos kaming nagpapasalamat sa Iyo sa matagumpay at mapagpalang oras ng pananalangin at pagbubulay sa Iyong Banal na Salita. Puspusin Mo kami ng Iyong Banal na Espiritu upang ang aming mga natutunan ay maisagawa at maisabuhay namin sa bawat araw, at hindi manatili bilang kaalaman lamang sa isip, sa pangalan ni HESUS, Amen.'
+          'Aming AMANG nasa langit, lubos kaming nagpapasalamat sa Iyo sa matagumpay at mapagpalang oras ng pananalangin at pagbubulay sa Iyong Banal na Salita. Puspusin Mo kami ng Iyong BANAL NA ESPIRITU upang ang aming mga natutunan ay maisagawa at maisabuhay namin sa bawat araw, at hindi manatili bilang kaalaman lamang sa isip, sa pangalan ni HESUS, Amen.'
         );
       } else {
         setSamplePrayer(
-          'Our FATHER in Heaven, thank You with all our hearts for this fruitful devotional time and for speaking directly to our spirits through Your Word. Empower us by Your Holy Spirit to transform all that we have read into active obedience and daily love, ensuring it never remains as mere head knowledge, in JESUS\' Name, Amen.'
+          'Our FATHER in Heaven, thank You with all our hearts for this fruitful devotional time and for speaking directly to our spirits through Your Word. Empower us by Your HOLY SPIRIT to transform all that we have read into active obedience and daily love, ensuring it never remains as mere head knowledge, in JESUS\' Name, Amen.'
         );
       }
     } finally {
@@ -272,7 +272,7 @@ export default function ThanksgivingPrayerItem({
                         }`}>
                           {isTagalog 
                             ? 'Tapusin ang debosyon sa pagpapasalamat at paghingi ng lakas upang isabuhay ang Salita.' 
-                            : 'Conclude your devotional by thanking God and asking for strength to put His Word into action.'}
+                            : 'Conclude your devotional by thanking GOD and asking for strength to put His Word into action.'}
                         </span>
 
                         <button

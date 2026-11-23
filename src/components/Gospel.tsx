@@ -15,7 +15,7 @@ const GOSPEL_CARD_TRANSLATIONS: Record<string, { en: { word: string; explanation
   },
   death: {
     en: { word: 'Death', explanation: 'In the Bible, it means separation' },
-    fil: { word: 'Kamatayan (Death)', explanation: 'Sa Banal na Kasulatan, ito ay nangangahulugang pagkahiwalay sa Diyos' }
+    fil: { word: 'Kamatayan (Death)', explanation: 'Sa Banal na Kasulatan, ito ay nangangahulugang pagkahiwalay sa DIYOS' }
   },
   but: {
     en: { word: 'BUT', explanation: 'There is Hope' },
@@ -30,20 +30,20 @@ const GOSPEL_CARD_TRANSLATIONS: Record<string, { en: { word: string; explanation
     fil: { word: 'DIYOS (GOD)', explanation: 'Ang tanging May Akda at Makapagbibigay ng Kaloob na ito' }
   },
   eternal_life: {
-    en: { word: 'Eternal Life', explanation: 'To be with God in heaven forever' },
-    fil: { word: 'Buhay na Walang Hanggan', explanation: 'Makasama ang Diyos sa kalangitan magpakailanman' }
+    en: { word: 'Eternal Life', explanation: 'To be with GOD in heaven forever' },
+    fil: { word: 'Buhay na Walang Hanggan', explanation: 'Makasama ang DIYOS sa kalangitan magpakailanman' }
   },
   jesus_christ: {
-    en: { word: 'JESUS CHRIST', explanation: 'The Son of God and the only One who can and is willing to pay for our sins' },
-    fil: { word: 'CRISTO JESUS', explanation: 'Ang Anak ng Diyos at ang tanging may kakayahan at nagbayad para sa ating mga kasalanan' }
+    en: { word: 'JESUS CHRIST', explanation: 'The Son of GOD and the only One who can and is willing to pay for our sins' },
+    fil: { word: 'CRISTO JESUS', explanation: 'Ang Anak ng DIYOS at ang tanging may kakayahan at nagbayad para sa ating mga kasalanan' }
   },
   lord_confession: {
-    en: { word: 'Lord by Confession', explanation: 'Proclaiming that we are sinners, we cannot save ourselves, and only JESUS can save us' },
-    fil: { word: 'Panginoon sa Pagpapahayag', explanation: 'Paghahayag na tayo ay makasalanan, hindi natin kayang iligtas ang ating sarili, at si Hesus lamang ang tagapagligtas' }
+    en: { word: 'LORD by Confession', explanation: 'Proclaiming that we are sinners, we cannot save ourselves, and only JESUS can save us' },
+    fil: { word: 'PANGINOON sa Pagpapahayag', explanation: 'Paghahayag na tayo ay makasalanan, hindi natin kayang iligtas ang ating sarili, at si HESUS lamang ang TAGAPAGLIGTAS' }
   },
   lord_surrender: {
-    en: { word: 'Lord by Surrender', explanation: 'Accepting JESUS as the primary authority in our lives' },
-    fil: { word: 'Panginoon sa Pagsuko', explanation: 'Pagtanggap kay HESUS bilang pangunahing kapangyarihan at gabay sa ating buong buhay' }
+    en: { word: 'LORD by Surrender', explanation: 'Accepting JESUS as the primary authority in our lives' },
+    fil: { word: 'PANGINOON sa Pagsuko', explanation: 'Pagtanggap kay HESUS bilang pangunahing kapangyarihan at gabay sa ating buong buhay' }
   },
 };
 
@@ -89,13 +89,13 @@ export default function Gospel() {
             <p className="mt-8 text-2xl sm:text-3xl font-medium text-gray-800 leading-relaxed font-serif max-w-4xl mx-auto">
               "Sapagkat ang <span className="text-red-600 font-bold">kabayaran</span> ng <span className="text-red-600 font-bold">kasalanan</span> ay <span className="text-red-600 font-bold">kamatayan</span>, 
               <span className="text-amber-600 font-bold mx-2">NGUNIT</span> 
-              ang <span className="text-green-600 font-bold">kaloob</span> ng <span className="text-green-600 font-bold">Diyos</span> ay <span className="text-green-600 font-bold">buhay na walang hanggan</span> kay <span className="text-green-600 font-bold">Cristo Jesus</span> na ating <span className="text-blue-600 font-bold">Panginoon</span>."
+              ang <span className="text-green-600 font-bold">kaloob</span> ng <span className="text-green-600 font-bold">DIYOS</span> ay <span className="text-green-600 font-bold">buhay na walang hanggan</span> kay <span className="text-green-600 font-bold">CRISTO JESUS</span> na ating <span className="text-blue-600 font-bold">PANGINOON</span>."
             </p>
           ) : (
             <p className="mt-8 text-2xl sm:text-3xl font-medium text-gray-800 leading-relaxed font-serif max-w-4xl mx-auto">
               "For the <span className="text-red-600 font-bold">wages</span> of <span className="text-red-600 font-bold">sin</span> is <span className="text-red-600 font-bold">death</span>, 
               <span className="text-amber-600 font-bold mx-2">BUT</span> 
-              the <span className="text-green-600 font-bold">gift</span> of <span className="text-green-600 font-bold">God</span> is <span className="text-green-600 font-bold">eternal life</span> in <span className="text-green-600 font-bold">Christ Jesus</span> our <span className="text-blue-600 font-bold">Lord</span>."
+              the <span className="text-green-600 font-bold">gift</span> of <span className="text-green-600 font-bold">GOD</span> is <span className="text-green-600 font-bold">eternal life</span> in <span className="text-green-600 font-bold">CHRIST JESUS</span> our <span className="text-blue-600 font-bold">LORD</span>."
             </p>
           )}
           <p className="mt-4 text-gray-500 text-sm">{dict.gospel.instruction}</p>

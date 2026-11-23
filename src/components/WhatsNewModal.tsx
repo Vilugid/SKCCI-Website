@@ -305,7 +305,7 @@ export default function WhatsNewModal({ isOpen, onClose, onNavigate }: WhatsNewM
           <span className="text-xs text-gray-500 hidden sm:inline">
             {isTagalog 
               ? 'Salamat sa patuloy na paglago kasama ang SKCCI.' 
-              : 'Thank you for growing with Savior-King Commission Church.'}
+              : 'Thank you for growing with SAVIOR-KING Commission Church.'}
           </span>
           <button
             type="button"

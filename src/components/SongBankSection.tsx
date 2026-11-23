@@ -229,8 +229,8 @@ export default function SongBankSection({
               </p>
               <p className={`mt-0.5 ${isDark ? 'text-amber-300/80' : 'text-amber-800/90'}`}>
                 {isTagalog
-                  ? 'Bago pumasok sa pagbabasa ng Salita ng Diyos, ialay ang iyong puso sa Panginoon sa pamamagitan ng pag-awit ng papuri mula sa talaan sa ibaba.'
-                  : 'Before opening the Scriptures, lift your voice and surrender your focus to the Lord. Choose a song below to view and sing along with full lyrics.'}
+                  ? 'Bago pumasok sa pagbabasa ng Salita ng DIYOS, ialay ang iyong puso sa PANGINOON sa pamamagitan ng pag-awit ng papuri mula sa talaan sa ibaba.'
+                  : 'Before opening the Scriptures, lift your voice and surrender your focus to the LORD. Choose a song below to view and sing along with full lyrics.'}
               </p>
             </div>
           </div>

@@ -177,3 +177,42 @@ html, body {
   border-bottom-color: #ffffff;
 }
 
+/* Print Stylesheet for Elderly-Friendly Discipleship Manuals */
+@media print {
+  @page {
+    size: auto;
+    margin: 15mm 14mm;
+  }
+
+  html,
+  body,
+  #root,
+  main {
+    overflow: visible !important;
+    overflow-x: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  header,
+  footer,
+  .no-print {
+    display: none !important;
+  }
+
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+

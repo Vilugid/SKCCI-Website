@@ -397,8 +397,8 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
             id: `saved-${Date.now()}`,
             role: 'model',
             content: isTagalog
-              ? `✅ **Purihin ang Panginoon! Na-save na po ang Meeting Report para sa grupo ni ${targetGroup.leaderName}!**\n- 📅 Petsa: **${newLog.date}**\n- 👥 Bilang ng Dumalo: **${newLog.attendedMembers.length} miyembro**\n\nMakikita na po ito agad sa **Cell Groups** page!`
-              : `✅ **Praise God! The Meeting Report for ${targetGroup.leaderName}'s Group has been saved!**\n- 📅 Date: **${newLog.date}**\n- 👥 Attendance: **${newLog.attendedMembers.length} present**\n\nIt is now live on the **Cell Groups** page!`,
+              ? `✅ **Purihin ang PANGINOON! Na-save na po ang Meeting Report para sa grupo ni ${targetGroup.leaderName}!**\n- 📅 Petsa: **${newLog.date}**\n- 👥 Bilang ng Dumalo: **${newLog.attendedMembers.length} miyembro**\n\nMakikita na po ito agad sa **Cell Groups** page!`
+              : `✅ **Praise GOD! The Meeting Report for ${targetGroup.leaderName}'s Group has been saved!**\n- 📅 Date: **${newLog.date}**\n- 👥 Attendance: **${newLog.attendedMembers.length} present**\n\nIt is now live on the **Cell Groups** page!`,
             timestamp: formatCurrentTime(),
           }
         ]);
@@ -484,8 +484,8 @@ export default function HannahChat({ handleTabClick }: HannahChatProps) {
               id: `saved-${Date.now()}`,
               role: 'model',
               content: isTagalog
-                ? `🎉 **Purihin ang Diyos! Na-register na po ang bagong Cell Group ni ${payload.leaderName}!**\n- 📍 Lokasyon: **${payload.location}**\n- 🗓️ Araw at Oras: **${payload.scheduleDay}, ${payload.scheduleTime}**\n- 👥 Mga Miyembro (${finalMembers.length}): **${finalMembers.join(', ')}**`
-                : `🎉 **Praise God! ${payload.leaderName}'s new Cell Group is now registered!**\n- 📍 Location: **${payload.location}**\n- 🗓️ Schedule: **${payload.scheduleDay} at ${payload.scheduleTime}**\n- 👥 Members (${finalMembers.length}): **${finalMembers.join(', ')}**`,
+                ? `🎉 **Purihin ang DIYOS! Na-register na po ang bagong Cell Group ni ${payload.leaderName}!**\n- 📍 Lokasyon: **${payload.location}**\n- 🗓️ Araw at Oras: **${payload.scheduleDay}, ${payload.scheduleTime}**\n- 👥 Mga Miyembro (${finalMembers.length}): **${finalMembers.join(', ')}**`
+                : `🎉 **Praise GOD! ${payload.leaderName}'s new Cell Group is now registered!**\n- 📍 Location: **${payload.location}**\n- 🗓️ Schedule: **${payload.scheduleDay} at ${payload.scheduleTime}**\n- 👥 Members (${finalMembers.length}): **${finalMembers.join(', ')}**`,
               timestamp: formatCurrentTime(),
             }
           ]);
